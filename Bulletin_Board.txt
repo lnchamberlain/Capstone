@@ -1,0 +1,16 @@
+*******Bulletin Board for intra-team Notes**************
+
+Possibly Useful Resources:
+https://realpython.com/python-gui-with-wxpython/
+https://scrapfly.io/blog/how-to-scrape-instagram/
+https://github.com/notepad-plus-plus/notepad-plus-plus
+
+Setup and intro to writing programs for windows machines (c++) vv
+https://docs.microsoft.com/en-us/cpp/windows/walkthrough-creating-windows-desktop-applications-cpp?view=msvc-170
+
+
+Twitter Developer Keys:
+API Key: X6ZwDIp9IT10KQrtxQgkzYSgm
+API Secret Key: SMR87GjFxNF9Uy226ULtSm7cKfGdLkWreQlTiSFr6tNnYoQ9Hh
+Bearer Token: AAAAAAAAAAAAAAAAAAAAADiDgwEAAAAAVGAn%2Bf2hEB9bjyxqxWjLH8JApsw%3DzMGvHfJOqe0e7Bh30ZMItbfh6p4b4Rbjgk1oHTD77lpsmSOedF
+URL: https://developer.twitter.com/en/portal/projects/1456459840595714051/apps/25396024/settings
