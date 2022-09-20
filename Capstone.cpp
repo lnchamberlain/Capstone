@@ -31,6 +31,7 @@ BOOL                InitInstance(HINSTANCE, int);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
 void AddMenus();
+void AddControls();
 
 
 /*
@@ -155,7 +156,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    // Store in global variable
    MainWindow = hWnd;
    // Create Configuration Window and store in global variable
-   HWND config = CreateWindow(szWindowClass, L"Configuration", WS_OVERLAPPEDWINDOW | WS_VISIBLE, CW_USEDEFAULT, CW_USEDEFAULT, 800, 600, hWnd, NULL, hInstance, NULL);
+   HWND config = CreateWindowW(szWindowClass, L"Configuration", WS_OVERLAPPEDWINDOW | WS_VISIBLE, CW_USEDEFAULT, CW_USEDEFAULT, 800, 600, MainWindow, nullptr, hInstance, nullptr);
    ConfigurationWindow = config;
 
    
@@ -188,6 +189,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     {
     case WM_CREATE:
         AddMenus();
+        AddControls();
         break;
     case WM_COMMAND:
         {
@@ -259,7 +261,7 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
     return (INT_PTR)FALSE;
 }
 
-// Called in WndProc WM_CREATE case
+// Called in WndProc WM_CREATE case, adds menus to the two windows
 void AddMenus()
 {
     HMENU menuMain = CreateMenu();
@@ -285,4 +287,18 @@ void AddMenus()
 
     SetMenu(ConfigurationWindow, menuConfig);
     SetMenu(MainWindow, menuMain);
+}
+
+//Add static and edit controls to windows
+void AddControls()
+{
+    //Buttons are also windows
+    //Static controls -> buttons, etc. 
+    //Edit controls -> text boxes, user input, etc
+    CreateWindowW(L"Static", L"Testing", WS_VISIBLE | WS_CHILD, 100, 100, 100, 20, MainWindow, NULL, NULL, NULL);
+
+
+
+
+
 }
