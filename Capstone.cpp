@@ -22,14 +22,15 @@
 HINSTANCE hInst;                                // current instance
 WCHAR szTitle[MAX_LOADSTRING];                  // The title bar text
 WCHAR szWindowClass[MAX_LOADSTRING];            // the main window class name
-
+HWND ConfigurationWindow;
+HWND MainWindow;
 
 // Forward declarations of functions included in this code module:
 ATOM                MyRegisterClass(HINSTANCE hInstance);
 BOOL                InitInstance(HINSTANCE, int);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
-void AddMenu(HWND);
+void AddMenus();
 
 
 /*
@@ -50,7 +51,7 @@ HWND hwndButton = CreateWindow(
 
 Window Creation: 
 
-HWND CreateWindowExA(
+HWND CreateWindow(
   [in]           DWORD     dwExStyle,
   [in, optional] LPCSTR    lpClassName,
   [in, optional] LPCSTR    lpWindowName,
@@ -81,8 +82,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
     LoadStringW(hInstance, IDC_CAPSTONE, szWindowClass, MAX_LOADSTRING);
     MyRegisterClass(hInstance);
-
-
 
 
     // Perform application initialization:
@@ -153,6 +152,8 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    HWND hWnd = CreateWindowW(szWindowClass, L"UnderCover Recovery", WS_OVERLAPPEDWINDOW,
       CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, nullptr, nullptr, hInstance, nullptr);
 
+   // Store in global variable
+   MainWindow = hWnd;
    // Create Configuration Window and store in global variable
    HWND config = CreateWindow(szWindowClass, L"Configuration", WS_OVERLAPPEDWINDOW | WS_VISIBLE, CW_USEDEFAULT, CW_USEDEFAULT, 800, 600, hWnd, NULL, hInstance, NULL);
    ConfigurationWindow = config;
@@ -185,13 +186,26 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     switch (message)
     {
+    case WM_CREATE:
+        AddMenus();
+        break;
     case WM_COMMAND:
         {
             int wmId = LOWORD(wParam);
             // Parse the menu selections
             switch (wmId)
             {
-            case IDM_ABOUT:
+            //File Tab
+            case FILE_MENU_FILE:
+                break;
+            //Configuration Tab -> open panel
+            case FILE_MENU_OPEN_CONFIGURATION:
+                break;
+            //Configuration Tab -> save config
+            case FILE_MENU_SAVE_CONFIGURATION:
+                break;
+            //About Tab
+            case FILE_MENU_ABOUT:
                 DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
                 break;
             case IDM_EXIT:
@@ -243,4 +257,32 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
         break;
     }
     return (INT_PTR)FALSE;
+}
+
+// Called in WndProc WM_CREATE case
+void AddMenus()
+{
+    HMENU menuMain = CreateMenu();
+    HMENU menuConfig = CreateMenu();
+
+    // Submenus for Main
+    HMENU menuMainSubFile = CreateMenu();
+    HMENU menuMainSubConfig = CreateMenu();
+
+    // Populate drop-down menus
+    AppendMenu(menuMainSubFile, MF_STRING, IDM_EXIT, L"Exit");
+    //TODO Make the first a button and the second do something with the config file
+    AppendMenu(menuMainSubConfig, MF_STRING, FILE_MENU_OPEN_CONFIGURATION, L"Open Configuration Panel");
+    AppendMenu(menuMainSubConfig, MF_STRING, FILE_MENU_SAVE_CONFIGURATION, L"Save config file");
+
+
+    //Populate primary menu items
+    AppendMenu(menuMain, MF_POPUP, (UINT_PTR)menuMainSubFile, L"File");
+    AppendMenu(menuMain, MF_POPUP, (UINT_PTR)menuMainSubConfig, L"Configuration");
+    AppendMenu(menuMain, MF_STRING, FILE_MENU_ABOUT, L"About");
+
+    AppendMenu(menuConfig, MF_STRING, NULL, L"Testing");
+
+    SetMenu(ConfigurationWindow, menuConfig);
+    SetMenu(MainWindow, menuMain);
 }
