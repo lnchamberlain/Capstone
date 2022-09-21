@@ -22,7 +22,6 @@
 HINSTANCE hInst;                                // current instance
 WCHAR szTitle[MAX_LOADSTRING];                  // The title bar text
 WCHAR szWindowClass[MAX_LOADSTRING];            // the main window class name
-HWND ConfigurationWindow;
 HWND MainWindow;
 
 // Forward declarations of functions included in this code module:
@@ -30,8 +29,8 @@ ATOM                MyRegisterClass(HINSTANCE hInstance);
 BOOL                InitInstance(HINSTANCE, int);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
-void AddMenus();
-void AddControls();
+void AddMenu();
+void AddControls(HWND);
 
 
 /*
@@ -151,13 +150,15 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    hInst = hInstance; // Store instance handle global variable
 
    HWND hWnd = CreateWindowW(szWindowClass, L"UnderCover Recovery", WS_OVERLAPPEDWINDOW,
-      CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, nullptr, nullptr, hInstance, nullptr);
+      200, 100, 1200, 800, nullptr, nullptr, hInstance, nullptr);
+   //Main Window Coordinates (0,0) upper left, (1200, 800) lower right
+  
 
    // Store in global variable
    MainWindow = hWnd;
    // Create Configuration Window and store in global variable
-   HWND config = CreateWindowW(szWindowClass, L"Configuration", WS_OVERLAPPEDWINDOW | WS_VISIBLE, CW_USEDEFAULT, CW_USEDEFAULT, 800, 600, MainWindow, nullptr, hInstance, nullptr);
-   ConfigurationWindow = config;
+  // HWND config = CreateWindowW(szWindowClass, L"Configuration", WS_VISIBLE, CW_USEDEFAULT, CW_USEDEFAULT, 800, 600, MainWindow, nullptr, hInstance, nullptr);
+   //ConfigurationWindow = config;
 
    
 
@@ -188,8 +189,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     switch (message)
     {
     case WM_CREATE:
-        AddMenus();
-        AddControls();
+        AddMenu();
+        AddControls(hWnd);
         break;
     case WM_COMMAND:
         {
@@ -228,10 +229,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         break;
     //Manages the Red 'X'
     case WM_DESTROY:
-        //In case of closing the Configuration Window, should not exit program only that window
-        if (hWnd == ConfigurationWindow) {
-            break;
-        }
         //Makes 'Get message' return false and terminate program
         PostQuitMessage(0);
         break;
@@ -262,42 +259,51 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 }
 
 // Called in WndProc WM_CREATE case, adds menus to the two windows
-void AddMenus()
+void AddMenu()
 {
     HMENU menuMain = CreateMenu();
-    HMENU menuConfig = CreateMenu();
-
+    
     // Submenus for Main
     HMENU menuMainSubFile = CreateMenu();
-    HMENU menuMainSubConfig = CreateMenu();
+   
 
     // Populate drop-down menus
     AppendMenu(menuMainSubFile, MF_STRING, IDM_EXIT, L"Exit");
     //TODO Make the first a button and the second do something with the config file
-    AppendMenu(menuMainSubConfig, MF_STRING, FILE_MENU_OPEN_CONFIGURATION, L"Open Configuration Panel");
-    AppendMenu(menuMainSubConfig, MF_STRING, FILE_MENU_SAVE_CONFIGURATION, L"Save config file");
-
+    
 
     //Populate primary menu items
     AppendMenu(menuMain, MF_POPUP, (UINT_PTR)menuMainSubFile, L"File");
-    AppendMenu(menuMain, MF_POPUP, (UINT_PTR)menuMainSubConfig, L"Configuration");
     AppendMenu(menuMain, MF_STRING, FILE_MENU_ABOUT, L"About");
-
-    AppendMenu(menuConfig, MF_STRING, NULL, L"Testing");
-
-    SetMenu(ConfigurationWindow, menuConfig);
     SetMenu(MainWindow, menuMain);
 }
 
 //Add static and edit controls to windows
-void AddControls()
+void AddControls(HWND hWnd)
 {
     //Buttons are also windows
     //Static controls -> buttons, etc. 
     //Edit controls -> text boxes, user input, etc
-    CreateWindowW(L"Static", L"Testing", WS_VISIBLE | WS_CHILD, 100, 100, 100, 20, MainWindow, NULL, NULL, NULL);
+   
+    //Top section, clock, edit clock, open config
+    HWND clockWindow = CreateWindowW(L"Static", L"CLOCK", WS_VISIBLE | WS_CHILD, 500, 50, 200, 50, hWnd, NULL, NULL, NULL);
+    HWND setClockButton = CreateWindowW(L"Button", L"Set Clock", WS_VISIBLE | WS_CHILD, 725, 55, 75, 30, hWnd, NULL, NULL, NULL);
+    HWND openConfigButton = CreateWindowW(L"Button", L"Configuration", WS_VISIBLE | WS_CHILD, 825, 55, 100, 30, hWnd, NULL, NULL, NULL);
+    
+    //Main three blocks
+    HWND facebookSection = CreateWindowW(L"Static", L"Facebook", WS_VISIBLE | WS_CHILD, 100, 120, 300, 500, hWnd, NULL, NULL, NULL);
+    HWND instagramSection = CreateWindowW(L"Static", L"Instagram", WS_VISIBLE | WS_CHILD, 450, 120, 300, 500, hWnd, NULL, NULL, NULL);
+    HWND twitterSection = CreateWindowW(L"Static", L"Twitter", WS_VISIBLE | WS_CHILD, 800, 120, 300, 500, hWnd, NULL, NULL, NULL, NULL);
 
+    //Populate login buttons
+    HWND facebookLoginButton = CreateWindowW(L"Button", L"Login", WS_VISIBLE | WS_CHILD, 125, 85, 55, 30, facebookSection, NULL, NULL, NULL);
+    HWND instagramLoginButton = CreateWindowW(L"Button", L"Login", WS_VISIBLE | WS_CHILD, 125,85, 55, 30, instagramSection, NULL, NULL, NULL);
+    HWND twitterLoginButton = CreateWindowW(L"Button", L"Login", WS_VISIBLE | WS_CHILD, 125, 85, 55, 30, twitterSection, NULL, NULL, NULL);
 
+    //Populate flagged users lists
+    HWND facebookFlaggedUserButton = CreateWindowW(L"Button", L"Flagged Users", WS_VISIBLE | WS_CHILD, 190, 10, 100, 30, facebookSection, NULL, NULL, NULL);
+    HWND instagramFlaggedUserButton = CreateWindowW(L"Button", L"Flagged Users", WS_VISIBLE | WS_CHILD, 190, 10, 100, 30, instagramSection, NULL, NULL, NULL);
+    HWND twitterFlaggedUserButton = CreateWindowW(L"Button", L"Flagged Users", WS_VISIBLE | WS_CHILD, 190, 10, 100, 30, twitterSection, NULL, NULL, NULL);
 
 
 
