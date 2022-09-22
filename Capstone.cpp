@@ -10,19 +10,36 @@
 #include <cstdio>
 #include <cstdlib>
 #include <iostream>
+#include <wchar.h>
+#include <string.h>
+#include <cmath>
 
 #define MAX_LOADSTRING 100
 #define FILE_MENU_FILE 1
 #define FILE_MENU_OPEN_CONFIGURATION 2
 #define FILE_MENU_ABOUT 3
 #define FILE_MENU_SAVE_CONFIGURATION 4
+#define FACEBOOK_LOGIN 5
+#define INSTAGRAM_LOGIN 6
+#define TWITTER_LOGIN 7
+#define SET_TIMER_VALUE 8
+//#define WM_SETFONT                      0x0200
 
 
 // Global Variables:
 HINSTANCE hInst;                                // current instance
 WCHAR szTitle[MAX_LOADSTRING];                  // The title bar text
 WCHAR szWindowClass[MAX_LOADSTRING];            // the main window class name
-HWND MainWindow;
+HWND MainWindow, timerWnd;                     // Global variable for main window and timer window
+HWND facebookSection, instagramSection, twitterSection; // TODO make these seperate processes with their own procedures
+int COUNT = 0;                                  // Counts down                    
+int RESET_TIMER = 20;                           // Reset timer on finish (in seconds)
+int seconds, minutes, hours, days;              //Convert COUNT into readable format
+UINT_PTR ID_TIMER;                              // Timer ID
+HWND fbUser, fbPass, igUser, igPass, twUser, twPass, enteredTime; // captured values
+wchar_t fbUsername[100], fbPassword[100], igUsername[100], igPassword[100], twUsername[100], twPassword[100], Freq[100]; // store captured values
+char buf[] = { '00', ':', '00', ':', '00' };
+
 
 // Forward declarations of functions included in this code module:
 ATOM                MyRegisterClass(HINSTANCE hInstance);
@@ -31,41 +48,9 @@ LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
 void AddMenu();
 void AddControls(HWND);
+void Test();
+void InitializeTimer();
 
-
-/*
-Button Creation: 
-
-HWND hwndButton = CreateWindow(
-    L"BUTTON",  // Predefined class; Unicode assumed 
-    L"OK",      // Button text 
-    WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,  // Styles 
-    10,         // x position 
-    10,         // y position 
-    100,        // Button width
-    100,        // Button height
-    m_hwnd,     // Parent window
-    NULL,       // No menu.
-    (HINSTANCE)GetWindowLongPtr(m_hwnd, GWLP_HINSTANCE),
-    NULL);      // Pointer not needed.
-
-Window Creation: 
-
-HWND CreateWindow(
-  [in]           DWORD     dwExStyle,
-  [in, optional] LPCSTR    lpClassName,
-  [in, optional] LPCSTR    lpWindowName,
-  [in]           DWORD     dwStyle,
-  [in]           int       X,
-  [in]           int       Y,
-  [in]           int       nWidth,
-  [in]           int       nHeight,
-  [in, optional] HWND      hWndParent,
-  [in, optional] HMENU     hMenu,
-  [in, optional] HINSTANCE hInstance,
-  [in, optional] LPVOID    lpParam
-);
-*/
 
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
@@ -75,8 +60,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 {
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
-
-    // TODO: Place code here.
 
     // Initialize global strings
     LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
@@ -152,16 +135,9 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    HWND hWnd = CreateWindowW(szWindowClass, L"UnderCover Recovery", WS_OVERLAPPEDWINDOW,
       200, 100, 1200, 800, nullptr, nullptr, hInstance, nullptr);
    //Main Window Coordinates (0,0) upper left, (1200, 800) lower right
-  
-
+   
    // Store in global variable
    MainWindow = hWnd;
-   // Create Configuration Window and store in global variable
-  // HWND config = CreateWindowW(szWindowClass, L"Configuration", WS_VISIBLE, CW_USEDEFAULT, CW_USEDEFAULT, 800, 600, MainWindow, nullptr, hInstance, nullptr);
-   //ConfigurationWindow = config;
-
-   
-
 
    if (!hWnd)
    {
@@ -186,44 +162,107 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 //
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
+       
     switch (message)
     {
     case WM_CREATE:
         AddMenu();
         AddControls(hWnd);
+        
         break;
-    case WM_COMMAND:
+    case WM_TIMER:
+        
+        if (COUNT > 0) 
         {
-            int wmId = LOWORD(wParam);
-            // Parse the menu selections
-            switch (wmId)
-            {
-            //File Tab
-            case FILE_MENU_FILE:
-                break;
-            //Configuration Tab -> open panel
-            case FILE_MENU_OPEN_CONFIGURATION:
-                break;
-            //Configuration Tab -> save config
-            case FILE_MENU_SAVE_CONFIGURATION:
-                break;
-            //About Tab
-            case FILE_MENU_ABOUT:
-                DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
-                break;
-            case IDM_EXIT:
-                DestroyWindow(hWnd);
-                break;
-            default:
-                return DefWindowProc(hWnd, message, wParam, lParam);
-            }
+            hours = COUNT / 3600;
+            minutes = (COUNT / 60) % 60;
+            seconds = COUNT % 60;
+            buf[0] = (char)hours;
+            buf[2] = (char)minutes;
+            buf[4] = (char)seconds;
+            size_t size = strlen(buf) + 1;
+            size_t outSize;
+            wchar_t wbuf[6];
+            mbstowcs_s(&outSize, wbuf, size, buf, size - 1);
+            SetWindowTextW(timerWnd, wbuf);
+            //Test();
+        }
+        COUNT--;
+        if (COUNT <= 0) 
+        {
+            //Reset timer automatically
+            COUNT = RESET_TIMER;
         }
         break;
+    case WM_COMMAND:
+    {
+        int wmId = LOWORD(wParam);
+        // Parse the menu selections
+        switch (wmId)
+        {
+            //File Tab
+        case FILE_MENU_FILE:
+            break;
+            //Configuration Tab -> open panel
+        case FILE_MENU_OPEN_CONFIGURATION:
+            break;
+            //Configuration Tab -> save config
+        case FILE_MENU_SAVE_CONFIGURATION:
+            break;
+            //About Tab
+        case FILE_MENU_ABOUT:
+            DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
+            break;
+        case FACEBOOK_LOGIN:
+            GetWindowTextW(fbUser, fbUsername, 100);
+            GetWindowTextW(fbPass, fbPassword, 100);
+            //Post login request here
+            break;
+        case INSTAGRAM_LOGIN:
+            GetWindowTextW(igUser, igUsername, 100);
+            GetWindowTextW(igPass, igPassword, 100);
+            //Post login request here
+            break;
+        case TWITTER_LOGIN:
+            GetWindowTextW(twUser, twUsername, 100);
+            GetWindowTextW(twPass, twPassword, 100);
+            //Post login request here
+            break;
+        case SET_TIMER_VALUE:
+            GetWindowTextW(enteredTime, Freq, 100);
+            COUNT = (int)Freq;
+            std::cout << COUNT << std::endl;
+            RESET_TIMER = COUNT;
+            InitializeTimer();
+            break;
+        case IDM_EXIT:
+            DestroyWindow(hWnd);
+            break;
+        default:
+            return DefWindowProc(hWnd, message, wParam, lParam);
+        }
+    }
+    break;
+    
     case WM_PAINT:
         {
+        //Doesn't display?
             PAINTSTRUCT ps;
             HDC hdc = BeginPaint(hWnd, &ps);
-            // TODO: Add any drawing code that uses hdc here...
+            //GetClientRect(timerhwnd, &r);
+            /* FillRect(hdc, &ps.rcPaint, (HBRUSH)(COLOR_WINDOW + 1));
+            char buf[] = { '00', ':', '00', ':', '00' };
+            //If value has been set
+            if (COUNT > 0) {
+                hours = COUNT / 3600;
+                minutes = (COUNT / 60) % 60;
+                seconds = COUNT % 60;
+                buf[0] = (char)hours;
+                buf[1] = (char)minutes;
+                buf[2] = (char)seconds;
+                DrawText(hdc, (LPCWSTR) buf, -1, &r, DT_LEFT);
+            }
+            */
             EndPaint(hWnd, &ps);
         }
         break;
@@ -281,30 +320,51 @@ void AddMenu()
 //Add static and edit controls to windows
 void AddControls(HWND hWnd)
 {
-    //Buttons are also windows
-    //Static controls -> buttons, etc. 
-    //Edit controls -> text boxes, user input, etc
-   
+      
     //Top section, clock, edit clock, open config
-    HWND clockWindow = CreateWindowW(L"Static", L"CLOCK", WS_VISIBLE | WS_CHILD, 500, 50, 200, 50, hWnd, NULL, NULL, NULL);
-    HWND setClockButton = CreateWindowW(L"Button", L"Set Clock", WS_VISIBLE | WS_CHILD, 725, 55, 75, 30, hWnd, NULL, NULL, NULL);
-    HWND openConfigButton = CreateWindowW(L"Button", L"Configuration", WS_VISIBLE | WS_CHILD, 825, 55, 100, 30, hWnd, NULL, NULL, NULL);
+    HWND timerWindow = CreateWindowW(L"Edit", L"TIMER", WS_VISIBLE | WS_CHILD | WS_BORDER | SS_CENTER, 500, 50, 200, 50, hWnd, NULL, NULL, NULL);
+    timerWnd = timerWindow;
+
+    HWND openConfigButton = CreateWindowW(L"Button", L"Set Frequency:", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON, 720, 55, 110, 30, hWnd, (HMENU)SET_TIMER_VALUE, NULL, NULL);
+    enteredTime = CreateWindowW(L"Edit", L"Seconds", WS_VISIBLE | WS_CHILD | WS_BORDER, 840, 55, 100, 30, hWnd, NULL, NULL, NULL);
     
     //Main three blocks
-    HWND facebookSection = CreateWindowW(L"Static", L"Facebook", WS_VISIBLE | WS_CHILD, 100, 120, 300, 500, hWnd, NULL, NULL, NULL);
-    HWND instagramSection = CreateWindowW(L"Static", L"Instagram", WS_VISIBLE | WS_CHILD, 450, 120, 300, 500, hWnd, NULL, NULL, NULL);
-    HWND twitterSection = CreateWindowW(L"Static", L"Twitter", WS_VISIBLE | WS_CHILD, 800, 120, 300, 500, hWnd, NULL, NULL, NULL, NULL);
+    facebookSection = CreateWindowW(L"Static", L"Facebook", WS_VISIBLE | WS_CHILD | WS_BORDER, 100, 120, 300, 500, hWnd, NULL, NULL, NULL);
+    instagramSection = CreateWindowW(L"Static", L"Instagram", WS_VISIBLE | WS_CHILD | WS_BORDER, 450, 120, 300, 500, hWnd, NULL, NULL, NULL);
+    twitterSection = CreateWindowW(L"Static", L"Twitter", WS_VISIBLE | WS_CHILD | WS_BORDER, 800, 120, 300, 500, hWnd, NULL, NULL, NULL, NULL);
 
+    //Initialize username and password windows
+    fbUser = CreateWindowW(L"Edit", L"Username", WS_VISIBLE | WS_CHILD | ES_MULTILINE | ES_AUTOVSCROLL | SS_CENTER, 215, 270, 100, 30, hWnd, NULL, NULL, NULL);
+    fbPass = CreateWindowW(L"Edit", L"Password", WS_VISIBLE | WS_CHILD | ES_MULTILINE | ES_AUTOVSCROLL | SS_CENTER, 215, 305, 100, 30, hWnd, NULL, NULL, NULL);
+    igUser = CreateWindowW(L"Edit", L"Username", WS_VISIBLE | WS_CHILD | ES_MULTILINE | ES_AUTOVSCROLL | SS_CENTER, 565, 270, 100, 30, hWnd, NULL, NULL, NULL);
+    igPass = CreateWindowW(L"Edit", L"Password", WS_VISIBLE | WS_CHILD | ES_MULTILINE | ES_AUTOVSCROLL | SS_CENTER, 565, 305, 100, 30, hWnd, NULL, NULL, NULL);
+    twUser = CreateWindowW(L"Edit", L"Username", WS_VISIBLE | WS_CHILD | ES_MULTILINE | ES_AUTOVSCROLL | SS_CENTER, 915, 270, 100, 30, hWnd, NULL, NULL, NULL);
+    twPass = CreateWindowW(L"Edit", L"Password", WS_VISIBLE | WS_CHILD | ES_MULTILINE | ES_AUTOVSCROLL | SS_CENTER, 915, 305, 100, 30, hWnd, NULL, NULL, NULL);
+    
     //Populate login buttons
-    HWND facebookLoginButton = CreateWindowW(L"Button", L"Login", WS_VISIBLE | WS_CHILD, 125, 85, 55, 30, facebookSection, NULL, NULL, NULL);
-    HWND instagramLoginButton = CreateWindowW(L"Button", L"Login", WS_VISIBLE | WS_CHILD, 125,85, 55, 30, instagramSection, NULL, NULL, NULL);
-    HWND twitterLoginButton = CreateWindowW(L"Button", L"Login", WS_VISIBLE | WS_CHILD, 125, 85, 55, 30, twitterSection, NULL, NULL, NULL);
+    HWND facebookLoginButton = CreateWindowW(L"Button", L"Login", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON, 225, 205, 55, 30, hWnd, (HMENU)FACEBOOK_LOGIN, NULL, NULL);
+    HWND instagramLoginButton = CreateWindowW(L"Button", L"Login", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON, 575,205, 55, 30, hWnd,(HMENU)INSTAGRAM_LOGIN, NULL, NULL);
+    HWND twitterLoginButton = CreateWindowW(L"Button", L"Login", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON, 925, 205, 55, 30, hWnd, (HMENU)TWITTER_LOGIN, NULL, NULL);
 
-    //Populate flagged users lists
-    HWND facebookFlaggedUserButton = CreateWindowW(L"Button", L"Flagged Users", WS_VISIBLE | WS_CHILD, 190, 10, 100, 30, facebookSection, NULL, NULL, NULL);
-    HWND instagramFlaggedUserButton = CreateWindowW(L"Button", L"Flagged Users", WS_VISIBLE | WS_CHILD, 190, 10, 100, 30, instagramSection, NULL, NULL, NULL);
-    HWND twitterFlaggedUserButton = CreateWindowW(L"Button", L"Flagged Users", WS_VISIBLE | WS_CHILD, 190, 10, 100, 30, twitterSection, NULL, NULL, NULL);
+    //Populate flagged users buttons
+    HWND facebookFlaggedUserButton = CreateWindowW(L"Button", L"Flagged Users", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON, 290, 130, 100, 30, hWnd, NULL, NULL, NULL);
+    HWND instagramFlaggedUserButton = CreateWindowW(L"Button", L"Flagged Users", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON, 640, 130, 100, 30, hWnd, NULL, NULL, NULL);
+    HWND twitterFlaggedUserButton = CreateWindowW(L"Button", L"Flagged Users", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON, 990, 130, 100, 30, hWnd, NULL, NULL, NULL);
+
+   
+}
 
 
+//Sets up the timer and starts it going, will send WM_TIMER messages every second 
+void InitializeTimer()
+{   
+    //One second intervals
+    SetTimer(MainWindow, NULL, 500, NULL);
+
+}
+//Should make the window header the facebook username if value is captured correctly
+void Test() 
+{
+    SetWindowTextW(MainWindow, L"Testing Testing");
 
 }
