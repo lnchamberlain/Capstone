@@ -8,6 +8,8 @@ https://github.com/notepad-plus-plus/notepad-plus-plus
 Setup and intro to writing programs for windows machines (c++) vv
 https://docs.microsoft.com/en-us/cpp/windows/walkthrough-creating-windows-desktop-applications-cpp?view=msvc-170
 
+Location example for instagram:
+https://www.instagram.com/explore/locations/760995699/?__a=1
 
 Twitter Developer Keys:
 API Key: X6ZwDIp9IT10KQrtxQgkzYSgm
