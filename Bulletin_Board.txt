@@ -11,6 +11,9 @@ https://docs.microsoft.com/en-us/cpp/windows/walkthrough-creating-windows-deskto
 Location example for instagram:
 https://www.instagram.com/explore/locations/760995699/?__a=1
 
+Query to twitter for "word" with "near me" on and "latest":
+https://twitter.com/search?q=word&src=typed_query&f=live&lf=on
+
 Twitter Developer Keys:
 API Key: X6ZwDIp9IT10KQrtxQgkzYSgm
 API Secret Key: SMR87GjFxNF9Uy226ULtSm7cKfGdLkWreQlTiSFr6tNnYoQ9Hh
