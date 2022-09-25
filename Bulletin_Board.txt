@@ -1,9 +1,5 @@
 *******Bulletin Board for intra-team Notes**************
 
-Possibly Useful Resources:
-https://realpython.com/python-gui-with-wxpython/
-https://scrapfly.io/blog/how-to-scrape-instagram/
-https://github.com/notepad-plus-plus/notepad-plus-plus
 
 Setup and intro to writing programs for windows machines (c++) vv
 https://docs.microsoft.com/en-us/cpp/windows/walkthrough-creating-windows-desktop-applications-cpp?view=msvc-170
@@ -13,6 +9,9 @@ https://www.instagram.com/explore/locations/760995699/?__a=1
 
 Query to twitter for "word" with "near me" on and "latest":
 https://twitter.com/search?q=word&src=typed_query&f=live&lf=on
+
+Query to facebook for "word" at Anchorage, AK with "recent" turned on:
+https://www.facebook.com/search/posts?q=word&filters=eyJycF9sb2NhdGlvbjowIjoie1wibmFtZVwiOlwibG9jYXRpb25cIixcImFyZ3NcIjpcIjEwNjE5OTYxOTQxMTA5MVwifSIsInJlY2VudF9wb3N0czowIjoie1wibmFtZVwiOlwicmVjZW50X3Bvc3RzXCIsXCJhcmdzXCI6XCJcIn0ifQ%3D%3D
 
 Twitter Developer Keys:
 API Key: X6ZwDIp9IT10KQrtxQgkzYSgm
