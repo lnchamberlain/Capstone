@@ -23,6 +23,10 @@
 #define INSTAGRAM_LOGIN 6
 #define TWITTER_LOGIN 7
 #define SET_TIMER_VALUE 8
+#define FILE_HELP_SCAN 9
+#define FILE_HELP_LOGIN 10
+#define FILE_HELP_WORDLIST 11
+ 
 //#define WM_SETFONT                      0x0200
 
 
@@ -39,6 +43,7 @@ UINT_PTR ID_TIMER;                              // Timer ID
 HWND fbUser, fbPass, igUser, igPass, twUser, twPass, enteredTime; // captured values
 wchar_t fbUsername[100], fbPassword[100], igUsername[100], igPassword[100], twUsername[100], twPassword[100], Freq[100]; // store captured values
 char buf[] = { '00', ':', '00', ':', '00' };
+HWND HOURS, MINUTES, SECONDS;
 
 
 // Forward declarations of functions included in this code module:
@@ -46,7 +51,7 @@ ATOM                MyRegisterClass(HINSTANCE hInstance);
 BOOL                InitInstance(HINSTANCE, int);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
-void AddMenu();
+void AddMenu(HWND);
 void AddControls(HWND);
 void Test();
 void InitializeTimer();
@@ -133,7 +138,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    hInst = hInstance; // Store instance handle global variable
 
    HWND hWnd = CreateWindowW(szWindowClass, L"UnderCover Recovery", WS_OVERLAPPEDWINDOW,
-      200, 100, 1200, 800, nullptr, nullptr, hInstance, nullptr);
+      200, 100, 1200, 850, nullptr, nullptr, hInstance, nullptr);
    //Main Window Coordinates (0,0) upper left, (1200, 800) lower right
    
    // Store in global variable
@@ -166,9 +171,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     switch (message)
     {
     case WM_CREATE:
-        AddMenu();
-        AddControls(hWnd);
-        
+        AddMenu(hWnd);
+        AddControls(hWnd);  
         break;
     case WM_TIMER:
         
@@ -213,19 +217,28 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         case FILE_MENU_ABOUT:
             DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
             break;
+           //Help Tab -> Login Help
+        case FILE_HELP_LOGIN:
+            break;
+            //Help Tab -> Wordlist Help
+        case FILE_HELP_WORDLIST:
+            break;
+            //Help Tab -> Scanner Help Help
+        case FILE_HELP_SCAN:
+            break;
         case FACEBOOK_LOGIN:
-            GetWindowTextW(fbUser, fbUsername, 100);
-            GetWindowTextW(fbPass, fbPassword, 100);
+            //GetWindowTextW(fbUser, fbUsername, 100);
+            //GetWindowTextW(fbPass, fbPassword, 100);
             //Post login request here
             break;
         case INSTAGRAM_LOGIN:
-            GetWindowTextW(igUser, igUsername, 100);
-            GetWindowTextW(igPass, igPassword, 100);
+            //GetWindowTextW(igUser, igUsername, 100);
+            //GetWindowTextW(igPass, igPassword, 100);
             //Post login request here
             break;
         case TWITTER_LOGIN:
-            GetWindowTextW(twUser, twUsername, 100);
-            GetWindowTextW(twPass, twPassword, 100);
+            //GetWindowTextW(twUser, twUsername, 100);
+            //GetWindowTextW(twPass, twPassword, 100);
             //Post login request here
             break;
         case SET_TIMER_VALUE:
@@ -249,10 +262,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         //Doesn't display?
             PAINTSTRUCT ps;
             HDC hdc = BeginPaint(hWnd, &ps);
-            //GetClientRect(timerhwnd, &r);
-            /* FillRect(hdc, &ps.rcPaint, (HBRUSH)(COLOR_WINDOW + 1));
-            char buf[] = { '00', ':', '00', ':', '00' };
-            //If value has been set
+            /*
             if (COUNT > 0) {
                 hours = COUNT / 3600;
                 minutes = (COUNT / 60) % 60;
@@ -297,60 +307,82 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
     return (INT_PTR)FALSE;
 }
 
-// Called in WndProc WM_CREATE case, adds menus to the two windows
-void AddMenu()
+// Called in WndProc WM_CREATE case, adds menu to the main window
+void AddMenu(HWND hWnd)
 {
     HMENU menuMain = CreateMenu();
     
     // Submenus for Main
     HMENU menuMainSubFile = CreateMenu();
+    HMENU menuMainSubHelp = CreateMenu();
+    SetWindowTextW(MainWindow, L"Testing Testing");
    
 
     // Populate drop-down menus
     AppendMenu(menuMainSubFile, MF_STRING, IDM_EXIT, L"Exit");
-    //TODO Make the first a button and the second do something with the config file
-    
-
+    AppendMenu(menuMainSubHelp, MF_STRING, FILE_HELP_SCAN, L"Scan Help");
+    AppendMenu(menuMainSubHelp, MF_STRING, FILE_HELP_LOGIN, L"Login Help");
+    AppendMenu(menuMainSubHelp, MF_STRING, FILE_HELP_WORDLIST, L"Wordlist Help");
     //Populate primary menu items
     AppendMenu(menuMain, MF_POPUP, (UINT_PTR)menuMainSubFile, L"File");
+    AppendMenu(menuMain, MF_POPUP, (UINT_PTR)menuMainSubHelp, L"Help");
     AppendMenu(menuMain, MF_STRING, FILE_MENU_ABOUT, L"About");
-    SetMenu(MainWindow, menuMain);
+    SetMenu(hWnd, menuMain);
 }
 
 //Add static and edit controls to windows
 void AddControls(HWND hWnd)
 {
-      
-    //Top section, clock, edit clock, open config
-    HWND timerWindow = CreateWindowW(L"Edit", L"TIMER", WS_VISIBLE | WS_CHILD | WS_BORDER | SS_CENTER, 500, 50, 200, 50, hWnd, NULL, NULL, NULL);
-    timerWnd = timerWindow;
 
-    HWND openConfigButton = CreateWindowW(L"Button", L"Set Frequency:", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON, 720, 55, 110, 30, hWnd, (HMENU)SET_TIMER_VALUE, NULL, NULL);
-    enteredTime = CreateWindowW(L"Edit", L"Seconds", WS_VISIBLE | WS_CHILD | WS_BORDER, 840, 55, 100, 30, hWnd, NULL, NULL, NULL);
-    
+    //Create boxes to fill with Timer values, store h,m, and s in global variables for re-painting on WM_TIMER
+    HWND timeTillNextScanBox = CreateWindowW(L"Static", L"Time Until Next Scan:", WS_VISIBLE | WS_CHILD | SS_RIGHT, 406, 50, 140, 20, hWnd, NULL, NULL, NULL);
+    HWND timerBox = CreateWindowW(L"Edit", L"", WS_VISIBLE | WS_CHILD | WS_BORDER, 549, 49, 97, 22, hWnd, NULL, NULL, NULL);
+    HOURS = CreateWindowW(L"Edit", L"00", WS_VISIBLE | WS_CHILD | SS_CENTER, 550, 50, 25, 20, hWnd, NULL, NULL, NULL);
+    HWND space_1 = CreateWindowW(L"Static", L":", WS_VISIBLE | WS_CHILD | SS_CENTER, 575, 50, 10, 20, hWnd, NULL, NULL, NULL);
+    MINUTES = CreateWindowW(L"Edit", L"00", WS_VISIBLE | WS_CHILD | SS_CENTER, 585, 50, 25, 20, hWnd, NULL, NULL, NULL);
+    HWND space_2 = CreateWindowW(L"Static", L":", WS_VISIBLE | WS_CHILD | SS_CENTER, 610, 50, 10, 20, hWnd, NULL, NULL, NULL);
+    SECONDS = CreateWindowW(L"Edit", L"00", WS_VISIBLE | WS_CHILD | SS_CENTER, 620, 50, 25, 20, hWnd, NULL, NULL, NULL);
+
+
+    HWND openConfigButton = CreateWindowW(L"Button", L"Configuration", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON |BS_CENTER, 670, 45, 110, 30, hWnd, (HMENU)SET_TIMER_VALUE, NULL, NULL);
+    HWND stopScanningButton = CreateWindow(L"Button", L"Stop Scanning", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON | BS_CENTER, 670, 80, 100, 30, hWnd, NULL, NULL, NULL);
+
+    //Add Scan count and message
+    HWND scanCountText = CreateWindowW(L"Static", L"Scan Count:", WS_VISIBLE | WS_CHILD | SS_RIGHT, 460, 75, 85, 20, hWnd, NULL, NULL, NULL);
+    HWND scanCount = CreateWindowW(L"Edit", L"0", WS_VISIBLE | WS_CHILD | WS_BORDER | SS_CENTER, 550, 75, 25, 20, hWnd, NULL, NULL, NULL);
+
+
     //Main three blocks
-    facebookSection = CreateWindowW(L"Static", L"Facebook", WS_VISIBLE | WS_CHILD | WS_BORDER, 100, 120, 300, 500, hWnd, NULL, NULL, NULL);
-    instagramSection = CreateWindowW(L"Static", L"Instagram", WS_VISIBLE | WS_CHILD | WS_BORDER, 450, 120, 300, 500, hWnd, NULL, NULL, NULL);
-    twitterSection = CreateWindowW(L"Static", L"Twitter", WS_VISIBLE | WS_CHILD | WS_BORDER, 800, 120, 300, 500, hWnd, NULL, NULL, NULL, NULL);
+    facebookSection = CreateWindowW(L"Static", L"Facebook", WS_VISIBLE | WS_CHILD | WS_BORDER, 100, 130, 300, 500, hWnd, NULL, NULL, NULL);
+    instagramSection = CreateWindowW(L"Static", L"Instagram", WS_VISIBLE | WS_CHILD | WS_BORDER, 450, 130, 300, 500, hWnd, NULL, NULL, NULL);
+    twitterSection = CreateWindowW(L"Static", L"Twitter", WS_VISIBLE | WS_CHILD | WS_BORDER, 800, 130, 300, 500, hWnd, NULL, NULL, NULL, NULL);
 
     //Initialize username and password windows
+    /*
     fbUser = CreateWindowW(L"Edit", L"Username", WS_VISIBLE | WS_CHILD | ES_MULTILINE | ES_AUTOVSCROLL | SS_CENTER, 215, 270, 100, 30, hWnd, NULL, NULL, NULL);
     fbPass = CreateWindowW(L"Edit", L"Password", WS_VISIBLE | WS_CHILD | ES_MULTILINE | ES_AUTOVSCROLL | SS_CENTER, 215, 305, 100, 30, hWnd, NULL, NULL, NULL);
     igUser = CreateWindowW(L"Edit", L"Username", WS_VISIBLE | WS_CHILD | ES_MULTILINE | ES_AUTOVSCROLL | SS_CENTER, 565, 270, 100, 30, hWnd, NULL, NULL, NULL);
     igPass = CreateWindowW(L"Edit", L"Password", WS_VISIBLE | WS_CHILD | ES_MULTILINE | ES_AUTOVSCROLL | SS_CENTER, 565, 305, 100, 30, hWnd, NULL, NULL, NULL);
     twUser = CreateWindowW(L"Edit", L"Username", WS_VISIBLE | WS_CHILD | ES_MULTILINE | ES_AUTOVSCROLL | SS_CENTER, 915, 270, 100, 30, hWnd, NULL, NULL, NULL);
     twPass = CreateWindowW(L"Edit", L"Password", WS_VISIBLE | WS_CHILD | ES_MULTILINE | ES_AUTOVSCROLL | SS_CENTER, 915, 305, 100, 30, hWnd, NULL, NULL, NULL);
-    
+    */
     //Populate login buttons
-    HWND facebookLoginButton = CreateWindowW(L"Button", L"Login", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON, 225, 205, 55, 30, hWnd, (HMENU)FACEBOOK_LOGIN, NULL, NULL);
-    HWND instagramLoginButton = CreateWindowW(L"Button", L"Login", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON, 575,205, 55, 30, hWnd,(HMENU)INSTAGRAM_LOGIN, NULL, NULL);
-    HWND twitterLoginButton = CreateWindowW(L"Button", L"Login", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON, 925, 205, 55, 30, hWnd, (HMENU)TWITTER_LOGIN, NULL, NULL);
+    HWND facebookLoginButton = CreateWindowW(L"Button", L"LOGIN", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON, 225, 205, 55, 30, hWnd, (HMENU)FACEBOOK_LOGIN, NULL, NULL);
+    HWND instagramLoginButton = CreateWindowW(L"Button", L"LOGIN", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON, 575, 205, 55, 30, hWnd, (HMENU)INSTAGRAM_LOGIN, NULL, NULL);
+    HWND twitterLoginButton = CreateWindowW(L"Button", L"LOGIN", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON, 925, 205, 55, 30, hWnd, (HMENU)TWITTER_LOGIN, NULL, NULL);
+
 
     //Populate flagged users buttons
     HWND facebookFlaggedUserButton = CreateWindowW(L"Button", L"Flagged Users", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON, 290, 130, 100, 30, hWnd, NULL, NULL, NULL);
     HWND instagramFlaggedUserButton = CreateWindowW(L"Button", L"Flagged Users", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON, 640, 130, 100, 30, hWnd, NULL, NULL, NULL);
     HWND twitterFlaggedUserButton = CreateWindowW(L"Button", L"Flagged Users", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON, 990, 130, 100, 30, hWnd, NULL, NULL, NULL);
 
+    //Add Export Results Buttons
+    HWND facebookExportButton = CreateWindowW(L"Button", L"Export Full Scan Results", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON | BS_MULTILINE, 290, 560, 100, 60, hWnd, NULL, NULL, NULL);
+    HWND instagramExportButton = CreateWindowW(L"Button", L"Export Full Scan Results", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON | BS_MULTILINE, 640, 560, 100, 60, hWnd, NULL, NULL, NULL);
+    HWND twitterExportButton = CreateWindowW(L"Button", L"Export Full Scan Results", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON | BS_MULTILINE, 990, 560, 100, 60, hWnd, NULL, NULL, NULL);
+
+    HWND launchButton = CreateWindowW(L"Button", L"LAUCH SCAN", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON| BS_CENTER, 550, 655, 100, 60, hWnd, NULL, NULL, NULL);
    
 }
 
