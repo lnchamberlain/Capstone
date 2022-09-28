@@ -26,6 +26,7 @@
 #define FILE_HELP_SCAN 9
 #define FILE_HELP_LOGIN 10
 #define FILE_HELP_WORDLIST 11
+#define CONFIG_PANEL 12
  
 //#define WM_SETFONT                      0x0200
 
@@ -41,18 +42,31 @@ int RESET_TIMER = 20;                           // Reset timer on finish (in sec
 int seconds, minutes, hours, days;              //Convert COUNT into readable format
 UINT_PTR ID_TIMER;                              // Timer ID
 HWND fbUser, fbPass, igUser, igPass, twUser, twPass, enteredTime; // captured values
-wchar_t fbUsername[100], fbPassword[100], igUsername[100], igPassword[100], twUsername[100], twPassword[100], Freq[100]; // store captured values
+WCHAR fbUsername[100], fbPassword[100], igUsername[100], igPassword[100], twUsername[100], twPassword[100], Freq[100]; // store captured values
 char buf[] = { '00', ':', '00', ':', '00' };
 HWND HOURS, MINUTES, SECONDS;
+WCHAR configClassName[MAX_LOADSTRING];
 
 
 // Forward declarations of functions included in this code module:
 ATOM                MyRegisterClass(HINSTANCE hInstance);
 BOOL                InitInstance(HINSTANCE, int);
-LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
+LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM); // WndProc for Main Window
+LRESULT CALLBACK WndProcConfig(HWND, UINT, WPARAM, LPARAM); // WndProc for Configuration Window
+LRESULT CALLBACK WndProcFBLogin(HWND, UINT, WPARAM, LPARAM); // WndProc for Facebook Login Window
+LRESULT CALLBACK WndProcIGLogin(HWND, UINT, WPARAM, LPARAM); // WndProc for Facebook Instgram Window
+LRESULT CALLBACK WndProcTWLogin(HWND, UINT, WPARAM, LPARAM); // WndProc for Facebook Twitter Window
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
+void createConfigurationWindow(WNDCLASSEX&, HINSTANCE&, int, HWND);
+void createFacebookLoginWindow(WNDCLASSEX&, HINSTANCE&, int);
+void createInstagramLoginWindow(WNDCLASSEX&, HINSTANCE&, int);
+void createTwitterLoginWindow(WNDCLASSEX&, HINSTANCE&, int);
 void AddMenu(HWND);
 void AddControls(HWND);
+void AddConfigControls(HWND);
+void AddFBLoginControls(HWND);
+void AddIGLoginControls(HWND);
+void AddTWLoginControls(HWND);
 void Test();
 void InitializeTimer();
 
@@ -108,7 +122,6 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
     WNDCLASSEXW wcex;
 
     wcex.cbSize = sizeof(WNDCLASSEX);
-
     wcex.style          = CS_HREDRAW | CS_VREDRAW;
     wcex.lpfnWndProc    = WndProc;
     wcex.cbClsExtra     = 0;
@@ -155,19 +168,109 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    return TRUE;
 }
 
-//
-//  FUNCTION: WndProc(HWND, UINT, WPARAM, LPARAM)
-//
-//  PURPOSE: Processes messages for the main window.
-//
-//  WM_COMMAND  - process the application menu
-//  WM_PAINT    - Paint the main window
-//  WM_DESTROY  - post a quit message and return
-//
-//
-LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+//Create Configuration Window 
+void createConfigurationWindow(WNDCLASSEXW& config_cl, HINSTANCE& hInst_config, int nCmdShow, HWND parent)
 {
+    config_cl.cbSize = sizeof(WNDCLASSEX);
+    config_cl.style = CS_HREDRAW | CS_VREDRAW;
+    config_cl.lpfnWndProc = WndProcConfig;
+    config_cl.cbClsExtra = 0;
+    config_cl.cbWndExtra = 0;
+    config_cl.hInstance = hInst_config;
+    config_cl.hIcon = LoadIcon(hInst_config, MAKEINTRESOURCE(IDI_CAPSTONE));
+    config_cl.hCursor = LoadCursor(nullptr, IDC_ARROW);
+    config_cl.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+    config_cl.lpszMenuName = MAKEINTRESOURCEW(IDC_CAPSTONE);
+    config_cl.lpszClassName = configClassName;
+    config_cl.hIconSm = LoadIcon(config_cl.hInstance, MAKEINTRESOURCE(IDI_SMALL));
+    if (!RegisterClassExW(&config_cl))
+    {
        
+        MessageBoxW(parent, L"Error registering Class", NULL, MB_OK);
+    }
+    
+    //Create window after registering class
+    HWND confighWnd = CreateWindowW(configClassName, L"Configuration", WS_OVERLAPPEDWINDOW, 300, 200, 600, 400, parent, NULL, hInst_config, NULL);
+    ShowWindow(confighWnd, nCmdShow);
+
+}
+
+//Create Facebook Login Window 
+void createFBLoginWindow(WNDCLASSEX& fb_cl, HINSTANCE& hInst_fb, int nCmdShow)
+{
+    fb_cl.hInstance = hInst_fb;
+    fb_cl.lpszClassName = L"FBLoginClass";
+    fb_cl.lpfnWndProc = (WNDPROC)WndProcFBLogin;
+    fb_cl.hIcon = LoadIcon(NULL, IDI_APPLICATION); //Default mouse and icons
+    fb_cl.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
+    fb_cl.hCursor = LoadCursor(NULL, IDC_ARROW);
+
+    fb_cl.lpszMenuName = NULL; // No menu for this section
+    fb_cl.cbClsExtra = 0;
+    fb_cl.cbWndExtra = 0;
+    fb_cl.hbrBackground = (HBRUSH)COLOR_BACKGROUND;
+    if (!RegisterClassEx(&fb_cl))
+    {
+        return;
+    }
+    //Create window after registering class
+    HWND FBLoginhWnd = CreateWindowEx(0, L"FBLoginClass", L"Facebook Login", WS_OVERLAPPEDWINDOW, 300, 200, 300, 200, HWND_DESKTOP, NULL, hInst_fb, NULL);
+    ShowWindow(FBLoginhWnd, nCmdShow);
+}
+
+//Create Instagram Login Window 
+void createIGLoginWindow(WNDCLASSEX& ig_cl, HINSTANCE& hInst_ig, int nCmdShow)
+{
+    ig_cl.hInstance = hInst_ig;
+    ig_cl.lpszClassName = L"IGLoginClass";
+    ig_cl.lpfnWndProc = (WNDPROC)WndProcIGLogin;
+    ig_cl.hIcon = LoadIcon(NULL, IDI_APPLICATION); //Default mouse and icons
+    ig_cl.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
+    ig_cl.hCursor = LoadCursor(NULL, IDC_ARROW);
+
+    ig_cl.lpszMenuName = NULL; // No menu for this section
+    ig_cl.cbClsExtra = 0;
+    ig_cl.cbWndExtra = 0;
+    ig_cl.hbrBackground = (HBRUSH)COLOR_BACKGROUND;
+    if (!RegisterClassEx(&ig_cl))
+    {
+        return;
+    }
+    //Create window after registering class
+    HWND IGLoginhWnd = CreateWindowEx(0, L"IGLoginClass", L"Instgram Login", WS_OVERLAPPEDWINDOW, 300, 200, 300, 200, HWND_DESKTOP, NULL, hInst_ig, NULL);
+    ShowWindow(IGLoginhWnd, nCmdShow);
+}
+
+//Create Facebook Login Window 
+void createTWLoginWindow(WNDCLASSEX& tw_cl, HINSTANCE& hInst_tw, int nCmdShow)
+{
+    tw_cl.hInstance = hInst_tw;
+    tw_cl.lpszClassName = L"TWLoginClass";
+    tw_cl.lpfnWndProc = (WNDPROC)WndProcTWLogin;
+    tw_cl.hIcon = LoadIcon(NULL, IDI_APPLICATION); //Default mouse and icons
+    tw_cl.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
+    tw_cl.hCursor = LoadCursor(NULL, IDC_ARROW);
+
+    tw_cl.lpszMenuName = NULL; // No menu for this section
+    tw_cl.cbClsExtra = 0;
+    tw_cl.cbWndExtra = 0;
+    tw_cl.hbrBackground = (HBRUSH)COLOR_BACKGROUND;
+    if (!RegisterClassEx(&tw_cl))
+    {
+        return;
+    }
+    //Create window after registering class
+    HWND TWLoginhWnd = CreateWindowEx(0, L"TWLoginClass", L"Twitter Login", WS_OVERLAPPEDWINDOW, 300, 200, 300, 200, HWND_DESKTOP, NULL, hInst_tw, NULL);
+    ShowWindow(TWLoginhWnd, nCmdShow);
+}
+
+
+
+
+//Main Window Procedure
+LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{    
+    static HINSTANCE hInstance;
     switch (message)
     {
     case WM_CREATE:
@@ -248,6 +351,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             RESET_TIMER = COUNT;
             InitializeTimer();
             break;
+        //Launch Configuration Panel IN PROGRESS
+        case CONFIG_PANEL:
+            WNDCLASSEXW configWindow;
+            hInstance = (HINSTANCE)::GetWindowLong(hWnd, GWLP_HINSTANCE);
+            createConfigurationWindow(configWindow, hInstance, SW_SHOW, hWnd);
+            break;
         case IDM_EXIT:
             DestroyWindow(hWnd);
             break;
@@ -262,23 +371,100 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         //Doesn't display?
             PAINTSTRUCT ps;
             HDC hdc = BeginPaint(hWnd, &ps);
-            /*
-            if (COUNT > 0) {
-                hours = COUNT / 3600;
-                minutes = (COUNT / 60) % 60;
-                seconds = COUNT % 60;
-                buf[0] = (char)hours;
-                buf[1] = (char)minutes;
-                buf[2] = (char)seconds;
-                DrawText(hdc, (LPCWSTR) buf, -1, &r, DT_LEFT);
-            }
-            */
             EndPaint(hWnd, &ps);
         }
         break;
     //Manages the Red 'X'
     case WM_DESTROY:
         //Makes 'Get message' return false and terminate program
+        PostQuitMessage(0);
+        break;
+    default:
+        return DefWindowProc(hWnd, message, wParam, lParam);
+    }
+    return 0;
+}
+
+//Window Procedure for the configuration panel
+LRESULT CALLBACK WndProcConfig(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+    switch (message)
+    {
+    case WM_CREATE:
+        AddConfigControls(hWnd);
+        break;
+    case WM_COMMAND:
+        switch (wParam)
+        {
+            //Add button controls, capture text, etc here
+        }
+    case WM_DESTROY:
+        PostQuitMessage(0);
+        break;
+    default:
+        return DefWindowProc(hWnd, message, wParam, lParam);
+    }
+    return 0;
+}
+
+//Window Procedure for the Facebook Login Panel
+LRESULT CALLBACK WndProcFBLogin(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+    switch (message)
+    {
+    case WM_CREATE:
+        AddFBLoginControls(hWnd);
+        break;
+    case WM_COMMAND:
+        switch (wParam)
+        {
+            //Add button controls, capture text, etc here
+        }
+    case WM_DESTROY:
+        PostQuitMessage(0);
+        break;
+    default:
+        return DefWindowProc(hWnd, message, wParam, lParam);
+    }
+    return 0;
+}
+
+//Window Procedure for the Instagram Login Panel
+LRESULT CALLBACK WndProcIGLogin(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+    switch (message)
+    {
+    case WM_CREATE:
+        AddIGLoginControls(hWnd);
+        break;
+    case WM_COMMAND:
+        switch (wParam)
+        {
+            //Add button controls, capture text, etc here
+        }
+    case WM_DESTROY:
+        PostQuitMessage(0);
+        break;
+    default:
+        return DefWindowProc(hWnd, message, wParam, lParam);
+    }
+    return 0;
+}
+
+//Window Procedure for the Twitter Login Panel
+LRESULT CALLBACK WndProcTWLogin(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+    switch (message)
+    {
+    case WM_CREATE:
+        AddTWLoginControls(hWnd);
+        break;
+    case WM_COMMAND:
+        switch (wParam)
+        {
+            //Add button controls, capture text, etc here
+        }
+    case WM_DESTROY:
         PostQuitMessage(0);
         break;
     default:
@@ -344,7 +530,7 @@ void AddControls(HWND hWnd)
     SECONDS = CreateWindowW(L"Edit", L"00", WS_VISIBLE | WS_CHILD | SS_CENTER, 620, 50, 25, 20, hWnd, NULL, NULL, NULL);
 
 
-    HWND openConfigButton = CreateWindowW(L"Button", L"Configuration", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON |BS_CENTER, 670, 45, 110, 30, hWnd, (HMENU)SET_TIMER_VALUE, NULL, NULL);
+    HWND openConfigButton = CreateWindowW(L"Button", L"Configuration", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON |BS_CENTER, 670, 45, 110, 30, hWnd, (HMENU)CONFIG_PANEL, NULL, NULL);
     HWND stopScanningButton = CreateWindow(L"Button", L"Stop Scanning", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON | BS_CENTER, 670, 80, 100, 30, hWnd, NULL, NULL, NULL);
 
     //Add Scan count and message
@@ -386,6 +572,35 @@ void AddControls(HWND hWnd)
    
 }
 
+//Add elements to the configuration window
+void AddConfigControls(HWND hWnd)
+{
+
+
+
+
+}
+
+// Add elements to FB login window
+void AddFBLoginControls(HWND hWnd) {
+
+    //STUB
+
+}
+
+// Add elements to FB login window
+void AddIGLoginControls(HWND hWnd) {
+
+    //STUB
+
+}
+
+// Add elements to FB login window
+void AddTWLoginControls(HWND hWnd) {
+
+    //STUB
+
+}
 
 //Sets up the timer and starts it going, will send WM_TIMER messages every second 
 void InitializeTimer()
