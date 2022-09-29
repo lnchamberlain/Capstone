@@ -2,7 +2,7 @@
 // Windows Desktop Application for scraping and storing keywords and flagged users from social media sites 
 // Developed by Tyler and Logan 
 // UAA CSCE Capstone Project Fall 2022
-// 
+// Main Architecture
 //
 
 #include "framework.h"
@@ -13,6 +13,7 @@
 #include <wchar.h>
 #include <string.h>
 #include <cmath>
+//#include <Python.h>
 
 #define MAX_LOADSTRING 100
 #define FILE_MENU_FILE 1
@@ -433,7 +434,7 @@ LRESULT CALLBACK WndProcConfig(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
             //Add button controls, capture text, etc here
         }
     case WM_DESTROY:
-        PostQuitMessage(0);
+        DestroyWindow(hWnd);
         break;
     default:
         return DefWindowProc(hWnd, message, wParam, lParam);
@@ -455,7 +456,7 @@ LRESULT CALLBACK WndProcFBLogin(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
             //Add button controls, capture text, etc here
         }
     case WM_DESTROY:
-        PostQuitMessage(0);
+        DestroyWindow(hWnd);
         break;
     default:
         return DefWindowProc(hWnd, message, wParam, lParam);
@@ -477,7 +478,7 @@ LRESULT CALLBACK WndProcIGLogin(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
             //Add button controls, capture text, etc here
         }
     case WM_DESTROY:
-        PostQuitMessage(0);
+        DestroyWindow(hWnd);
         break;
     default:
         return DefWindowProc(hWnd, message, wParam, lParam);
@@ -499,7 +500,7 @@ LRESULT CALLBACK WndProcTWLogin(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
             //Add button controls, capture text, etc here
         }
     case WM_DESTROY:
-        PostQuitMessage(0);
+        DestroyWindow(hWnd);
         break;
     default:
         return DefWindowProc(hWnd, message, wParam, lParam);
@@ -550,7 +551,7 @@ void AddMenu(HWND hWnd)
     SetMenu(hWnd, menuMain);
 }
 
-//Add static and edit controls to windows
+//Adds features to the main window
 void AddControls(HWND hWnd)
 {
 
@@ -616,21 +617,27 @@ void AddConfigControls(HWND hWnd)
 }
 
 // Add elements to FB login window
-void AddFBLoginControls(HWND hWnd) {
+void AddFBLoginControls(HWND hWnd) 
+{
+
+    HWND titleText = CreateWindowW(L"Static", L"Facebook Login", WS_VISIBLE | WS_CHILD | SS_CENTER, 120, 10, 150, 30, hWnd, NULL, NULL, NULL);
+    HWND usernameTextBox = CreateWindowW(L"Static", L"Username:", WS_VISIBLE | WS_CHILD | SS_RIGHT, 20, 50, 70, 30, hWnd, NULL, NULL, NULL);
+    fbUser = CreateWindowW(L"Edit", L"Username", WS_VISIBLE | WS_CHILD | ES_MULTILINE | ES_AUTOVSCROLL | SS_CENTER, 95, 50, 100, 30, hWnd, NULL, NULL, NULL);
+    //fbUser = CreateWindowW(L"Edit", L"Username", WS_VISIBLE | WS_CHILD | WS_BORDER, 95, 50, 100, 30, hWnd, NULL, NULL, NULL);
+
+}
+
+// Add elements to FB login window
+void AddIGLoginControls(HWND hWnd) 
+{
 
     //STUB
 
 }
 
 // Add elements to FB login window
-void AddIGLoginControls(HWND hWnd) {
-
-    //STUB
-
-}
-
-// Add elements to FB login window
-void AddTWLoginControls(HWND hWnd) {
+void AddTWLoginControls(HWND hWnd) 
+{
 
     //STUB
 
