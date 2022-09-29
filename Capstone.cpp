@@ -28,6 +28,9 @@
 #define FILE_HELP_LOGIN 10
 #define FILE_HELP_WORDLIST 11
 #define CONFIG_PANEL 12
+#define FACEBOOK_LOGIN_SUBMIT 13
+#define INSTAGRAM_LOGIN_SUBMIT 14
+#define TWITTER_LOGIN_SUBMIT 15
  
 // Global Variables:
 HINSTANCE hInst, hInstanceConfig, hInstanceFBLogin, hInstanceIGLogin, hInstanceTWLogin;  
@@ -180,7 +183,7 @@ void createConfigurationWindow(WNDCLASSEXW& config_cl, HINSTANCE& hInst_config, 
     config_cl.hIcon = LoadIcon(hInst_config, MAKEINTRESOURCE(IDI_CAPSTONE));
     config_cl.hCursor = LoadCursor(nullptr, IDC_ARROW);
     config_cl.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
-    config_cl.lpszMenuName = MAKEINTRESOURCEW(IDC_CAPSTONE);
+    config_cl.lpszMenuName = NULL;
     config_cl.lpszClassName = configClassName;
     config_cl.hIconSm = LoadIcon(config_cl.hInstance, MAKEINTRESOURCE(IDI_SMALL));
     if (!RegisterClassExW(&config_cl))
@@ -188,10 +191,11 @@ void createConfigurationWindow(WNDCLASSEXW& config_cl, HINSTANCE& hInst_config, 
        
         int nResult = GetLastError();
         
-        MessageBox(NULL,
+        /*MessageBox(NULL,
             L"Window class creation failed",
             L"Window Class Failed",
             MB_ICONERROR);
+            */
     }
     
     //Create window after registering class
@@ -212,7 +216,7 @@ void createFacebookLoginWindow(WNDCLASSEXW& fb_cl, HINSTANCE& hInst_fb, int nCmd
     fb_cl.hIcon = LoadIcon(hInst_fb, MAKEINTRESOURCE(IDI_CAPSTONE));
     fb_cl.hCursor = LoadCursor(nullptr, IDC_ARROW);
     fb_cl.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
-    fb_cl.lpszMenuName = MAKEINTRESOURCEW(IDC_CAPSTONE);
+    fb_cl.lpszMenuName = NULL;
     fb_cl.lpszClassName = FBLoginClassName;
     fb_cl.hIconSm = LoadIcon(fb_cl.hInstance, MAKEINTRESOURCE(IDI_SMALL));
     if (!RegisterClassExW(&fb_cl))
@@ -220,14 +224,15 @@ void createFacebookLoginWindow(WNDCLASSEXW& fb_cl, HINSTANCE& hInst_fb, int nCmd
 
         int nResult = GetLastError();
 
-        MessageBox(NULL,
+        /*MessageBox(NULL,
             L"Window class creation failed",
             L"Window Class Failed",
             MB_ICONERROR);
+            */
     }
 
     //Create window after registering class
-    HWND fbLoginhWnd = CreateWindowW((LPCWSTR)FBLoginClassName, L"Facebook Login", WS_OVERLAPPEDWINDOW, 400, 200, 400, 300, parent, NULL, hInst_fb, NULL);
+    HWND fbLoginhWnd = CreateWindowW((LPCWSTR)FBLoginClassName, L"Facebook", WS_OVERLAPPEDWINDOW, 400, 200, 400, 300, parent, NULL, hInst_fb, NULL);
     ShowWindow(fbLoginhWnd, nCmdShow);
 
 }
@@ -244,7 +249,7 @@ void createInstagramLoginWindow(WNDCLASSEXW& ig_cl, HINSTANCE& hInst_ig, int nCm
     ig_cl.hIcon = LoadIcon(hInst_ig, MAKEINTRESOURCE(IDI_CAPSTONE));
     ig_cl.hCursor = LoadCursor(nullptr, IDC_ARROW);
     ig_cl.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
-    ig_cl.lpszMenuName = MAKEINTRESOURCEW(IDC_CAPSTONE);
+    ig_cl.lpszMenuName = NULL; 
     ig_cl.lpszClassName = IGLoginClassName;
     ig_cl.hIconSm = LoadIcon(ig_cl.hInstance, MAKEINTRESOURCE(IDI_SMALL));
     if (!RegisterClassExW(&ig_cl))
@@ -252,14 +257,15 @@ void createInstagramLoginWindow(WNDCLASSEXW& ig_cl, HINSTANCE& hInst_ig, int nCm
 
         int nResult = GetLastError();
 
-        MessageBox(NULL,
+       /* MessageBox(NULL,
             L"Window class creation failed",
             L"Window Class Failed",
             MB_ICONERROR);
+            */
     }
 
     //Create window after registering class
-    HWND igLoginhWnd = CreateWindowW((LPCWSTR)IGLoginClassName, L"Instagram Login", WS_OVERLAPPEDWINDOW, 400, 200, 400, 300, parent, NULL, hInst_ig, NULL);
+    HWND igLoginhWnd = CreateWindowW((LPCWSTR)IGLoginClassName, L"Instagram", WS_OVERLAPPEDWINDOW, 400, 200, 400, 300, parent, NULL, hInst_ig, NULL);
     ShowWindow(igLoginhWnd, nCmdShow);
 
 }
@@ -276,7 +282,7 @@ void createTwitterLoginWindow(WNDCLASSEXW& tw_cl, HINSTANCE& hInst_tw, int nCmdS
     tw_cl.hIcon = LoadIcon(hInst_tw, MAKEINTRESOURCE(IDI_CAPSTONE));
     tw_cl.hCursor = LoadCursor(nullptr, IDC_ARROW);
     tw_cl.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
-    tw_cl.lpszMenuName = MAKEINTRESOURCEW(IDC_CAPSTONE);
+    tw_cl.lpszMenuName = NULL;
     tw_cl.lpszClassName = TWLoginClassName;
     tw_cl.hIconSm = LoadIcon(tw_cl.hInstance, MAKEINTRESOURCE(IDI_SMALL));
     if (!RegisterClassExW(&tw_cl))
@@ -284,14 +290,15 @@ void createTwitterLoginWindow(WNDCLASSEXW& tw_cl, HINSTANCE& hInst_tw, int nCmdS
 
         int nResult = GetLastError();
 
-        MessageBox(NULL,
+       /* MessageBox(NULL,
             L"Window class creation failed",
             L"Window Class Failed",
             MB_ICONERROR);
+            */
     }
 
     //Create window after registering class
-    HWND twLoginhWnd = CreateWindowW((LPCWSTR)TWLoginClassName, L"Twitter Login", WS_OVERLAPPEDWINDOW, 400, 200, 400, 300, parent, NULL, hInst_tw, NULL);
+    HWND twLoginhWnd = CreateWindowW((LPCWSTR)TWLoginClassName, L"Twitter", WS_OVERLAPPEDWINDOW, 400, 200, 400, 300, parent, NULL, hInst_tw, NULL);
     ShowWindow(twLoginhWnd, nCmdShow);
 
 }
@@ -363,8 +370,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             hInstanceFBLogin = (HINSTANCE)GetWindowLong(hWnd, GWLP_HINSTANCE);
             createFacebookLoginWindow(fbLoginWindow, hInstanceFBLogin, SW_SHOW, hWnd);
             break;
-            //GetWindowTextW(fbUser, fbUsername, 100);
-            //GetWindowTextW(fbPass, fbPassword, 100);
         case INSTAGRAM_LOGIN:
             WNDCLASSEXW igLoginWindow;
             hInstanceIGLogin = (HINSTANCE)GetWindowLong(hWnd, GWLP_HINSTANCE);
@@ -423,19 +428,21 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 //Window Procedure for the configuration panel
 LRESULT CALLBACK WndProcConfig(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
+    int wmId = LOWORD(wParam);
     switch (message)
     {
     case WM_CREATE:
         AddConfigControls(hWnd);
         break;
     case WM_COMMAND:
-        switch (wParam)
+        switch (wmId)
         {
             //Add button controls, capture text, etc here
+
+        case WM_DESTROY:
+            DestroyWindow(hWnd);
+            break;
         }
-    case WM_DESTROY:
-        DestroyWindow(hWnd);
-        break;
     default:
         return DefWindowProc(hWnd, message, wParam, lParam);
     }
@@ -445,19 +452,28 @@ LRESULT CALLBACK WndProcConfig(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 //Window Procedure for the Facebook Login Panel
 LRESULT CALLBACK WndProcFBLogin(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
+    int wmId = LOWORD(wParam);
     switch (message)
     {
     case WM_CREATE:
         AddFBLoginControls(hWnd);
         break;
     case WM_COMMAND:
-        switch (wParam)
+        switch (wmId)
         {
-            //Add button controls, capture text, etc here
+        case FACEBOOK_LOGIN_SUBMIT:
+            //Grab values from the username and password fields, store in global variables
+            GetWindowTextW(fbUser, fbUsername, 100);
+            GetWindowTextW(fbPass, fbPassword, 100);
+            SetWindowTextW(fbUser, L"");
+            SetWindowTextW(fbPass, L"");
+            //PASS TO AUTH SCRIPT HERE
+            DestroyWindow(hWnd);
+            break;
         }
-    case WM_DESTROY:
-        DestroyWindow(hWnd);
-        break;
+     case WM_DESTROY:
+        //DestroyWindow(hWnd);
+        break;       
     default:
         return DefWindowProc(hWnd, message, wParam, lParam);
     }
@@ -467,19 +483,31 @@ LRESULT CALLBACK WndProcFBLogin(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 //Window Procedure for the Instagram Login Panel
 LRESULT CALLBACK WndProcIGLogin(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
+    int wmId = LOWORD(wParam);
     switch (message)
     {
     case WM_CREATE:
         AddIGLoginControls(hWnd);
         break;
     case WM_COMMAND:
-        switch (wParam)
+        switch (wmId)
         {
+        case INSTAGRAM_LOGIN_SUBMIT:
+            //Grab values from the username and password fields, store in global variables
+            GetWindowTextW(igUser, igUsername, 100);
+            GetWindowTextW(igPass, igPassword, 100);
+            SetWindowTextW(igUser, L"");
+            SetWindowTextW(igPass, L"");
+            //PASS TO AUTH SCRIPT HERE
+            DestroyWindow(hWnd);
+            break;
             //Add button controls, capture text, etc here
         }
-    case WM_DESTROY:
-        DestroyWindow(hWnd);
-        break;
+
+        case WM_DESTROY:
+            //DestroyWindow(hWnd);
+            break;
+        
     default:
         return DefWindowProc(hWnd, message, wParam, lParam);
     }
@@ -497,10 +525,18 @@ LRESULT CALLBACK WndProcTWLogin(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
     case WM_COMMAND:
         switch (wParam)
         {
-            //Add button controls, capture text, etc here
+        case TWITTER_LOGIN_SUBMIT:
+            //Grab values from the username and password fields, store in global variables
+            GetWindowTextW(twUser, twUsername, 100);
+            GetWindowTextW(twPass, twPassword, 100);
+            SetWindowTextW(twUser, L"");
+            SetWindowTextW(twPass, L"");
+            //PASS TO AUTH SCRIPT HERE
+            DestroyWindow(hWnd);
+            break;
         }
     case WM_DESTROY:
-        DestroyWindow(hWnd);
+        //DestroyWindow(hWnd);
         break;
     default:
         return DefWindowProc(hWnd, message, wParam, lParam);
@@ -578,15 +614,6 @@ void AddControls(HWND hWnd)
     instagramSection = CreateWindowW(L"Static", L"Instagram", WS_VISIBLE | WS_CHILD | WS_BORDER, 450, 130, 300, 500, hWnd, NULL, NULL, NULL);
     twitterSection = CreateWindowW(L"Static", L"Twitter", WS_VISIBLE | WS_CHILD | WS_BORDER, 800, 130, 300, 500, hWnd, NULL, NULL, NULL, NULL);
 
-    //Initialize username and password windows
-    /*
-    fbUser = CreateWindowW(L"Edit", L"Username", WS_VISIBLE | WS_CHILD | ES_MULTILINE | ES_AUTOVSCROLL | SS_CENTER, 215, 270, 100, 30, hWnd, NULL, NULL, NULL);
-    fbPass = CreateWindowW(L"Edit", L"Password", WS_VISIBLE | WS_CHILD | ES_MULTILINE | ES_AUTOVSCROLL | SS_CENTER, 215, 305, 100, 30, hWnd, NULL, NULL, NULL);
-    igUser = CreateWindowW(L"Edit", L"Username", WS_VISIBLE | WS_CHILD | ES_MULTILINE | ES_AUTOVSCROLL | SS_CENTER, 565, 270, 100, 30, hWnd, NULL, NULL, NULL);
-    igPass = CreateWindowW(L"Edit", L"Password", WS_VISIBLE | WS_CHILD | ES_MULTILINE | ES_AUTOVSCROLL | SS_CENTER, 565, 305, 100, 30, hWnd, NULL, NULL, NULL);
-    twUser = CreateWindowW(L"Edit", L"Username", WS_VISIBLE | WS_CHILD | ES_MULTILINE | ES_AUTOVSCROLL | SS_CENTER, 915, 270, 100, 30, hWnd, NULL, NULL, NULL);
-    twPass = CreateWindowW(L"Edit", L"Password", WS_VISIBLE | WS_CHILD | ES_MULTILINE | ES_AUTOVSCROLL | SS_CENTER, 915, 305, 100, 30, hWnd, NULL, NULL, NULL);
-    */
     //Populate login buttons
     HWND facebookLoginButton = CreateWindowW(L"Button", L"LOGIN", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON, 225, 205, 55, 30, hWnd, (HMENU)FACEBOOK_LOGIN, NULL, NULL);
     HWND instagramLoginButton = CreateWindowW(L"Button", L"LOGIN", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON, 575, 205, 55, 30, hWnd, (HMENU)INSTAGRAM_LOGIN, NULL, NULL);
@@ -622,32 +649,47 @@ void AddFBLoginControls(HWND hWnd)
 
     HWND titleText = CreateWindowW(L"Static", L"Facebook Login", WS_VISIBLE | WS_CHILD | SS_CENTER, 120, 10, 150, 30, hWnd, NULL, NULL, NULL);
     HWND usernameTextBox = CreateWindowW(L"Static", L"Username:", WS_VISIBLE | WS_CHILD | SS_RIGHT, 20, 50, 70, 30, hWnd, NULL, NULL, NULL);
-    fbUser = CreateWindowW(L"Edit", L"Username", WS_VISIBLE | WS_CHILD | ES_MULTILINE | ES_AUTOVSCROLL | SS_CENTER, 95, 50, 100, 30, hWnd, NULL, NULL, NULL);
-    //fbUser = CreateWindowW(L"Edit", L"Username", WS_VISIBLE | WS_CHILD | WS_BORDER, 95, 50, 100, 30, hWnd, NULL, NULL, NULL);
-
+    fbUser = CreateWindowW(L"Edit", L"", WS_VISIBLE | WS_CHILD | WS_BORDER| ES_MULTILINE | ES_AUTOVSCROLL | SS_LEFT, 95, 50, 100, 30, hWnd, NULL, NULL, NULL);
+    HWND passwordTextBox = CreateWindowW(L"Static", L"Password:", WS_VISIBLE | WS_CHILD | SS_RIGHT, 20, 85, 70, 30, hWnd, NULL, NULL, NULL);
+    fbPass = CreateWindowW(L"Edit", L"", WS_VISIBLE | WS_CHILD | WS_BORDER | ES_MULTILINE | ES_AUTOVSCROLL | SS_LEFT, 95, 85, 100, 30, hWnd, NULL, NULL, NULL);
+    HWND submit = CreateWindowW(L"Button", L"SUBMIT", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON | SS_CENTER, 160, 140, 60, 40, hWnd, (HMENU)FACEBOOK_LOGIN_SUBMIT, NULL, NULL);
+    HWND checkBoxText = CreateWindowW(L"Static", L"Use Saved?", WS_VISIBLE | WS_CHILD | WS_BORDER | SS_LEFT, 250, 80, 150, 30, hWnd, NULL, NULL, NULL);
+    HWND checkBox = CreateWindowW(L"Button", L"", WS_VISIBLE | WS_CHILD | BS_CHECKBOX | BST_CHECKED | SS_CENTER, 350, 85, 20, 20, hWnd, NULL, NULL, NULL);
 }
 
 // Add elements to FB login window
 void AddIGLoginControls(HWND hWnd) 
 {
 
-    //STUB
-
+    HWND titleText = CreateWindowW(L"Static", L"Instagram Login", WS_VISIBLE | WS_CHILD | SS_CENTER, 120, 10, 150, 30, hWnd, NULL, NULL, NULL);
+    HWND usernameTextBox = CreateWindowW(L"Static", L"Username:", WS_VISIBLE | WS_CHILD | SS_RIGHT, 20, 50, 70, 30, hWnd, NULL, NULL, NULL);
+    igUser = CreateWindowW(L"Edit", L"", WS_VISIBLE | WS_CHILD | WS_BORDER | ES_MULTILINE | ES_AUTOVSCROLL | SS_LEFT, 95, 50, 100, 30, hWnd, NULL, NULL, NULL);
+    HWND passwordTextBox = CreateWindowW(L"Static", L"Password:", WS_VISIBLE | WS_CHILD | SS_RIGHT, 20, 85, 70, 30, hWnd, NULL, NULL, NULL);
+    igPass = CreateWindowW(L"Edit", L"", WS_VISIBLE | WS_CHILD | WS_BORDER | ES_MULTILINE | ES_AUTOVSCROLL | SS_LEFT, 95, 85, 100, 30, hWnd, NULL, NULL, NULL);
+    HWND submit = CreateWindowW(L"Button", L"SUBMIT", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON | SS_CENTER, 160, 140, 60, 40, hWnd, (HMENU)INSTAGRAM_LOGIN_SUBMIT, NULL, NULL);
+    HWND checkBoxText = CreateWindowW(L"Static", L"Use Saved?", WS_VISIBLE | WS_CHILD | WS_BORDER | SS_LEFT, 250, 80, 150, 30, hWnd, NULL, NULL, NULL);
+    HWND checkBox = CreateWindowW(L"Button", L"", WS_VISIBLE | WS_CHILD | BS_CHECKBOX | BST_CHECKED | SS_CENTER, 350, 85, 20, 20, hWnd, NULL, NULL, NULL);
 }
 
 // Add elements to FB login window
 void AddTWLoginControls(HWND hWnd) 
 {
 
-    //STUB
-
+    HWND titleText = CreateWindowW(L"Static", L"Twitter Login", WS_VISIBLE | WS_CHILD | SS_CENTER, 120, 10, 150, 30, hWnd, NULL, NULL, NULL);
+    HWND usernameTextBox = CreateWindowW(L"Static", L"Username:", WS_VISIBLE | WS_CHILD | SS_RIGHT, 20, 50, 70, 30, hWnd, NULL, NULL, NULL);
+    twUser = CreateWindowW(L"Edit", L"", WS_VISIBLE | WS_CHILD | WS_BORDER | ES_MULTILINE | ES_AUTOVSCROLL | SS_LEFT, 95, 50, 100, 30, hWnd, NULL, NULL, NULL);
+    HWND passwordTextBox = CreateWindowW(L"Static", L"Password:", WS_VISIBLE | WS_CHILD | SS_RIGHT, 20, 85, 70, 30, hWnd, NULL, NULL, NULL);
+    twPass = CreateWindowW(L"Edit", L"", WS_VISIBLE | WS_CHILD | WS_BORDER | ES_MULTILINE | ES_AUTOVSCROLL | SS_LEFT, 95, 85, 100, 30, hWnd, NULL, NULL, NULL);
+    HWND submit = CreateWindowW(L"Button", L"SUBMIT", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON | SS_CENTER, 160, 140, 60, 40, hWnd, (HMENU)TWITTER_LOGIN_SUBMIT, NULL, NULL);
+    HWND checkBoxText = CreateWindowW(L"Static", L"Use Saved?", WS_VISIBLE | WS_CHILD | WS_BORDER | SS_LEFT, 250, 80, 150, 30, hWnd, NULL, NULL, NULL);
+    HWND checkBox = CreateWindowW(L"Button", L"", WS_VISIBLE | WS_CHILD | BS_CHECKBOX | BST_CHECKED | SS_CENTER, 350, 85, 20, 20, hWnd, NULL, NULL, NULL);
 }
 
 //Sets up the timer and starts it going, will send WM_TIMER messages every second 
 void InitializeTimer()
 {   
     //One second intervals
-    SetTimer(MainWindow, NULL, 500, NULL);
+    SetTimer(MainWindow, NULL, 1000, NULL);
 
 }
 //Should make the window header the facebook username if value is captured correctly
