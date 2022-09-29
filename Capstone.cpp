@@ -28,12 +28,9 @@
 #define FILE_HELP_WORDLIST 11
 #define CONFIG_PANEL 12
  
-//#define WM_SETFONT                      0x0200
-
-
 // Global Variables:
-HINSTANCE hInst;                                // current instance
-WCHAR szTitle[MAX_LOADSTRING];                  // The title bar text
+HINSTANCE hInst, hInstanceConfig, hInstanceFBLogin, hInstanceIGLogin, hInstanceTWLogin;  
+WCHAR szTitle[MAX_LOADSTRING];                 // The title bar text
 WCHAR szWindowClass[MAX_LOADSTRING];            // the main window class name
 HWND MainWindow, timerWnd;                     // Global variable for main window and timer window
 HWND facebookSection, instagramSection, twitterSection; // TODO make these seperate processes with their own procedures
@@ -42,10 +39,12 @@ int RESET_TIMER = 20;                           // Reset timer on finish (in sec
 int seconds, minutes, hours, days;              //Convert COUNT into readable format
 UINT_PTR ID_TIMER;                              // Timer ID
 HWND fbUser, fbPass, igUser, igPass, twUser, twPass, enteredTime; // captured values
-WCHAR fbUsername[100], fbPassword[100], igUsername[100], igPassword[100], twUsername[100], twPassword[100], Freq[100]; // store captured values
-char buf[] = { '00', ':', '00', ':', '00' };
+WCHAR fbUsername[100], fbPassword[100], igUsername[100], igPassword[100], twUsername[100], twPassword[100], Freq[100]; // store captured value
 HWND HOURS, MINUTES, SECONDS;
-WCHAR configClassName[MAX_LOADSTRING];
+const WCHAR *configClassName = L"ConfigClassName";
+const WCHAR* FBLoginClassName = L"FacebookLoginClassName";
+const WCHAR* IGLoginClassName = L"InstagramLoginClassName";
+const WCHAR* TWLoginClassName = L"TwitterLoginClassName";
 
 
 // Forward declarations of functions included in this code module:
@@ -57,10 +56,10 @@ LRESULT CALLBACK WndProcFBLogin(HWND, UINT, WPARAM, LPARAM); // WndProc for Face
 LRESULT CALLBACK WndProcIGLogin(HWND, UINT, WPARAM, LPARAM); // WndProc for Facebook Instgram Window
 LRESULT CALLBACK WndProcTWLogin(HWND, UINT, WPARAM, LPARAM); // WndProc for Facebook Twitter Window
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
-void createConfigurationWindow(WNDCLASSEX&, HINSTANCE&, int, HWND);
-void createFacebookLoginWindow(WNDCLASSEX&, HINSTANCE&, int);
-void createInstagramLoginWindow(WNDCLASSEX&, HINSTANCE&, int);
-void createTwitterLoginWindow(WNDCLASSEX&, HINSTANCE&, int);
+void createConfigurationWindow(WNDCLASSEXW& config_cl, HINSTANCE& hInst_config, int nCmdShow, HWND parent);
+void createFacebookLoginWindow(WNDCLASSEXW& fb_cl, HINSTANCE& hInst_fb, int nCmdShow, HWND parent);
+void createInstagramLoginWindow(WNDCLASSEXW& ig_cl, HINSTANCE& hInst_ig, int nCmdShow, HWND parent);
+void createTwitterLoginWindow(WNDCLASSEXW& tw_cl, HINSTANCE& hInst_tw, int nCmdShow, HWND parent);
 void AddMenu(HWND);
 void AddControls(HWND);
 void AddConfigControls(HWND);
@@ -186,91 +185,120 @@ void createConfigurationWindow(WNDCLASSEXW& config_cl, HINSTANCE& hInst_config, 
     if (!RegisterClassExW(&config_cl))
     {
        
-        MessageBoxW(parent, L"Error registering Class", NULL, MB_OK);
+        int nResult = GetLastError();
+        
+        MessageBox(NULL,
+            L"Window class creation failed",
+            L"Window Class Failed",
+            MB_ICONERROR);
     }
     
     //Create window after registering class
-    HWND confighWnd = CreateWindowW(configClassName, L"Configuration", WS_OVERLAPPEDWINDOW, 300, 200, 600, 400, parent, NULL, hInst_config, NULL);
+    HWND confighWnd = CreateWindowW((LPCWSTR)configClassName, L"Configuration", WS_OVERLAPPEDWINDOW, 300, 200, 600, 400, parent, NULL, hInst_config, NULL);
     ShowWindow(confighWnd, nCmdShow);
 
 }
 
 //Create Facebook Login Window 
-void createFBLoginWindow(WNDCLASSEX& fb_cl, HINSTANCE& hInst_fb, int nCmdShow)
+void createFacebookLoginWindow(WNDCLASSEXW& fb_cl, HINSTANCE& hInst_fb, int nCmdShow, HWND parent)
 {
-    fb_cl.hInstance = hInst_fb;
-    fb_cl.lpszClassName = L"FBLoginClass";
-    fb_cl.lpfnWndProc = (WNDPROC)WndProcFBLogin;
-    fb_cl.hIcon = LoadIcon(NULL, IDI_APPLICATION); //Default mouse and icons
-    fb_cl.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
-    fb_cl.hCursor = LoadCursor(NULL, IDC_ARROW);
-
-    fb_cl.lpszMenuName = NULL; // No menu for this section
+    fb_cl.cbSize = sizeof(WNDCLASSEX);
+    fb_cl.style = CS_HREDRAW | CS_VREDRAW;
+    fb_cl.lpfnWndProc = WndProcFBLogin;
     fb_cl.cbClsExtra = 0;
     fb_cl.cbWndExtra = 0;
-    fb_cl.hbrBackground = (HBRUSH)COLOR_BACKGROUND;
-    if (!RegisterClassEx(&fb_cl))
+    fb_cl.hInstance = hInst_fb;
+    fb_cl.hIcon = LoadIcon(hInst_fb, MAKEINTRESOURCE(IDI_CAPSTONE));
+    fb_cl.hCursor = LoadCursor(nullptr, IDC_ARROW);
+    fb_cl.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+    fb_cl.lpszMenuName = MAKEINTRESOURCEW(IDC_CAPSTONE);
+    fb_cl.lpszClassName = FBLoginClassName;
+    fb_cl.hIconSm = LoadIcon(fb_cl.hInstance, MAKEINTRESOURCE(IDI_SMALL));
+    if (!RegisterClassExW(&fb_cl))
     {
-        return;
-    }
-    //Create window after registering class
-    HWND FBLoginhWnd = CreateWindowEx(0, L"FBLoginClass", L"Facebook Login", WS_OVERLAPPEDWINDOW, 300, 200, 300, 200, HWND_DESKTOP, NULL, hInst_fb, NULL);
-    ShowWindow(FBLoginhWnd, nCmdShow);
-}
 
-//Create Instagram Login Window 
-void createIGLoginWindow(WNDCLASSEX& ig_cl, HINSTANCE& hInst_ig, int nCmdShow)
-{
-    ig_cl.hInstance = hInst_ig;
-    ig_cl.lpszClassName = L"IGLoginClass";
-    ig_cl.lpfnWndProc = (WNDPROC)WndProcIGLogin;
-    ig_cl.hIcon = LoadIcon(NULL, IDI_APPLICATION); //Default mouse and icons
-    ig_cl.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
-    ig_cl.hCursor = LoadCursor(NULL, IDC_ARROW);
+        int nResult = GetLastError();
 
-    ig_cl.lpszMenuName = NULL; // No menu for this section
-    ig_cl.cbClsExtra = 0;
-    ig_cl.cbWndExtra = 0;
-    ig_cl.hbrBackground = (HBRUSH)COLOR_BACKGROUND;
-    if (!RegisterClassEx(&ig_cl))
-    {
-        return;
+        MessageBox(NULL,
+            L"Window class creation failed",
+            L"Window Class Failed",
+            MB_ICONERROR);
     }
+
     //Create window after registering class
-    HWND IGLoginhWnd = CreateWindowEx(0, L"IGLoginClass", L"Instgram Login", WS_OVERLAPPEDWINDOW, 300, 200, 300, 200, HWND_DESKTOP, NULL, hInst_ig, NULL);
-    ShowWindow(IGLoginhWnd, nCmdShow);
+    HWND fbLoginhWnd = CreateWindowW((LPCWSTR)FBLoginClassName, L"Facebook Login", WS_OVERLAPPEDWINDOW, 400, 200, 400, 300, parent, NULL, hInst_fb, NULL);
+    ShowWindow(fbLoginhWnd, nCmdShow);
+
 }
 
 //Create Facebook Login Window 
-void createTWLoginWindow(WNDCLASSEX& tw_cl, HINSTANCE& hInst_tw, int nCmdShow)
+void createInstagramLoginWindow(WNDCLASSEXW& ig_cl, HINSTANCE& hInst_ig, int nCmdShow, HWND parent)
 {
-    tw_cl.hInstance = hInst_tw;
-    tw_cl.lpszClassName = L"TWLoginClass";
-    tw_cl.lpfnWndProc = (WNDPROC)WndProcTWLogin;
-    tw_cl.hIcon = LoadIcon(NULL, IDI_APPLICATION); //Default mouse and icons
-    tw_cl.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
-    tw_cl.hCursor = LoadCursor(NULL, IDC_ARROW);
-
-    tw_cl.lpszMenuName = NULL; // No menu for this section
-    tw_cl.cbClsExtra = 0;
-    tw_cl.cbWndExtra = 0;
-    tw_cl.hbrBackground = (HBRUSH)COLOR_BACKGROUND;
-    if (!RegisterClassEx(&tw_cl))
+    ig_cl.cbSize = sizeof(WNDCLASSEX);
+    ig_cl.style = CS_HREDRAW | CS_VREDRAW;
+    ig_cl.lpfnWndProc = WndProcIGLogin;
+    ig_cl.cbClsExtra = 0;
+    ig_cl.cbWndExtra = 0;
+    ig_cl.hInstance = hInst_ig;
+    ig_cl.hIcon = LoadIcon(hInst_ig, MAKEINTRESOURCE(IDI_CAPSTONE));
+    ig_cl.hCursor = LoadCursor(nullptr, IDC_ARROW);
+    ig_cl.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+    ig_cl.lpszMenuName = MAKEINTRESOURCEW(IDC_CAPSTONE);
+    ig_cl.lpszClassName = IGLoginClassName;
+    ig_cl.hIconSm = LoadIcon(ig_cl.hInstance, MAKEINTRESOURCE(IDI_SMALL));
+    if (!RegisterClassExW(&ig_cl))
     {
-        return;
+
+        int nResult = GetLastError();
+
+        MessageBox(NULL,
+            L"Window class creation failed",
+            L"Window Class Failed",
+            MB_ICONERROR);
     }
+
     //Create window after registering class
-    HWND TWLoginhWnd = CreateWindowEx(0, L"TWLoginClass", L"Twitter Login", WS_OVERLAPPEDWINDOW, 300, 200, 300, 200, HWND_DESKTOP, NULL, hInst_tw, NULL);
-    ShowWindow(TWLoginhWnd, nCmdShow);
+    HWND igLoginhWnd = CreateWindowW((LPCWSTR)IGLoginClassName, L"Instagram Login", WS_OVERLAPPEDWINDOW, 400, 200, 400, 300, parent, NULL, hInst_ig, NULL);
+    ShowWindow(igLoginhWnd, nCmdShow);
+
 }
 
+//Create Facebook Login Window 
+void createTwitterLoginWindow(WNDCLASSEXW& tw_cl, HINSTANCE& hInst_tw, int nCmdShow, HWND parent)
+{
+    tw_cl.cbSize = sizeof(WNDCLASSEX);
+    tw_cl.style = CS_HREDRAW | CS_VREDRAW;
+    tw_cl.lpfnWndProc = WndProcTWLogin;
+    tw_cl.cbClsExtra = 0;
+    tw_cl.cbWndExtra = 0;
+    tw_cl.hInstance = hInst_tw;
+    tw_cl.hIcon = LoadIcon(hInst_tw, MAKEINTRESOURCE(IDI_CAPSTONE));
+    tw_cl.hCursor = LoadCursor(nullptr, IDC_ARROW);
+    tw_cl.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+    tw_cl.lpszMenuName = MAKEINTRESOURCEW(IDC_CAPSTONE);
+    tw_cl.lpszClassName = TWLoginClassName;
+    tw_cl.hIconSm = LoadIcon(tw_cl.hInstance, MAKEINTRESOURCE(IDI_SMALL));
+    if (!RegisterClassExW(&tw_cl))
+    {
 
+        int nResult = GetLastError();
+
+        MessageBox(NULL,
+            L"Window class creation failed",
+            L"Window Class Failed",
+            MB_ICONERROR);
+    }
+
+    //Create window after registering class
+    HWND twLoginhWnd = CreateWindowW((LPCWSTR)TWLoginClassName, L"Twitter Login", WS_OVERLAPPEDWINDOW, 400, 200, 400, 300, parent, NULL, hInst_tw, NULL);
+    ShowWindow(twLoginhWnd, nCmdShow);
+
+}
 
 
 //Main Window Procedure
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {    
-    static HINSTANCE hInstance;
     switch (message)
     {
     case WM_CREATE:
@@ -284,14 +312,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             hours = COUNT / 3600;
             minutes = (COUNT / 60) % 60;
             seconds = COUNT % 60;
-            buf[0] = (char)hours;
-            buf[2] = (char)minutes;
-            buf[4] = (char)seconds;
-            size_t size = strlen(buf) + 1;
-            size_t outSize;
-            wchar_t wbuf[6];
-            mbstowcs_s(&outSize, wbuf, size, buf, size - 1);
-            SetWindowTextW(timerWnd, wbuf);
+            //buf[0] = (char)hours;
+            //buf[2] = (char)minutes;
+            //buf[4] = (char)seconds;
+            //size_t size = strlen(buf) + 1;
+            //size_t outSize;
+            //wchar_t wbuf[6];
+            //mbstowcs_s(&outSize, wbuf, size, buf, size - 1);
+            //SetWindowTextW(timerWnd, wbuf);
             //Test();
         }
         COUNT--;
@@ -330,20 +358,26 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         case FILE_HELP_SCAN:
             break;
         case FACEBOOK_LOGIN:
+            WNDCLASSEXW fbLoginWindow;
+            hInstanceFBLogin = (HINSTANCE)GetWindowLong(hWnd, GWLP_HINSTANCE);
+            createFacebookLoginWindow(fbLoginWindow, hInstanceFBLogin, SW_SHOW, hWnd);
+            break;
             //GetWindowTextW(fbUser, fbUsername, 100);
             //GetWindowTextW(fbPass, fbPassword, 100);
-            //Post login request here
-            break;
         case INSTAGRAM_LOGIN:
+            WNDCLASSEXW igLoginWindow;
+            hInstanceIGLogin = (HINSTANCE)GetWindowLong(hWnd, GWLP_HINSTANCE);
+            createInstagramLoginWindow(igLoginWindow, hInstanceIGLogin, SW_SHOW, hWnd);
+            break;
             //GetWindowTextW(igUser, igUsername, 100);
             //GetWindowTextW(igPass, igPassword, 100);
-            //Post login request here
-            break;
         case TWITTER_LOGIN:
+            WNDCLASSEXW twLoginWindow;
+            hInstanceTWLogin = (HINSTANCE)GetWindowLong(hWnd, GWLP_HINSTANCE);
+            createTwitterLoginWindow(twLoginWindow, hInstanceTWLogin, SW_SHOW, hWnd);
+            break;
             //GetWindowTextW(twUser, twUsername, 100);
             //GetWindowTextW(twPass, twPassword, 100);
-            //Post login request here
-            break;
         case SET_TIMER_VALUE:
             GetWindowTextW(enteredTime, Freq, 100);
             COUNT = (int)Freq;
@@ -354,8 +388,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         //Launch Configuration Panel IN PROGRESS
         case CONFIG_PANEL:
             WNDCLASSEXW configWindow;
-            hInstance = (HINSTANCE)::GetWindowLong(hWnd, GWLP_HINSTANCE);
-            createConfigurationWindow(configWindow, hInstance, SW_SHOW, hWnd);
+            hInstanceConfig = (HINSTANCE)GetWindowLong(hWnd, GWLP_HINSTANCE);
+            createConfigurationWindow(configWindow, hInstanceConfig, SW_SHOW, hWnd);
             break;
         case IDM_EXIT:
             DestroyWindow(hWnd);
