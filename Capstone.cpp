@@ -43,6 +43,8 @@
 #define OPEN_FLAGGED_FB 24
 #define OPEN_FLAGGED_IG 25
 #define OPEN_FLAGGED_TW 26
+#define OPEN_KEYWORDS 27
+#define SUBMIT_CONFIG 28
  
 // Global Variables:
 HINSTANCE hInst, hInstanceConfig, hInstanceFBLogin, hInstanceIGLogin, hInstanceTWLogin;
@@ -55,7 +57,7 @@ int COUNT = 0;                                  // Counts down
 int RESET_TIMER = 20;                           // Reset timer on finish (in seconds)
 int seconds, minutes, hours, days;              //Convert COUNT into readable format
 UINT_PTR ID_TIMER;                              // Timer ID
-HWND fbUser, fbPass, igUser, igPass, twUser, twPass, enteredTime; // captured values
+HWND fbUser, fbPass, igUser, igPass, twUser, twPass, ScanLimit, enteredTime, Region, outputDir; // captured values
 WCHAR fbUsername[100], fbPassword[100], igUsername[100], igPassword[100], twUsername[100], twPassword[100], Freq[100]; // store captured value
 HWND H, M, S;
 HWND HOURS, MINUTES, SECONDS;
@@ -207,15 +209,10 @@ void createConfigurationWindow(WNDCLASSEXW& config_cl, HINSTANCE& hInst_config, 
        
         int nResult = GetLastError();
         
-        /*MessageBox(NULL,
-            L"Window class creation failed",
-            L"Window Class Failed",
-            MB_ICONERROR);
-            */
     }
     
     //Create window after registering class
-    HWND confighWnd = CreateWindowW((LPCWSTR)configClassName, L"Configuration", WS_OVERLAPPEDWINDOW, 300, 200, 600, 400, parent, NULL, hInst_config, NULL);
+    HWND confighWnd = CreateWindowW((LPCWSTR)configClassName, L"Configuration", WS_OVERLAPPEDWINDOW, 300, 200, 500, 400, parent, NULL, hInst_config, NULL);
     ShowWindow(confighWnd, nCmdShow);
 
 }
@@ -239,12 +236,6 @@ void createFacebookLoginWindow(WNDCLASSEXW& fb_cl, HINSTANCE& hInst_fb, int nCmd
     {
 
         int nResult = GetLastError();
-
-        /*MessageBox(NULL,
-            L"Window class creation failed",
-            L"Window Class Failed",
-            MB_ICONERROR);
-            */
     }
 
     //Create window after registering class
@@ -273,11 +264,6 @@ void createInstagramLoginWindow(WNDCLASSEXW& ig_cl, HINSTANCE& hInst_ig, int nCm
 
         int nResult = GetLastError();
 
-       /* MessageBox(NULL,
-            L"Window class creation failed",
-            L"Window Class Failed",
-            MB_ICONERROR);
-            */
     }
 
     //Create window after registering class
@@ -305,12 +291,6 @@ void createTwitterLoginWindow(WNDCLASSEXW& tw_cl, HINSTANCE& hInst_tw, int nCmdS
     {
 
         int nResult = GetLastError();
-
-       /* MessageBox(NULL,
-            L"Window class creation failed",
-            L"Window Class Failed",
-            MB_ICONERROR);
-            */
     }
 
     //Create window after registering class
@@ -479,8 +459,18 @@ LRESULT CALLBACK WndProcConfig(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
     case WM_COMMAND:
         switch (wmId)
         {
-            //Add button controls, capture text, etc here
+        case OPEN_KEYWORDS:
+            if (!openFileExplorer(WORDLIST))
+            {
+                MessageBox(hWnd, L"Error opening results", L"Window Class Failed", MB_ICONERROR);
+            }
+            break;
 
+        case SUBMIT_CONFIG:
+            //GRAB ALL THE VALUES HERE
+            SetWindowTextW(hWnd, L"SUBMIT RECIEVED");
+            break;
+            
         case WM_DESTROY:
             DestroyWindow(hWnd);
             break;
@@ -679,16 +669,38 @@ void AddControls(HWND hWnd)
 //Add elements to the configuration window
 void AddConfigControls(HWND hWnd)
 {
-    HWND setFrequencyText = CreateWindowW(L"Static", L"Scan Frequency:", WS_VISIBLE | WS_CHILD | SS_RIGHT, 20, 20, 120, 30, hWnd, NULL, NULL, NULL);
-    H = CreateWindowW(L"Edit", L"00", WS_VISIBLE | WS_CHILD | SS_CENTER |WS_BORDER, 142, 20, 25, 20, hWnd, NULL, NULL, NULL);
-    HWND space_1 = CreateWindowW(L"Static", L"h", WS_VISIBLE | WS_CHILD | SS_CENTER, 167, 20, 10, 20, hWnd, NULL, NULL, NULL);
-    M = CreateWindowW(L"Edit", L"00", WS_VISIBLE | WS_CHILD | SS_CENTER | WS_BORDER, 177, 20, 25, 20, hWnd, NULL, NULL, NULL);
-    HWND space_2 = CreateWindowW(L"Static", L"m", WS_VISIBLE | WS_CHILD | SS_CENTER, 202, 20, 10, 20, hWnd, NULL, NULL, NULL);
-    S = CreateWindowW(L"Edit", L"00", WS_VISIBLE | WS_CHILD | SS_CENTER |WS_BORDER, 212, 20, 25, 20, hWnd, NULL, NULL, NULL);
-    HWND space_3 = CreateWindowW(L"Static", L"s", WS_VISIBLE | WS_CHILD | SS_CENTER, 237, 20, 10, 20, hWnd, NULL, NULL, NULL);
+   //Scan frequency boxes
+    HWND setFrequencyText = CreateWindowW(L"Static", L"Scan Frequency:", WS_VISIBLE | WS_CHILD | SS_RIGHT, 20, 20, 120, 20, hWnd, NULL, NULL, NULL);
+    H = CreateWindowW(L"Edit", L"00", WS_VISIBLE | WS_CHILD | SS_CENTER |WS_BORDER |ES_AUTOHSCROLL, 145, 20, 25, 20, hWnd, NULL, NULL, NULL);
+    HWND space_1 = CreateWindowW(L"Static", L"h", WS_VISIBLE | WS_CHILD | SS_CENTER, 170, 20, 10, 20, hWnd, NULL, NULL, NULL);
+    M = CreateWindowW(L"Edit", L"00", WS_VISIBLE | WS_CHILD | SS_CENTER | WS_BORDER, 185, 20, 25, 20, hWnd, NULL, NULL, NULL);
+    HWND space_2 = CreateWindowW(L"Static", L"m", WS_VISIBLE | WS_CHILD | SS_CENTER, 215, 20, 10, 20, hWnd, NULL, NULL, NULL);
+    S = CreateWindowW(L"Edit", L"00", WS_VISIBLE | WS_CHILD | SS_CENTER |WS_BORDER, 230, 20, 25, 20, hWnd, NULL, NULL, NULL);
+    HWND space_3 = CreateWindowW(L"Static", L"s", WS_VISIBLE | WS_CHILD | SS_CENTER, 260, 20, 10, 20, hWnd, NULL, NULL, NULL);
+    
+    //Scan limiter
+    HWND setScanLimitText = CreateWindowW(L"Static", L"Set Scan Limit:", WS_VISIBLE | WS_CHILD | SS_RIGHT, 20, 50, 120, 20, hWnd, NULL, NULL, NULL);
+    ScanLimit = CreateWindowW(L"Edit", L"0", WS_CHILD | WS_VISIBLE | WS_BORDER | SS_CENTER, 145, 50, 30, 20, hWnd, NULL, NULL, NULL);
 
+    //Open keywords folder button
+    HWND openKeyWordsDir = CreateWindowW(L"Button", L"Open Keywords", WS_VISIBLE | BS_DEFPUSHBUTTON | WS_CHILD | SS_CENTER, 20, 80, 120, 60, hWnd, (HMENU)OPEN_KEYWORDS, NULL, NULL);
+    
+    //Select region from dropdown menu WORK IN PROGRESS
+   
+    HWND setRegionText = CreateWindowW(L"Static", L"Select Region:", WS_VISIBLE | WS_CHILD | SS_RIGHT, 20, 150, 120, 20, hWnd, NULL, NULL, NULL);
+    
+    Region = CreateWindowW(L"combobox", L"Region", WS_VISIBLE | WS_BORDER | WS_CHILD |CBS_DROPDOWNLIST, 145, 150, 200, 20, hWnd, NULL, NULL, NULL);
+    //POPULATE DROP DOWN?
+    //SendMessageW(Region, CB_ADDSTRING, NULL, (LPARAM)L"Alaska");
 
+    //Output folder 
+    HWND outputFolderText = CreateWindowW(L"Static", L"Output Folder:", WS_VISIBLE | WS_CHILD | SS_RIGHT, 20, 180, 120, 20, hWnd, NULL, NULL, NULL);
+    outputDir = CreateWindowW(L"Edit", L".\\Program Data\\FoundPosts\\", WS_VISIBLE | WS_CHILD | SS_CENTER | WS_BORDER | ES_AUTOHSCROLL,145, 180, 200, 20, hWnd, NULL, NULL, NULL);
+    
+    //SUBMIT
+    HWND submit = CreateWindowW(L"Button", L"SUBMIT", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON, 190, 230, 120, 60, hWnd, (HMENU)SUBMIT_CONFIG, NULL, NULL);
 
+    
 
 }
 
