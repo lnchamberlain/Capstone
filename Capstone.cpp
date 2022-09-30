@@ -13,11 +13,12 @@
 #include <wchar.h>
 #include <string.h>
 #include <cmath>
+#include <shellapi.h>
 //#include <Python.h>
 
 #define MAX_LOADSTRING 100
-#define FILE_MENU_FILE 1
-#define FILE_MENU_OPEN_CONFIGURATION 2
+#define EXPORT_FB 1
+#define EXPORT_IG 2
 #define FILE_MENU_ABOUT 3
 #define FILE_MENU_SAVE_CONFIGURATION 4
 #define FACEBOOK_LOGIN 5
@@ -31,9 +32,21 @@
 #define FACEBOOK_LOGIN_SUBMIT 13
 #define INSTAGRAM_LOGIN_SUBMIT 14
 #define TWITTER_LOGIN_SUBMIT 15
+#define RESULTS_FB 16
+#define RESULTS_IG 17
+#define RESULTS_TW 18
+#define WORDLIST 19
+#define FLAGGED_FB 20
+#define FLAGGED_IG 21
+#define FLAGGED_TW 22
+#define EXPORT_TW 23
+#define OPEN_FLAGGED_FB 24
+#define OPEN_FLAGGED_IG 25
+#define OPEN_FLAGGED_TW 26
  
 // Global Variables:
-HINSTANCE hInst, hInstanceConfig, hInstanceFBLogin, hInstanceIGLogin, hInstanceTWLogin;  
+HINSTANCE hInst, hInstanceConfig, hInstanceFBLogin, hInstanceIGLogin, hInstanceTWLogin;
+WCHAR *CWD = _wgetcwd(CWD, 100);               // Current working directory
 WCHAR szTitle[MAX_LOADSTRING];                 // The title bar text
 WCHAR szWindowClass[MAX_LOADSTRING];            // the main window class name
 HWND MainWindow, timerWnd;                     // Global variable for main window and timer window
@@ -44,11 +57,13 @@ int seconds, minutes, hours, days;              //Convert COUNT into readable fo
 UINT_PTR ID_TIMER;                              // Timer ID
 HWND fbUser, fbPass, igUser, igPass, twUser, twPass, enteredTime; // captured values
 WCHAR fbUsername[100], fbPassword[100], igUsername[100], igPassword[100], twUsername[100], twPassword[100], Freq[100]; // store captured value
+HWND H, M, S;
 HWND HOURS, MINUTES, SECONDS;
 const WCHAR *configClassName = L"ConfigClassName";
 const WCHAR* FBLoginClassName = L"FacebookLoginClassName";
 const WCHAR* IGLoginClassName = L"InstagramLoginClassName";
 const WCHAR* TWLoginClassName = L"TwitterLoginClassName";
+
 
 
 // Forward declarations of functions included in this code module:
@@ -70,6 +85,7 @@ void AddConfigControls(HWND);
 void AddFBLoginControls(HWND);
 void AddIGLoginControls(HWND);
 void AddTWLoginControls(HWND);
+int openFileExplorer(int FLAG);
 void Test();
 void InitializeTimer();
 
@@ -343,14 +359,40 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         // Parse the menu selections
         switch (wmId)
         {
-            //File Tab
-        case FILE_MENU_FILE:
+            //Open FB results in file explorer
+        case EXPORT_FB:
+            if (!openFileExplorer(RESULTS_FB)) {
+                MessageBox(hWnd, L"Error opening results", L"Window Class Failed", MB_ICONERROR);
+            }
             break;
-            //Configuration Tab -> open panel
-        case FILE_MENU_OPEN_CONFIGURATION:
+            //Open IG results in file explorer
+        case EXPORT_IG:
+            if (!openFileExplorer(RESULTS_IG)) {
+                MessageBox(hWnd, L"Error opening results", L"Window Class Failed", MB_ICONERROR);
+            }
             break;
-            //Configuration Tab -> save config
-        case FILE_MENU_SAVE_CONFIGURATION:
+            //Open TW results in file explorer
+        case EXPORT_TW:
+            if (!openFileExplorer(RESULTS_TW)) {
+                MessageBox(hWnd, L"Error opening results", L"Window Class Failed", MB_ICONERROR);
+            }
+            break;
+        case OPEN_FLAGGED_FB:
+            if (!openFileExplorer(FLAGGED_FB)) {
+                MessageBox(hWnd, L"Error opening results", L"Window Class Failed", MB_ICONERROR);
+            }
+            break;
+            //Open IG results in file explorer
+        case OPEN_FLAGGED_IG:
+            if (!openFileExplorer(FLAGGED_IG)) {
+                MessageBox(hWnd, L"Error opening results", L"Window Class Failed", MB_ICONERROR);
+            }
+            break;
+            //Open TW results in file explorer
+        case OPEN_FLAGGED_TW:
+            if (!openFileExplorer(FLAGGED_TW)) {
+                MessageBox(hWnd, L"Error opening results", L"Window Class Failed", MB_ICONERROR);
+            }
             break;
             //About Tab
         case FILE_MENU_ABOUT:
@@ -621,14 +663,14 @@ void AddControls(HWND hWnd)
 
 
     //Populate flagged users buttons
-    HWND facebookFlaggedUserButton = CreateWindowW(L"Button", L"Flagged Users", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON, 290, 130, 100, 30, hWnd, NULL, NULL, NULL);
-    HWND instagramFlaggedUserButton = CreateWindowW(L"Button", L"Flagged Users", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON, 640, 130, 100, 30, hWnd, NULL, NULL, NULL);
-    HWND twitterFlaggedUserButton = CreateWindowW(L"Button", L"Flagged Users", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON, 990, 130, 100, 30, hWnd, NULL, NULL, NULL);
+    HWND facebookFlaggedUserButton = CreateWindowW(L"Button", L"Flagged Users", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON, 290, 130, 100, 30, hWnd, (HMENU)OPEN_FLAGGED_FB, NULL, NULL);
+    HWND instagramFlaggedUserButton = CreateWindowW(L"Button", L"Flagged Users", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON, 640, 130, 100, 30, hWnd, (HMENU)OPEN_FLAGGED_IG, NULL, NULL);
+    HWND twitterFlaggedUserButton = CreateWindowW(L"Button", L"Flagged Users", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON, 990, 130, 100, 30, hWnd, (HMENU)OPEN_FLAGGED_TW, NULL, NULL);
 
     //Add Export Results Buttons
-    HWND facebookExportButton = CreateWindowW(L"Button", L"Export Full Scan Results", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON | BS_MULTILINE, 290, 560, 100, 60, hWnd, NULL, NULL, NULL);
-    HWND instagramExportButton = CreateWindowW(L"Button", L"Export Full Scan Results", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON | BS_MULTILINE, 640, 560, 100, 60, hWnd, NULL, NULL, NULL);
-    HWND twitterExportButton = CreateWindowW(L"Button", L"Export Full Scan Results", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON | BS_MULTILINE, 990, 560, 100, 60, hWnd, NULL, NULL, NULL);
+    HWND facebookExportButton = CreateWindowW(L"Button", L"Export Full Scan Results", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON | BS_MULTILINE, 290, 560, 100, 60, hWnd, (HMENU)EXPORT_FB, NULL, NULL);
+    HWND instagramExportButton = CreateWindowW(L"Button", L"Export Full Scan Results", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON | BS_MULTILINE, 640, 560, 100, 60, hWnd, (HMENU)EXPORT_IG, NULL, NULL);
+    HWND twitterExportButton = CreateWindowW(L"Button", L"Export Full Scan Results", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON | BS_MULTILINE, 990, 560, 100, 60, hWnd, (HMENU)EXPORT_TW, NULL, NULL);
 
     HWND launchButton = CreateWindowW(L"Button", L"LAUCH SCAN", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON| BS_CENTER, 550, 655, 100, 60, hWnd, NULL, NULL, NULL);
    
@@ -637,6 +679,13 @@ void AddControls(HWND hWnd)
 //Add elements to the configuration window
 void AddConfigControls(HWND hWnd)
 {
+    HWND setFrequencyText = CreateWindowW(L"Static", L"Scan Frequency:", WS_VISIBLE | WS_CHILD | SS_RIGHT, 20, 20, 120, 30, hWnd, NULL, NULL, NULL);
+    H = CreateWindowW(L"Edit", L"00", WS_VISIBLE | WS_CHILD | SS_CENTER |WS_BORDER, 142, 20, 25, 20, hWnd, NULL, NULL, NULL);
+    HWND space_1 = CreateWindowW(L"Static", L"h", WS_VISIBLE | WS_CHILD | SS_CENTER, 167, 20, 10, 20, hWnd, NULL, NULL, NULL);
+    M = CreateWindowW(L"Edit", L"00", WS_VISIBLE | WS_CHILD | SS_CENTER | WS_BORDER, 177, 20, 25, 20, hWnd, NULL, NULL, NULL);
+    HWND space_2 = CreateWindowW(L"Static", L"m", WS_VISIBLE | WS_CHILD | SS_CENTER, 202, 20, 10, 20, hWnd, NULL, NULL, NULL);
+    S = CreateWindowW(L"Edit", L"00", WS_VISIBLE | WS_CHILD | SS_CENTER |WS_BORDER, 212, 20, 25, 20, hWnd, NULL, NULL, NULL);
+    HWND space_3 = CreateWindowW(L"Static", L"s", WS_VISIBLE | WS_CHILD | SS_CENTER, 237, 20, 10, 20, hWnd, NULL, NULL, NULL);
 
 
 
@@ -692,9 +741,75 @@ void InitializeTimer()
     SetTimer(MainWindow, NULL, 1000, NULL);
 
 }
+
+//Takes in a Flag denoted where to open file explorer and executes a shell api call
+//Returns 1 on success, 0 on failure
+int openFileExplorer(int FLAG)
+{
+    int i;
+    HINSTANCE caught;
+    switch (FLAG)
+    {
+    case RESULTS_FB:
+        caught = ShellExecuteA(NULL, "open", ".\\Program Data\\FoundPosts\\FoundPostsFB", NULL, NULL, SW_SHOWDEFAULT);
+        if (caught < (HINSTANCE)32) //Per windows documentation, error messages will be less than 32
+        {
+            return 0;
+        }
+        break;
+    case RESULTS_IG:
+        caught = ShellExecuteA(NULL, "open", ".\\Program Data\\FoundPosts\\FoundPostsIG", NULL, NULL, SW_SHOWDEFAULT);
+        if (caught < (HINSTANCE)32) //Per windows documentation, error messages will be less than 32
+        {
+            return 0;
+        }
+        break;
+    case RESULTS_TW:
+        caught = ShellExecuteA(NULL, "open", ".\\Program Data\\FoundPosts\\FoundPostsTW", NULL, NULL, SW_SHOWDEFAULT);
+        if (caught < (HINSTANCE)32) //Per windows documentation, error messages will be less than 32
+        {
+            return 0;
+        }
+        break;
+    case WORDLIST:
+        caught = ShellExecuteA(NULL, "open", ".\\Program Data\\Wordlists", NULL, NULL, SW_SHOWDEFAULT);
+        if (caught < (HINSTANCE)32) //Per windows documentation, error messages will be less than 32
+        {
+            return 0;
+        }
+        break;
+    case FLAGGED_FB:
+        caught = ShellExecuteA(NULL, "open", ".\\Program Data\\FlaggedUsers\\FBFlaggedUsers", NULL, NULL, SW_SHOWDEFAULT);
+        if (caught < (HINSTANCE)32) //Per windows documentation, error messages will be less than 32
+        {
+            return 0;
+        }
+        break;
+    case FLAGGED_IG:
+        caught = ShellExecuteA(NULL, "open", ".\\Program Data\\FlaggedUsers\\IGFlaggedUsers", NULL, NULL, SW_SHOWDEFAULT);
+        if (caught < (HINSTANCE)32) //Per windows documentation, error messages will be less than 32
+        {
+            return 0;
+        }
+        break;
+    case FLAGGED_TW:
+        caught = ShellExecuteA(NULL, "open", ".\\Program Data\\FlaggedUsers\\TWFlaggedUsers", NULL, NULL, SW_SHOWDEFAULT);
+        if (caught < (HINSTANCE)32) //Per windows documentation, error messages will be less than 32
+        {
+            return 0;
+        }
+        break;
+
+    }
+    return 1;
+}
+
+
+
+
 //Should make the window header the facebook username if value is captured correctly
 void Test() 
 {
-    SetWindowTextW(MainWindow, L"Testing Testing");
+    SetWindowTextW(MainWindow, CWD);
 
 }
