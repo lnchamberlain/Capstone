@@ -24,7 +24,7 @@
 #define FACEBOOK_LOGIN 5
 #define INSTAGRAM_LOGIN 6
 #define TWITTER_LOGIN 7
-#define SET_TIMER_VALUE 8
+#define LAUNCH 8
 #define FILE_HELP_SCAN 9
 #define FILE_HELP_LOGIN 10
 #define FILE_HELP_WORDLIST 11
@@ -45,6 +45,9 @@
 #define OPEN_FLAGGED_TW 26
 #define OPEN_KEYWORDS 27
 #define SUBMIT_CONFIG 28
+#define PAUSE_SCAN 29
+#define RESUME_SCAN 30
+
  
 // Global Variables:
 HINSTANCE hInst, hInstanceConfig, hInstanceFBLogin, hInstanceIGLogin, hInstanceTWLogin;
@@ -54,17 +57,19 @@ WCHAR szWindowClass[MAX_LOADSTRING];            // the main window class name
 HWND MainWindow, timerWnd;                     // Global variable for main window and timer window
 HWND facebookSection, instagramSection, twitterSection; // TODO make these seperate processes with their own procedures
 int COUNT = 0;                                  // Counts down                    
-int RESET_TIMER = 20;                           // Reset timer on finish (in seconds)
-int seconds, minutes, hours, days;              //Convert COUNT into readable format
+int RESET_COUNT = 0;                          // Reset timer on finish (in seconds)
+int hours, seconds, minutes, ScanCount, ScanLimitInt;              //Convert COUNT into readable format
 UINT_PTR ID_TIMER;                              // Timer ID
-HWND fbUser, fbPass, igUser, igPass, twUser, twPass, ScanLimit, enteredTime, Region, outputDir; // captured values
-WCHAR fbUsername[100], fbPassword[100], igUsername[100], igPassword[100], twUsername[100], twPassword[100], Freq[100]; // store captured value
+HWND fbUser, fbPass, igUser, igPass, twUser, twPass, ScanLimit, enteredTime, Region, outputDir, scanCountDisplay; // captured values
+WCHAR fbUsername[100], fbPassword[100], igUsername[100], igPassword[100], twUsername[100], twPassword[100], Freq[100]; // store captured values from Logins
+WCHAR hoursCaptured[100], minutesCaptured[20], secondsCaptured[20], regionCaptured[100], scanLimitCaptured[100], outputDirCaptured[100]; // store captured values from config panel
 HWND H, M, S;
 HWND HOURS, MINUTES, SECONDS;
 const WCHAR *configClassName = L"ConfigClassName";
 const WCHAR* FBLoginClassName = L"FacebookLoginClassName";
 const WCHAR* IGLoginClassName = L"InstagramLoginClassName";
 const WCHAR* TWLoginClassName = L"TwitterLoginClassName";
+bool STOP_SCANNING = false;
 
 
 
@@ -303,6 +308,7 @@ void createTwitterLoginWindow(WNDCLASSEXW& tw_cl, HINSTANCE& hInst_tw, int nCmdS
 //Main Window Procedure
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {    
+    wchar_t hOut[100], mOut[100], sOut[100], limitOut[20];
     switch (message)
     {
     case WM_CREATE:
@@ -316,21 +322,27 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             hours = COUNT / 3600;
             minutes = (COUNT / 60) % 60;
             seconds = COUNT % 60;
-            //buf[0] = (char)hours;
-            //buf[2] = (char)minutes;
-            //buf[4] = (char)seconds;
-            //size_t size = strlen(buf) + 1;
-            //size_t outSize;
-            //wchar_t wbuf[6];
-            //mbstowcs_s(&outSize, wbuf, size, buf, size - 1);
-            //SetWindowTextW(timerWnd, wbuf);
-            //Test();
+            _itow_s(hours, hOut, 10);
+            _itow_s(minutes, mOut, 10);
+            _itow_s(seconds, sOut, 10);
+            SetWindowTextW(HOURS, hOut);
+            SetWindowTextW(MINUTES, mOut);
+            SetWindowTextW(SECONDS, sOut);
         }
-        COUNT--;
+        if (!STOP_SCANNING)
+        {
+            COUNT--;
+        }
         if (COUNT <= 0) 
         {
-            //Reset timer automatically
-            COUNT = RESET_TIMER;
+            ScanCount++;
+            //Update Scan Count
+            _itow_s(ScanCount, limitOut, 10);
+            SetWindowTextW(scanCountDisplay, limitOut);
+            if (ScanCount >= ScanLimitInt) {
+                STOP_SCANNING = true;
+            }
+            COUNT = RESET_COUNT;
         }
         break;
     case WM_COMMAND:
@@ -397,21 +409,20 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             hInstanceIGLogin = (HINSTANCE)GetWindowLong(hWnd, GWLP_HINSTANCE);
             createInstagramLoginWindow(igLoginWindow, hInstanceIGLogin, SW_SHOW, hWnd);
             break;
-            //GetWindowTextW(igUser, igUsername, 100);
-            //GetWindowTextW(igPass, igPassword, 100);
         case TWITTER_LOGIN:
             WNDCLASSEXW twLoginWindow;
             hInstanceTWLogin = (HINSTANCE)GetWindowLong(hWnd, GWLP_HINSTANCE);
             createTwitterLoginWindow(twLoginWindow, hInstanceTWLogin, SW_SHOW, hWnd);
             break;
-            //GetWindowTextW(twUser, twUsername, 100);
-            //GetWindowTextW(twPass, twPassword, 100);
-        case SET_TIMER_VALUE:
-            GetWindowTextW(enteredTime, Freq, 100);
-            COUNT = (int)Freq;
-            std::cout << COUNT << std::endl;
-            RESET_TIMER = COUNT;
+        case LAUNCH:
             InitializeTimer();
+            COUNT = 0;            
+            break;
+        case PAUSE_SCAN:
+            STOP_SCANNING = true;
+            break;
+        case RESUME_SCAN:
+            STOP_SCANNING = false;
             break;
         //Launch Configuration Panel IN PROGRESS
         case CONFIG_PANEL:
@@ -430,7 +441,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     
     case WM_PAINT:
         {
-        //Doesn't display?
             PAINTSTRUCT ps;
             HDC hdc = BeginPaint(hWnd, &ps);
             EndPaint(hWnd, &ps);
@@ -451,6 +461,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 LRESULT CALLBACK WndProcConfig(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     int wmId = LOWORD(wParam);
+    int hoursVal, minutesVal, secondsVal;
+    wchar_t hOut[100], mOut[100], sOut[100];
     switch (message)
     {
     case WM_CREATE:
@@ -467,8 +479,41 @@ LRESULT CALLBACK WndProcConfig(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
             break;
 
         case SUBMIT_CONFIG:
-            //GRAB ALL THE VALUES HERE
-            SetWindowTextW(hWnd, L"SUBMIT RECIEVED");
+            //Grab values from config panel, set to default to show user something happened
+            GetWindowTextW(ScanLimit, scanLimitCaptured, 100);
+            SetWindowTextW(ScanLimit, L"0");
+
+            GetWindowTextW(outputDir, outputDirCaptured, 100);
+            SetWindowTextW(outputDir, L"");
+            
+            GetWindowTextW(H, hoursCaptured, 100);
+            SetWindowTextW(H, L"00");
+
+            GetWindowTextW(M, minutesCaptured, 20);
+            SetWindowTextW(M, L"00");
+
+            GetWindowTextW(S, secondsCaptured, 20);
+            SetWindowTextW(S, L"00");
+
+            //GetWindowTextW(Region, regionCaptured, 100);
+            //SetWindowTextW(Region, L"");
+
+            // Compute and store COUNT and RESET COUNT
+            hoursVal = _wtoi(hoursCaptured);
+            minutesVal = _wtoi(minutesCaptured);
+            secondsVal = _wtoi(secondsCaptured);
+
+            COUNT = ((hoursVal * 3600) + (minutesVal * 60) + secondsVal);
+            RESET_COUNT = COUNT;
+            //Show captured values in main window
+            SetWindowTextW(HOURS, hoursCaptured);
+            SetWindowTextW(MINUTES, minutesCaptured);
+            SetWindowTextW(SECONDS, secondsCaptured);
+            
+            //Convert and display scan limit
+            ScanLimitInt = _wtoi(scanLimitCaptured);
+            
+            DestroyWindow(hWnd);
             break;
             
         case WM_DESTROY:
@@ -634,11 +679,11 @@ void AddControls(HWND hWnd)
 
 
     HWND openConfigButton = CreateWindowW(L"Button", L"Configuration", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON |BS_CENTER, 670, 45, 110, 30, hWnd, (HMENU)CONFIG_PANEL, NULL, NULL);
-    HWND stopScanningButton = CreateWindow(L"Button", L"Stop Scanning", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON | BS_CENTER, 670, 80, 100, 30, hWnd, NULL, NULL, NULL);
-
+    HWND stopScanningButton = CreateWindow(L"Button", L"Pause Scan", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON | BS_CENTER, 670, 80, 100, 30, hWnd, (HMENU)PAUSE_SCAN, NULL, NULL);
+    HWND resumeScanningButton = CreateWindowW(L"Button", L"Resume Scan", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON | BS_CENTER, 780, 80, 100, 30, hWnd, (HMENU)RESUME_SCAN, NULL, NULL);
     //Add Scan count and message
     HWND scanCountText = CreateWindowW(L"Static", L"Scan Count:", WS_VISIBLE | WS_CHILD | SS_RIGHT, 460, 75, 85, 20, hWnd, NULL, NULL, NULL);
-    HWND scanCount = CreateWindowW(L"Edit", L"0", WS_VISIBLE | WS_CHILD | WS_BORDER | SS_CENTER, 550, 75, 25, 20, hWnd, NULL, NULL, NULL);
+    scanCountDisplay = CreateWindowW(L"Edit", L"0", WS_VISIBLE | WS_CHILD | WS_BORDER | SS_CENTER, 550, 75, 25, 20, hWnd, NULL, NULL, NULL);
 
 
     //Main three blocks
@@ -662,7 +707,7 @@ void AddControls(HWND hWnd)
     HWND instagramExportButton = CreateWindowW(L"Button", L"Export Full Scan Results", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON | BS_MULTILINE, 640, 560, 100, 60, hWnd, (HMENU)EXPORT_IG, NULL, NULL);
     HWND twitterExportButton = CreateWindowW(L"Button", L"Export Full Scan Results", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON | BS_MULTILINE, 990, 560, 100, 60, hWnd, (HMENU)EXPORT_TW, NULL, NULL);
 
-    HWND launchButton = CreateWindowW(L"Button", L"LAUCH SCAN", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON| BS_CENTER, 550, 655, 100, 60, hWnd, NULL, NULL, NULL);
+    HWND launchButton = CreateWindowW(L"Button", L"LAUCH SCAN", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON| BS_CENTER, 550, 655, 100, 60, hWnd, (HMENU)LAUNCH, NULL, NULL);
    
 }
 
