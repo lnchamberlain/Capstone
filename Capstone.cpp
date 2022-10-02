@@ -65,6 +65,7 @@ WCHAR fbUsername[100], fbPassword[100], igUsername[100], igPassword[100], twUser
 WCHAR hoursCaptured[100], minutesCaptured[20], secondsCaptured[20], regionCaptured[100], scanLimitCaptured[100], outputDirCaptured[100]; // store captured values from config panel
 HWND H, M, S;
 HWND HOURS, MINUTES, SECONDS;
+HWND  facebookResultsSummary, instagramResultsSummary, twitterResultsSummary;
 const WCHAR *configClassName = L"ConfigClassName";
 const WCHAR* FBLoginClassName = L"FacebookLoginClassName";
 const WCHAR* IGLoginClassName = L"InstagramLoginClassName";
@@ -696,6 +697,9 @@ void AddControls(HWND hWnd)
     HWND instagramLoginButton = CreateWindowW(L"Button", L"LOGIN", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON, 575, 205, 55, 30, hWnd, (HMENU)INSTAGRAM_LOGIN, NULL, NULL);
     HWND twitterLoginButton = CreateWindowW(L"Button", L"LOGIN", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON, 925, 205, 55, 30, hWnd, (HMENU)TWITTER_LOGIN, NULL, NULL);
 
+    facebookResultsSummary = CreateWindowW(L"Edit", L"Scan Summary:", WS_VISIBLE | WS_CHILD | WS_BORDER, 150, 250, 200, 250, hWnd, NULL, NULL, NULL);
+    instagramResultsSummary = CreateWindowW(L"Edit", L"Scan Summary:", WS_VISIBLE | WS_CHILD | WS_BORDER, 500, 250, 200, 250, hWnd, NULL, NULL, NULL);
+    twitterResultsSummary = CreateWindowW(L"Edit", L"Scan Summary:", WS_VISIBLE | WS_CHILD | WS_BORDER, 850, 250, 200, 250, hWnd, NULL, NULL, NULL);
 
     //Populate flagged users buttons
     HWND facebookFlaggedUserButton = CreateWindowW(L"Button", L"Flagged Users", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON, 290, 130, 100, 30, hWnd, (HMENU)OPEN_FLAGGED_FB, NULL, NULL);
