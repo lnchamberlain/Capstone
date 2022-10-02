@@ -50,7 +50,8 @@
 
  
 // Global Variables:
-HINSTANCE hInst, hInstanceConfig, hInstanceFBLogin, hInstanceIGLogin, hInstanceTWLogin;
+HINSTANCE hInst, hInstanceFBLogin, hInstanceIGLogin, hInstanceTWLogin;
+HINSTANCE hInstanceConfig = NULL;
 WCHAR *CWD = _wgetcwd(CWD, 100);               // Current working directory
 WCHAR szTitle[MAX_LOADSTRING];                 // The title bar text
 WCHAR szWindowClass[MAX_LOADSTRING];            // the main window class name
@@ -71,6 +72,9 @@ const WCHAR* FBLoginClassName = L"FacebookLoginClassName";
 const WCHAR* IGLoginClassName = L"InstagramLoginClassName";
 const WCHAR* TWLoginClassName = L"TwitterLoginClassName";
 bool STOP_SCANNING = false;
+bool CONFIG_SET = false;
+bool MIN_ONE_SITE_LOGGED_IN = false;
+bool NOT_DEFAULT_OUTPUT_DIR = false;
 
 
 
@@ -340,7 +344,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             //Update Scan Count
             _itow_s(ScanCount, limitOut, 10);
             SetWindowTextW(scanCountDisplay, limitOut);
-            if (ScanCount >= ScanLimitInt) {
+            if ((ScanLimitInt != NULL) && (ScanCount >= ScanLimitInt)) {
                 STOP_SCANNING = true;
             }
             COUNT = RESET_COUNT;
@@ -416,8 +420,17 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             createTwitterLoginWindow(twLoginWindow, hInstanceTWLogin, SW_SHOW, hWnd);
             break;
         case LAUNCH:
-            InitializeTimer();
-            COUNT = 0;            
+            //Only launch if configuration is all set up and login success
+            ScanCount = 0;
+            if (CONFIG_SET && MIN_ONE_SITE_LOGGED_IN) 
+            {
+                InitializeTimer();
+                COUNT = 0;
+            }
+            else
+            {
+                MessageBox(hWnd, L"Must:\n\nComplete Configuration\nBe logged into at least one site\n\nBefore Launching Scan", NULL, MB_ICONERROR | MB_OK);
+            }
             break;
         case PAUSE_SCAN:
             STOP_SCANNING = true;
@@ -427,6 +440,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             break;
         //Launch Configuration Panel IN PROGRESS
         case CONFIG_PANEL:
+            //Reset the default output directory if configuration has been opened before
+            if (hInstanceConfig != NULL)
+            {
+                SetWindowTextW(outputDir, L"Default: .\\Program Data\\FoundPosts\\");
+            }
             WNDCLASSEXW configWindow;
             hInstanceConfig = (HINSTANCE)GetWindowLong(hWnd, GWLP_HINSTANCE);
             createConfigurationWindow(configWindow, hInstanceConfig, SW_SHOW, hWnd);
@@ -462,8 +480,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 LRESULT CALLBACK WndProcConfig(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     int wmId = LOWORD(wParam);
-    int hoursVal, minutesVal, secondsVal;
+    int hoursVal, minutesVal, secondsVal, i;
     wchar_t hOut[100], mOut[100], sOut[100];
+    wchar_t checkDefault[] = L"Default";
     switch (message)
     {
     case WM_CREATE:
@@ -483,10 +502,18 @@ LRESULT CALLBACK WndProcConfig(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
             //Grab values from config panel, set to default to show user something happened
             GetWindowTextW(ScanLimit, scanLimitCaptured, 100);
             SetWindowTextW(ScanLimit, L"0");
-
             GetWindowTextW(outputDir, outputDirCaptured, 100);
+            //Check if first characters are 'Default'
+            NOT_DEFAULT_OUTPUT_DIR = false;
+            for (i = 0; i < 7; i++)
+            {
+                if (checkDefault[i] != outputDirCaptured[i]) {
+                    NOT_DEFAULT_OUTPUT_DIR = true;
+                }
+            }
+           
             SetWindowTextW(outputDir, L"");
-            
+                      
             GetWindowTextW(H, hoursCaptured, 100);
             SetWindowTextW(H, L"00");
 
@@ -513,7 +540,13 @@ LRESULT CALLBACK WndProcConfig(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
             
             //Convert and display scan limit
             ScanLimitInt = _wtoi(scanLimitCaptured);
-            
+            if (ScanLimitInt == 0) {
+                //No limit if no value set
+                ScanLimitInt = NULL;
+            }
+
+            //IN FUTURE, CHECK VALUE INTEGRITY BEFORE SETTING CONFIG_SET TO TRUE
+            CONFIG_SET = true;
             DestroyWindow(hWnd);
             break;
             
@@ -546,6 +579,7 @@ LRESULT CALLBACK WndProcFBLogin(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
             SetWindowTextW(fbUser, L"");
             SetWindowTextW(fbPass, L"");
             //PASS TO AUTH SCRIPT HERE
+            MIN_ONE_SITE_LOGGED_IN = true;
             DestroyWindow(hWnd);
             break;
         }
@@ -577,6 +611,7 @@ LRESULT CALLBACK WndProcIGLogin(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
             SetWindowTextW(igUser, L"");
             SetWindowTextW(igPass, L"");
             //PASS TO AUTH SCRIPT HERE
+            MIN_ONE_SITE_LOGGED_IN = true;
             DestroyWindow(hWnd);
             break;
             //Add button controls, capture text, etc here
@@ -610,6 +645,7 @@ LRESULT CALLBACK WndProcTWLogin(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
             SetWindowTextW(twUser, L"");
             SetWindowTextW(twPass, L"");
             //PASS TO AUTH SCRIPT HERE
+            MIN_ONE_SITE_LOGGED_IN = true;
             DestroyWindow(hWnd);
             break;
         }
@@ -732,7 +768,7 @@ void AddConfigControls(HWND hWnd)
     ScanLimit = CreateWindowW(L"Edit", L"0", WS_CHILD | WS_VISIBLE | WS_BORDER | SS_CENTER, 145, 50, 30, 20, hWnd, NULL, NULL, NULL);
 
     //Open keywords folder button
-    HWND openKeyWordsDir = CreateWindowW(L"Button", L"Open Keywords", WS_VISIBLE | BS_DEFPUSHBUTTON | WS_CHILD | SS_CENTER, 20, 80, 120, 60, hWnd, (HMENU)OPEN_KEYWORDS, NULL, NULL);
+    HWND openKeyWordsDir = CreateWindowW(L"Button", L"Open Keywords", WS_VISIBLE | BS_DEFPUSHBUTTON | WS_CHILD | SS_LEFT, 20, 80, 120, 60, hWnd, (HMENU)OPEN_KEYWORDS, NULL, NULL);
     
     //Select region from dropdown menu WORK IN PROGRESS
    
@@ -744,7 +780,7 @@ void AddConfigControls(HWND hWnd)
 
     //Output folder 
     HWND outputFolderText = CreateWindowW(L"Static", L"Output Folder:", WS_VISIBLE | WS_CHILD | SS_RIGHT, 20, 180, 120, 20, hWnd, NULL, NULL, NULL);
-    outputDir = CreateWindowW(L"Edit", L".\\Program Data\\FoundPosts\\", WS_VISIBLE | WS_CHILD | SS_CENTER | WS_BORDER | ES_AUTOHSCROLL,145, 180, 200, 20, hWnd, NULL, NULL, NULL);
+    outputDir = CreateWindowW(L"Edit", L"Default: .\\Program Data\\FoundPosts\\", WS_VISIBLE | WS_CHILD | SS_LEFT | WS_BORDER | ES_AUTOHSCROLL,145, 180, 250, 20, hWnd, NULL, NULL, NULL);
     
     //SUBMIT
     HWND submit = CreateWindowW(L"Button", L"SUBMIT", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON, 190, 230, 120, 60, hWnd, (HMENU)SUBMIT_CONFIG, NULL, NULL);
@@ -808,28 +844,71 @@ void InitializeTimer()
 int openFileExplorer(int FLAG)
 {
     int i;
+    char nonDefaultPathStr[100];
+    if (NOT_DEFAULT_OUTPUT_DIR)
+    {
+        size_t wcharSize = wcslen(outputDirCaptured) + 1;
+        size_t convertedChars = 0;
+        const size_t newSize = wcharSize * 2;
+        wcstombs_s(&convertedChars, nonDefaultPathStr, newSize, outputDirCaptured, _TRUNCATE);
+    }
     HINSTANCE caught;
     switch (FLAG)
     {
     case RESULTS_FB:
-        caught = ShellExecuteA(NULL, "open", ".\\Program Data\\FoundPosts\\FoundPostsFB", NULL, NULL, SW_SHOWDEFAULT);
-        if (caught < (HINSTANCE)32) //Per windows documentation, error messages will be less than 32
+        if (NOT_DEFAULT_OUTPUT_DIR)
+        {              
+            caught = ShellExecuteA(NULL, "open", (LPCSTR)nonDefaultPathStr, NULL, NULL, SW_SHOWDEFAULT);
+            if (caught < (HINSTANCE)32) //Per windows documentation, error messages will be less than 32
+            {
+                return 0;
+            }
+
+        }
+        else
         {
-            return 0;
+            caught = ShellExecuteA(NULL, "open", ".\\Program Data\\FoundPosts\\FoundPostsFB", NULL, NULL, SW_SHOWDEFAULT);
+            if (caught < (HINSTANCE)32) //Per windows documentation, error messages will be less than 32
+            {
+                //SetWindowTextW(MainWindow, (LPCWSTR)caught);
+                return 0;
+            }
         }
         break;
     case RESULTS_IG:
-        caught = ShellExecuteA(NULL, "open", ".\\Program Data\\FoundPosts\\FoundPostsIG", NULL, NULL, SW_SHOWDEFAULT);
-        if (caught < (HINSTANCE)32) //Per windows documentation, error messages will be less than 32
+        if (NOT_DEFAULT_OUTPUT_DIR)
         {
-            return 0;
+            caught = ShellExecuteA(NULL, "open", (LPCSTR)nonDefaultPathStr, NULL, NULL, SW_SHOWDEFAULT);
+            if (caught < (HINSTANCE)32) //Per windows documentation, error messages will be less than 32
+            {
+                return 0;
+            }
+        }
+        else 
+        {
+            caught = ShellExecuteA(NULL, "open", ".\\Program Data\\FoundPosts\\FoundPostsIG", NULL, NULL, SW_SHOWDEFAULT);
+            if (caught < (HINSTANCE)32) //Per windows documentation, error messages will be less than 32
+            {
+                return 0;
+            }
         }
         break;
     case RESULTS_TW:
-        caught = ShellExecuteA(NULL, "open", ".\\Program Data\\FoundPosts\\FoundPostsTW", NULL, NULL, SW_SHOWDEFAULT);
-        if (caught < (HINSTANCE)32) //Per windows documentation, error messages will be less than 32
+        if (NOT_DEFAULT_OUTPUT_DIR)
         {
-            return 0;
+            caught = ShellExecuteA(NULL, "open", (LPCSTR)nonDefaultPathStr, NULL, NULL, SW_SHOWDEFAULT);
+            if (caught < (HINSTANCE)32) //Per windows documentation, error messages will be less than 32
+            {
+                return 0;
+            }
+        }
+        else
+        {
+            caught = ShellExecuteA(NULL, "open", ".\\Program Data\\FoundPosts\\FoundPostsTW", NULL, NULL, SW_SHOWDEFAULT);
+            if (caught < (HINSTANCE)32) //Per windows documentation, error messages will be less than 32
+            {
+                return 0;
+            }
         }
         break;
     case WORDLIST:
