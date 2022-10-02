@@ -14,6 +14,8 @@
 #include <string.h>
 #include <cmath>
 #include <shellapi.h>
+#include <fstream>
+#include <string>
 //#include <Python.h>
 
 #define MAX_LOADSTRING 100
@@ -67,16 +69,22 @@ WCHAR hoursCaptured[100], minutesCaptured[20], secondsCaptured[20], regionCaptur
 HWND H, M, S;
 HWND HOURS, MINUTES, SECONDS;
 HWND  facebookResultsSummary, instagramResultsSummary, twitterResultsSummary;
+HWND checkboxFB, checkboxIG, checkboxTW;
 const WCHAR *configClassName = L"ConfigClassName";
 const WCHAR* FBLoginClassName = L"FacebookLoginClassName";
 const WCHAR* IGLoginClassName = L"InstagramLoginClassName";
 const WCHAR* TWLoginClassName = L"TwitterLoginClassName";
 const char* REGIONS[5] = { "Alaska", "Anchorage", "Juneau", "Fairbanks", "Bethel" };
+std::string SAVED_CONFIG_ELEMENTS[9] = { "" };
 const char* REGION_SELECTION;
 bool STOP_SCANNING = false;
 bool CONFIG_SET = false;
+bool CHECKED_USE_SAVED_FB = false;
+bool CHECKED_USE_SAVED_IG = false;
+bool CHECKED_USE_SAVED_TW = false;
 bool MIN_ONE_SITE_LOGGED_IN = false;
 bool NOT_DEFAULT_OUTPUT_DIR = false;
+std::fstream SAVED_CONFIG_FILE;
 
 
 
@@ -567,7 +575,9 @@ LRESULT CALLBACK WndProcConfig(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 //Window Procedure for the Facebook Login Panel
 LRESULT CALLBACK WndProcFBLogin(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
+    int state, i;
     int wmId = LOWORD(wParam);
+    std::string usernameSaved, passwordSaved; 
     switch (message)
     {
     case WM_CREATE:
@@ -582,7 +592,33 @@ LRESULT CALLBACK WndProcFBLogin(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
             GetWindowTextW(fbPass, fbPassword, 100);
             SetWindowTextW(fbUser, L"");
             SetWindowTextW(fbPass, L"");
+
+            state = SendMessageW(checkboxFB, (UINT)BM_GETCHECK, (WPARAM)0, (LPARAM)0);
+            if (state == BST_CHECKED)
+            {
+                i = 0;
+                SAVED_CONFIG_FILE.open(".\\Program Data\\Configuration\\user_config.txt", std::ios::in);
+                //Read in all lines, fill in string array of elements
+                if (SAVED_CONFIG_FILE.is_open()) 
+                {
+                    std::string line;
+                    while (std::getline(SAVED_CONFIG_FILE, line)) 
+                    {
+                        SAVED_CONFIG_ELEMENTS[i] = line;
+                        i++;
+                    }
+                }
+                usernameSaved = SAVED_CONFIG_ELEMENTS[1];
+                passwordSaved = SAVED_CONFIG_ELEMENTS[2];     
+            }
             //PASS TO AUTH SCRIPT HERE
+            if (state == BST_CHECKED) {
+                //USE usernameSaved and passwordSaved 
+            }
+            else {
+                //USE fbUsername and fbPassword
+            }
+            
             MIN_ONE_SITE_LOGGED_IN = true;
             DestroyWindow(hWnd);
             break;
@@ -599,7 +635,9 @@ LRESULT CALLBACK WndProcFBLogin(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 //Window Procedure for the Instagram Login Panel
 LRESULT CALLBACK WndProcIGLogin(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
+    int state, i;
     int wmId = LOWORD(wParam);
+    std::string usernameSaved, passwordSaved;
     switch (message)
     {
     case WM_CREATE:
@@ -614,7 +652,31 @@ LRESULT CALLBACK WndProcIGLogin(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
             GetWindowTextW(igPass, igPassword, 100);
             SetWindowTextW(igUser, L"");
             SetWindowTextW(igPass, L"");
+            state = SendMessageW(checkboxFB, (UINT)BM_GETCHECK, (WPARAM)0, (LPARAM)0);
+            if (state == BST_CHECKED)
+            {
+                i = 0;
+                SAVED_CONFIG_FILE.open(".\\Program Data\\Configuration\\user_config.txt", std::ios::in);
+                //Read in all lines, fill in string array of elements
+                if (SAVED_CONFIG_FILE.is_open())
+                {
+                    std::string line;
+                    while (std::getline(SAVED_CONFIG_FILE, line))
+                    {
+                        SAVED_CONFIG_ELEMENTS[i] = line;
+                        i++;
+                    }
+                }
+                usernameSaved = SAVED_CONFIG_ELEMENTS[4];
+                passwordSaved = SAVED_CONFIG_ELEMENTS[5];
+            }
             //PASS TO AUTH SCRIPT HERE
+            if (state == BST_CHECKED) {
+                //USE usernameSaved and passwordSaved 
+            }
+            else {
+                //USE igUsername and igPassword
+            }
             MIN_ONE_SITE_LOGGED_IN = true;
             DestroyWindow(hWnd);
             break;
@@ -634,13 +696,16 @@ LRESULT CALLBACK WndProcIGLogin(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 //Window Procedure for the Twitter Login Panel
 LRESULT CALLBACK WndProcTWLogin(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
+    int state, i;
+    int wmId = LOWORD(wParam);
+    std::string usernameSaved, passwordSaved;
     switch (message)
     {
     case WM_CREATE:
         AddTWLoginControls(hWnd);
         break;
     case WM_COMMAND:
-        switch (wParam)
+        switch (wmId)
         {
         case TWITTER_LOGIN_SUBMIT:
             //Grab values from the username and password fields, store in global variables
@@ -648,6 +713,31 @@ LRESULT CALLBACK WndProcTWLogin(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
             GetWindowTextW(twPass, twPassword, 100);
             SetWindowTextW(twUser, L"");
             SetWindowTextW(twPass, L"");
+            state = SendMessageW(checkboxFB, (UINT)BM_GETCHECK, (WPARAM)0, (LPARAM)0);
+            if (state == BST_CHECKED)
+            {
+                i = 0;
+                SAVED_CONFIG_FILE.open(".\\Program Data\\Configuration\\user_config.txt", std::ios::in);
+                //Read in all lines, fill in string array of elements
+                if (SAVED_CONFIG_FILE.is_open())
+                {
+                    std::string line;
+                    while (std::getline(SAVED_CONFIG_FILE, line))
+                    {
+                        SAVED_CONFIG_ELEMENTS[i] = line;
+                        i++;
+                    }
+                }
+                usernameSaved = SAVED_CONFIG_ELEMENTS[7];
+                passwordSaved = SAVED_CONFIG_ELEMENTS[8];
+            }
+            //PASS TO AUTH SCRIPT HERE
+            if (state == BST_CHECKED) {
+                //USE usernameSaved and passwordSaved 
+            }
+            else {
+                //USE fbUsername and fbPassword
+            }
             //PASS TO AUTH SCRIPT HERE
             MIN_ONE_SITE_LOGGED_IN = true;
             DestroyWindow(hWnd);
@@ -812,7 +902,7 @@ void AddFBLoginControls(HWND hWnd)
     fbPass = CreateWindowW(L"Edit", L"", WS_VISIBLE | WS_CHILD | WS_BORDER | ES_MULTILINE | ES_AUTOVSCROLL | SS_LEFT, 95, 85, 100, 30, hWnd, NULL, NULL, NULL);
     HWND submit = CreateWindowW(L"Button", L"SUBMIT", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON | SS_CENTER, 160, 140, 60, 40, hWnd, (HMENU)FACEBOOK_LOGIN_SUBMIT, NULL, NULL);
     HWND checkBoxText = CreateWindowW(L"Static", L"Use Saved?", WS_VISIBLE | WS_CHILD | WS_BORDER | SS_LEFT, 250, 80, 150, 30, hWnd, NULL, NULL, NULL);
-    HWND checkBox = CreateWindowW(L"Button", L"", WS_VISIBLE | WS_CHILD | BS_CHECKBOX | BST_CHECKED | SS_CENTER, 350, 85, 20, 20, hWnd, NULL, NULL, NULL);
+    checkboxFB = CreateWindowW(L"Button", L"", WS_VISIBLE | WS_CHILD | BS_AUTOCHECKBOX | SS_CENTER, 350, 85, 20, 20, hWnd, NULL, NULL, NULL);
 }
 
 // Add elements to FB login window
@@ -826,7 +916,7 @@ void AddIGLoginControls(HWND hWnd)
     igPass = CreateWindowW(L"Edit", L"", WS_VISIBLE | WS_CHILD | WS_BORDER | ES_MULTILINE | ES_AUTOVSCROLL | SS_LEFT, 95, 85, 100, 30, hWnd, NULL, NULL, NULL);
     HWND submit = CreateWindowW(L"Button", L"SUBMIT", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON | SS_CENTER, 160, 140, 60, 40, hWnd, (HMENU)INSTAGRAM_LOGIN_SUBMIT, NULL, NULL);
     HWND checkBoxText = CreateWindowW(L"Static", L"Use Saved?", WS_VISIBLE | WS_CHILD | WS_BORDER | SS_LEFT, 250, 80, 150, 30, hWnd, NULL, NULL, NULL);
-    HWND checkBox = CreateWindowW(L"Button", L"", WS_VISIBLE | WS_CHILD | BS_CHECKBOX | BST_CHECKED | SS_CENTER, 350, 85, 20, 20, hWnd, NULL, NULL, NULL);
+    checkboxIG = CreateWindowW(L"Button", L"", WS_VISIBLE | WS_CHILD | BS_AUTOCHECKBOX| SS_CENTER, 350, 85, 20, 20, hWnd, NULL, NULL, NULL);
 }
 
 // Add elements to FB login window
@@ -840,7 +930,7 @@ void AddTWLoginControls(HWND hWnd)
     twPass = CreateWindowW(L"Edit", L"", WS_VISIBLE | WS_CHILD | WS_BORDER | ES_MULTILINE | ES_AUTOVSCROLL | SS_LEFT, 95, 85, 100, 30, hWnd, NULL, NULL, NULL);
     HWND submit = CreateWindowW(L"Button", L"SUBMIT", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON | SS_CENTER, 160, 140, 60, 40, hWnd, (HMENU)TWITTER_LOGIN_SUBMIT, NULL, NULL);
     HWND checkBoxText = CreateWindowW(L"Static", L"Use Saved?", WS_VISIBLE | WS_CHILD | WS_BORDER | SS_LEFT, 250, 80, 150, 30, hWnd, NULL, NULL, NULL);
-    HWND checkBox = CreateWindowW(L"Button", L"", WS_VISIBLE | WS_CHILD | BS_CHECKBOX | BST_CHECKED | SS_CENTER, 350, 85, 20, 20, hWnd, NULL, NULL, NULL);
+    checkboxTW = CreateWindowW(L"Button", L"", WS_VISIBLE | WS_CHILD | BS_CHECKBOX | BST_CHECKED | SS_CENTER, 350, 85, 20, 20, hWnd, NULL, NULL, NULL);
 }
 
 //Sets up the timer and starts it going, will send WM_TIMER messages every second 
@@ -875,7 +965,6 @@ int openFileExplorer(int FLAG)
             {
                 return 0;
             }
-
         }
         else
         {
