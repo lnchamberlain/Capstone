@@ -16,7 +16,8 @@
 #include <shellapi.h>
 #include <fstream>
 #include <string>
-//#include <Python.h>
+#include <Python.h>
+#include <conio.h>
 
 #define MAX_LOADSTRING 100
 #define EXPORT_FB 1
@@ -324,6 +325,11 @@ void createTwitterLoginWindow(WNDCLASSEXW& tw_cl, HINSTANCE& hInst_tw, int nCmdS
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {    
     wchar_t hOut[100], mOut[100], sOut[100], limitOut[20];
+    //PYTHON TESTING VALUES 
+    PyObject* pyobj;
+    wchar_t filename[] = L"testing.py";
+    char file_location[] = "testing.py";
+    FILE* fp;
     switch (message)
     {
     case WM_CREATE:
@@ -431,6 +437,16 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             break;
         case LAUNCH:
             //Only launch if configuration is all set up and login success
+            // 
+            //BEGIN TEST OF RUNNING A PYTHON PROGRAM HERE
+            
+
+            Py_Initialize();
+            fp = _Py_wfopen(filename, L"r");
+            PyRun_SimpleFile(fp, file_location);
+            Py_Finalize();
+
+            //END TEST OF PYTHON 
             ScanCount = 0;
             if (CONFIG_SET && MIN_ONE_SITE_LOGGED_IN) 
             {
