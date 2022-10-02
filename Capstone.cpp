@@ -71,6 +71,8 @@ const WCHAR *configClassName = L"ConfigClassName";
 const WCHAR* FBLoginClassName = L"FacebookLoginClassName";
 const WCHAR* IGLoginClassName = L"InstagramLoginClassName";
 const WCHAR* TWLoginClassName = L"TwitterLoginClassName";
+const char* REGIONS[5] = { "Alaska", "Anchorage", "Juneau", "Fairbanks", "Bethel" };
+const char* REGION_SELECTION;
 bool STOP_SCANNING = false;
 bool CONFIG_SET = false;
 bool MIN_ONE_SITE_LOGGED_IN = false;
@@ -438,7 +440,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         case RESUME_SCAN:
             STOP_SCANNING = false;
             break;
-        //Launch Configuration Panel IN PROGRESS
+        //Launch Configuration Panel
         case CONFIG_PANEL:
             //Reset the default output directory if configuration has been opened before
             if (hInstanceConfig != NULL)
@@ -480,9 +482,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 LRESULT CALLBACK WndProcConfig(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     int wmId = LOWORD(wParam);
-    int hoursVal, minutesVal, secondsVal, i;
+    int hoursVal, minutesVal, secondsVal, i, RegionItemIndex;
     wchar_t hOut[100], mOut[100], sOut[100];
     wchar_t checkDefault[] = L"Default";
+    wchar_t indexItemOut[2];
     switch (message)
     {
     case WM_CREATE:
@@ -523,8 +526,9 @@ LRESULT CALLBACK WndProcConfig(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
             GetWindowTextW(S, secondsCaptured, 20);
             SetWindowTextW(S, L"00");
 
-            //GetWindowTextW(Region, regionCaptured, 100);
-            //SetWindowTextW(Region, L"");
+            //Grab cursor index for region dropdown list, 
+            RegionItemIndex = SendMessageW(Region, (UINT)CB_GETCURSEL, (WPARAM)0, (LPARAM)0); 
+            REGION_SELECTION = REGIONS[RegionItemIndex];
 
             // Compute and store COUNT and RESET COUNT
             hoursVal = _wtoi(hoursCaptured);
@@ -774,9 +778,17 @@ void AddConfigControls(HWND hWnd)
    
     HWND setRegionText = CreateWindowW(L"Static", L"Select Region:", WS_VISIBLE | WS_CHILD | SS_RIGHT, 20, 150, 120, 20, hWnd, NULL, NULL, NULL);
     
-    Region = CreateWindowW(L"combobox", L"Region", WS_VISIBLE | WS_BORDER | WS_CHILD |CBS_DROPDOWNLIST, 145, 150, 200, 20, hWnd, NULL, NULL, NULL);
-    //POPULATE DROP DOWN?
-    //SendMessageW(Region, CB_ADDSTRING, NULL, (LPARAM)L"Alaska");
+    Region = CreateWindowW(L"combobox", L"Region", WS_VISIBLE | WS_BORDER | WS_CHILD |CBS_DROPDOWN, 145, 150, 200, 200, hWnd, NULL, NULL, NULL);
+    
+    //Populate the dropdown list
+    SendMessageW(Region, CB_ADDSTRING, (WPARAM) 0, (LPARAM)L"Alaska");
+    SendMessageW(Region, CB_ADDSTRING, (WPARAM)1, (LPARAM)L"Anchorage");
+    SendMessageW(Region, CB_ADDSTRING, (WPARAM)2, (LPARAM)L"Juneau");
+    SendMessageW(Region, CB_ADDSTRING, (WPARAM)3, (LPARAM)L"Fairbanks");
+    SendMessageW(Region, CB_ADDSTRING, (WPARAM)4, (LPARAM)L"Bethel");
+    //Default option
+    SendMessageW(Region, CB_SETCURSEL, (WPARAM)0, (LPARAM)0);
+
 
     //Output folder 
     HWND outputFolderText = CreateWindowW(L"Static", L"Output Folder:", WS_VISIBLE | WS_CHILD | SS_RIGHT, 20, 180, 120, 20, hWnd, NULL, NULL, NULL);
