@@ -50,6 +50,9 @@
 #define SUBMIT_CONFIG 28
 #define PAUSE_SCAN 29
 #define RESUME_SCAN 30
+#define RUN_FB_AUTH 31
+#define RUN_IG_AUTH 32
+#define RUN_TW_AUTH 33
 
  
 // Global Variables:
