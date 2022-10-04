@@ -15,6 +15,11 @@ class FB_AUTH:
        self.username = username
        self.password = password
        self.cookie = ""
+    
+    #REFERENCE FOR PROCESS: https://stackoverflow.com/questions/21928368/login-to-facebook-using-python-requests
+    
+    def attempt_login(self):
+        #STUB
 
 
 class IG_AUTH:
