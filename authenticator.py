@@ -10,6 +10,39 @@ import datetime
 import json
 import time
 
+#Simple encryption, adds 100 to each character value, writes it into the right place
+def encrypt_and_store(auth, mode):
+    
+    enc_username = ''
+    enc_password = ''
+    for char in auth.username:
+        enc_username += chr(ord(char) + 100)
+    for char in auth.password:
+        enc_password += chr(ord(char) + 100)
+    
+    #open the file in read mode
+    f = open("./Program Data/Configuration/user_config.txt", 'r+')
+    data = f.read().split("\n")
+    f.close()
+    if(mode == "FB"):
+        data[1] = ""
+        data[2] = ""
+    if(mode == "IG"):
+        data[4] = enc_username
+        data[5] = enc_password
+    if(mode == "TW"):
+        data[7] = ""
+        data[8] = ""
+    #clear out old data and assemble new string
+    cleared_file = open("./Program Data/Configuration/user_config.txt", "w")
+    new_data = ''
+    for item in data:
+        new_data += item + "\n"
+    cleared_file.write(new_data)
+    cleared_file.close()
+
+
+
 class FB_AUTH:
     def __init__(self, username, password):
        self.username = username
@@ -19,7 +52,7 @@ class FB_AUTH:
     #REFERENCE FOR PROCESS: https://stackoverflow.com/questions/21928368/login-to-facebook-using-python-requests
     
     def attempt_login(self):
-        #STUB
+        print("This is a stub")
 
 
 class IG_AUTH:
@@ -35,12 +68,9 @@ class IG_AUTH:
         base_url = 'https://www.instagram.com/accounts/login'
         login_url = 'https://www.instagram.com/accounts/login/ajax/'
         current_time = time.time()
-        print("Current Time: {}\nUsername: {}\nPassword".format(current_time, self.username, self.password))
         #Have to get csrftoken to put into post header
         initial_response = requests.get(base_url)
-        print("Inital response is {}".format(initial_response))
         csrf = initial_response.cookies['csrftoken']
-        print("csrf is {}".format(csrf))
         #build payload
         payload = {
             'username': self.username,
@@ -58,13 +88,12 @@ class IG_AUTH:
         }
 
         login_attempt_response = requests.post(login_url, data=payload, headers=login_header)
-        print("Login attempt response is {}".format(login_attempt_response))
         json_data = json.loads(login_attempt_response.text)
-        print("\n\n{}\n\n".format(login_attempt_response.text))
 
         if "authenticated" in json_data:
             raw_cookies = login_attempt_response.cookies
             self.cookie = raw_cookies.get_dict()
+            encrypt_and_store(self, "IG")
         #Print out successful cookie
         print("cookie is {}".format(self.cookie))  
         if(self.cookie == ""):
@@ -88,7 +117,9 @@ def attempt_ig_login(username, password):
     auth = IG_AUTH(username, password)
     attempt = auth.attempt_login()
     if(attempt != "Success"):
-        print("Error message: {}".format(attempt))
+        return 0
+    else:
+        return 1
 
 def attempt_tw_login(username, password):
     auth = TW_AUTH(username, password)
@@ -98,6 +129,7 @@ def attempt_tw_login(username, password):
 if __name__ == "__main__":
     #takes in a mode, username, and password in argv
     #mode can be 31 (FB) 32 (IG) or 33 (TW) 
+    print(sys.argv)
     if(len(sys.argv) > 4):
         #Send an error to the c++ program 
         sys.exit()
@@ -109,7 +141,7 @@ if __name__ == "__main__":
     if(mode_id == '31'):
         attempt_fb_login(username, password)
     if(mode_id == '32'):
-        attempt_ig_login(username, password)
+        success = attempt_ig_login(username, password)
     if(mode_id == '33'):
         attempt_tw_login(username, password)
 

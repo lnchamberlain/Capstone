@@ -1,9 +1,14 @@
 FACBOOK:
-Saved Username FB
-Saved Password FB
+fb_username_placeholder
+fb_password_placeholder
 INSTAGRAM:
-Saved Username IG
-Saved Password IG
+ÐÓËÅÒÇÌÅÑÆÉÖÐÅÍÒ
+§·§©¥
 TWITTER:
-Saved Username TW
-Saved Password TW
+tw_username_placeholder
+tw_password_palceholder
+
+
+
+
+
