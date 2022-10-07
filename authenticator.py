@@ -10,29 +10,28 @@ import datetime
 import json
 import time
 
-#Simple encryption, adds 100 to each character value, writes it into the right place
+#Simple encryption, adds 10 to each character value, writes it into the right place
 def encrypt_and_store(auth, mode):
-    
     enc_username = ''
     enc_password = ''
     for char in auth.username:
-        enc_username += chr(ord(char) + 100)
+        enc_username += chr(ord(char) + 10)
     for char in auth.password:
-        enc_password += chr(ord(char) + 100)
+        enc_password += chr(ord(char) + 10)
     
     #open the file in read mode
     f = open("./Program Data/Configuration/user_config.txt", 'r+')
     data = f.read().split("\n")
     f.close()
     if(mode == "FB"):
-        data[1] = ""
-        data[2] = ""
+        data[1] = enc_username
+        data[2] = enc_password
     if(mode == "IG"):
         data[4] = enc_username
         data[5] = enc_password
     if(mode == "TW"):
-        data[7] = ""
-        data[8] = ""
+        data[7] = enc_username
+        data[8] = enc_password
     #clear out old data and assemble new string
     cleared_file = open("./Program Data/Configuration/user_config.txt", "w")
     new_data = ''
@@ -40,7 +39,13 @@ def encrypt_and_store(auth, mode):
         new_data += item + "\n"
     cleared_file.write(new_data)
     cleared_file.close()
-
+    
+    log_file = open("./Program Data/Logs/IG_AUTH_LOGS/log.txt", "w")
+    #write each element of the cookie to a line, last line must be SUCCESS
+    for item in auth.cookie:
+        log_file.write("{}:{}\n".format(item, auth.cookie[item]))
+    log_file.write("SUCCESS")
+    log_file.close()
 
 
 class FB_AUTH:
@@ -71,6 +76,7 @@ class IG_AUTH:
         #Have to get csrftoken to put into post header
         initial_response = requests.get(base_url)
         csrf = initial_response.cookies['csrftoken']
+        print("Inital response is {}".format(initial_response))
         #build payload
         payload = {
             'username': self.username,
@@ -81,7 +87,7 @@ class IG_AUTH:
 
         login_header = {
             "User-Agent": "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko)"
-                          " Chrome/77.0.3865.120 Safari/537.36", #TODO, find how to grab user-specific configs, this is the example User-Agent Value
+                          " Chrome/77.0.3865.120 Safari/537.36", 
                           "X-Requested-With": "XMLHttpRequest",
                           "Referer": "https://www.instagram.com/accounts/login",
                           "x-csrftoken": csrf       
@@ -89,17 +95,18 @@ class IG_AUTH:
 
         login_attempt_response = requests.post(login_url, data=payload, headers=login_header)
         json_data = json.loads(login_attempt_response.text)
-
-        if "authenticated" in json_data:
+        #print("Response from login attempt in {}".format(login_attempt_response.text))
+        time.sleep(5)
+        if json_data["authenticated"]:
             raw_cookies = login_attempt_response.cookies
             self.cookie = raw_cookies.get_dict()
             encrypt_and_store(self, "IG")
-        #Print out successful cookie
-        print("cookie is {}".format(self.cookie))  
-        if(self.cookie == ""):
-            #if unsuccessful, return error message
-            return login_attempt_response.text
-        
+        else:
+            log_file = open("./Program Data/Logs/IG_AUTH_LOGS/log.txt", "w")
+            log_file.write("FAIL")
+            log_file.write(login_attempt_response.text)
+            log_file.close()
+            return "Fail"        
         return "Success"
 
 
@@ -129,7 +136,7 @@ def attempt_tw_login(username, password):
 if __name__ == "__main__":
     #takes in a mode, username, and password in argv
     #mode can be 31 (FB) 32 (IG) or 33 (TW) 
-    print(sys.argv)
+    #print(sys.argv)
     if(len(sys.argv) > 4):
         #Send an error to the c++ program 
         sys.exit()
@@ -137,12 +144,11 @@ if __name__ == "__main__":
     mode_id = sys.argv[1]
     username = sys.argv[2]
     password = sys.argv[3]
-    print("Mode ID: {}\nUsername: {}\nPassword: {}".format(mode_id, username, password))
-    if(mode_id == '31'):
+    if(mode_id == 'FB'):
         attempt_fb_login(username, password)
-    if(mode_id == '32'):
+    if(mode_id == 'IG'):
         success = attempt_ig_login(username, password)
-    if(mode_id == '33'):
+    if(mode_id == 'TW'):
         attempt_tw_login(username, password)
 
 

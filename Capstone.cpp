@@ -18,6 +18,10 @@
 #include <string>
 #include <Python.h>
 #include <conio.h>
+#include <fstream>
+#include <algorithm>
+#include <bits.h>
+#include <vector>
 
 #define MAX_LOADSTRING 100
 #define EXPORT_FB 1
@@ -72,6 +76,7 @@ WCHAR fbUsername[100], fbPassword[100], igUsername[100], igPassword[100], twUser
 WCHAR hoursCaptured[100], minutesCaptured[20], secondsCaptured[20], regionCaptured[100], scanLimitCaptured[100], outputDirCaptured[100]; // store captured values from config panel
 HWND H, M, S;
 HWND HOURS, MINUTES, SECONDS;
+HWND FBsubmit, IGsubmit, TWsubmit;
 HWND  facebookResultsSummary, instagramResultsSummary, twitterResultsSummary;
 HWND checkboxFB, checkboxIG, checkboxTW;
 const WCHAR *configClassName = L"ConfigClassName";
@@ -79,7 +84,7 @@ const WCHAR* FBLoginClassName = L"FacebookLoginClassName";
 const WCHAR* IGLoginClassName = L"InstagramLoginClassName";
 const WCHAR* TWLoginClassName = L"TwitterLoginClassName";
 const char* REGIONS[5] = { "Alaska", "Anchorage", "Juneau", "Fairbanks", "Bethel" };
-std::string SAVED_CONFIG_ELEMENTS[9] = { "" };
+std::string SAVED_CONFIG_ELEMENTS[18] = { "" };
 const char* REGION_SELECTION;
 bool STOP_SCANNING = false;
 bool CONFIG_SET = false;
@@ -88,7 +93,15 @@ bool CHECKED_USE_SAVED_IG = false;
 bool CHECKED_USE_SAVED_TW = false;
 bool MIN_ONE_SITE_LOGGED_IN = false;
 bool NOT_DEFAULT_OUTPUT_DIR = false;
+bool IG_LOGGED_IN = false;
+bool FB_LOGGED_IN = false;
+bool TW_LOGGED_IN = false;
+bool PREV_SCAN_COMPLETE = true;
+bool IG_AUTH_FINISHED = false;
+bool FB_AUTH_FINISHED = false;
+bool TW_AUTH_FINISHED = false;
 std::fstream SAVED_CONFIG_FILE;
+std::string shellOperation;
 
 
 
@@ -353,7 +366,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             SetWindowTextW(MINUTES, mOut);
             SetWindowTextW(SECONDS, sOut);
         }
-        if (!STOP_SCANNING)
+        if ((!STOP_SCANNING) && (PREV_SCAN_COMPLETE))
         {
             COUNT--;
         }
@@ -442,13 +455,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             //Only launch if configuration is all set up and login success
             // 
             //BEGIN TEST OF RUNNING A PYTHON PROGRAM HERE
-            
+            /*
 
             Py_Initialize();
             fp = _Py_wfopen(filename, L"r");
             PyRun_SimpleFile(fp, file_location);
             Py_Finalize();
-
+            */
             //END TEST OF PYTHON 
             ScanCount = 0;
             if (CONFIG_SET && MIN_ONE_SITE_LOGGED_IN) 
@@ -594,9 +607,14 @@ LRESULT CALLBACK WndProcConfig(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 //Window Procedure for the Facebook Login Panel
 LRESULT CALLBACK WndProcFBLogin(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    int state, i;
+    int state, i, j, k, char_val, savedUsernameLen, savedPasswordLen;
     int wmId = LOWORD(wParam);
-    std::string usernameSaved, passwordSaved; 
+    std::string usernameSaved_enc, passwordSaved_enc, usernameClearText, passwordClearText;
+    char c;
+    char usernameSavedClearText[50], passwordSavedClearText[50];
+    std::string line;
+    std::fstream readOutputLog;
+    std::vector<std::string>outputContent;
     switch (message)
     {
     case WM_CREATE:
@@ -606,40 +624,87 @@ LRESULT CALLBACK WndProcFBLogin(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
         switch (wmId)
         {
         case FACEBOOK_LOGIN_SUBMIT:
+            shellOperation = "";
+            shellOperation.append("python3 authenticator.py FB ");
             //Grab values from the username and password fields, store in global variables
             GetWindowTextW(fbUser, fbUsername, 100);
             GetWindowTextW(fbPass, fbPassword, 100);
             SetWindowTextW(fbUser, L"");
             SetWindowTextW(fbPass, L"");
-
             state = SendMessageW(checkboxFB, (UINT)BM_GETCHECK, (WPARAM)0, (LPARAM)0);
+            state = BST_CHECKED;
             if (state == BST_CHECKED)
             {
-                i = 0;
                 SAVED_CONFIG_FILE.open(".\\Program Data\\Configuration\\user_config.txt", std::ios::in);
                 //Read in all lines, fill in string array of elements
-                if (SAVED_CONFIG_FILE.is_open()) 
+                if (SAVED_CONFIG_FILE.is_open())
                 {
-                    std::string line;
-                    while (std::getline(SAVED_CONFIG_FILE, line)) 
-                    {
+
+                    for (i = 0; i < 18; i++) {
+                        std::getline(SAVED_CONFIG_FILE, line);
                         SAVED_CONFIG_ELEMENTS[i] = line;
                         i++;
                     }
                 }
-                usernameSaved = SAVED_CONFIG_ELEMENTS[1];
-                passwordSaved = SAVED_CONFIG_ELEMENTS[2];     
+                //Decrpyt the usernames and passwords (-10 to each character value)
+                usernameSaved_enc = SAVED_CONFIG_ELEMENTS[4];
+                passwordSaved_enc = SAVED_CONFIG_ELEMENTS[6];
+
+                savedUsernameLen = strlen(usernameSaved_enc.c_str());
+                savedPasswordLen = strlen(passwordSaved_enc.c_str());
+
+                for (i = 0; i < savedUsernameLen; i++) {
+                    char_val = int(usernameSaved_enc[i]) - 10;
+                    usernameSavedClearText[i] = (char)char_val;
+                }
+                usernameSavedClearText[i] = '\0';
+                for (i = 0; i < savedPasswordLen; i++) {
+                    char_val = int(passwordSaved_enc[i]) - 10;
+                    passwordSavedClearText[i] = (char)char_val;
+                }
+                passwordSavedClearText[i] = '\0';
             }
-            //PASS TO AUTH SCRIPT HERE
+            //Use saved credentials if check box is checked
             if (state == BST_CHECKED) {
-                //USE usernameSaved and passwordSaved 
+                usernameClearText = usernameSavedClearText;
+                passwordClearText = passwordSavedClearText;
+                shellOperation.append(usernameClearText);
+                shellOperation.append(" ");
+                shellOperation.append(passwordClearText);
+
+                //Lauch program
+                SetWindowTextW(FBsubmit, L"Authenticating...");
+                WinExec((LPCSTR)shellOperation.c_str(), SW_HIDE);
+
             }
             else {
                 //USE fbUsername and fbPassword
             }
-            
-            MIN_ONE_SITE_LOGGED_IN = true;
-            DestroyWindow(hWnd);
+
+            //Check if login success
+            //Wait 5 seconds then see if the logs show a success or a fail
+            Sleep(5000);
+            readOutputLog.open(".\\Program Data\\Logs\\FB_AUTH_LOGS\\log.txt", std::ios::in);
+            //Read in all lines, add to array of strings
+            if (readOutputLog.is_open())
+            {
+                while (std::getline(readOutputLog, line))
+                {
+                    outputContent.push_back(line);
+                    if (strcmp(line.c_str(), "SUCCESS") == 0) {
+                        IG_AUTH_FINISHED = true;
+                    }
+                    if (strcmp(line.c_str(), "FAILURE") == 0) {
+                        MessageBox(hWnd, L"Login Attempt Failed", L"Error on Login", MB_ICONERROR);
+                    }
+                }
+            }
+            if (FB_AUTH_FINISHED)
+            {
+                MIN_ONE_SITE_LOGGED_IN = true;
+                FB_LOGGED_IN = true;
+                DestroyWindow(hWnd);
+            }
             break;
         }
      case WM_DESTROY:
@@ -654,9 +719,14 @@ LRESULT CALLBACK WndProcFBLogin(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 //Window Procedure for the Instagram Login Panel
 LRESULT CALLBACK WndProcIGLogin(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    int state, i;
+    int state, i,j,k, char_val, savedUsernameLen, savedPasswordLen;
     int wmId = LOWORD(wParam);
-    std::string usernameSaved, passwordSaved;
+    std::string usernameSaved_enc, passwordSaved_enc, usernameClearText, passwordClearText;
+    char c;
+    char usernameSavedClearText[50], passwordSavedClearText[50];
+    std::string line;
+    std::fstream readOutputLog;
+    std::vector<std::string>outputContent;
     switch (message)
     {
     case WM_CREATE:
@@ -666,40 +736,88 @@ LRESULT CALLBACK WndProcIGLogin(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
         switch (wmId)
         {
         case INSTAGRAM_LOGIN_SUBMIT:
+            shellOperation = "";
+            shellOperation.append("python3 authenticator.py IG ");
             //Grab values from the username and password fields, store in global variables
             GetWindowTextW(igUser, igUsername, 100);
             GetWindowTextW(igPass, igPassword, 100);
             SetWindowTextW(igUser, L"");
             SetWindowTextW(igPass, L"");
-            state = SendMessageW(checkboxFB, (UINT)BM_GETCHECK, (WPARAM)0, (LPARAM)0);
+            state = SendMessageW(checkboxIG, (UINT)BM_GETCHECK, (WPARAM)0, (LPARAM)0);
+            state = BST_CHECKED;
             if (state == BST_CHECKED)
             {
-                i = 0;
                 SAVED_CONFIG_FILE.open(".\\Program Data\\Configuration\\user_config.txt", std::ios::in);
                 //Read in all lines, fill in string array of elements
                 if (SAVED_CONFIG_FILE.is_open())
                 {
-                    std::string line;
-                    while (std::getline(SAVED_CONFIG_FILE, line))
-                    {
+
+                    for (i = 0; i < 18; i++) {
+                        std::getline(SAVED_CONFIG_FILE, line);
                         SAVED_CONFIG_ELEMENTS[i] = line;
                         i++;
                     }
                 }
-                usernameSaved = SAVED_CONFIG_ELEMENTS[4];
-                passwordSaved = SAVED_CONFIG_ELEMENTS[5];
+                //Decrpyt the usernames and passwords (-10 to each character value)
+                usernameSaved_enc = SAVED_CONFIG_ELEMENTS[8];
+                passwordSaved_enc = SAVED_CONFIG_ELEMENTS[10];
+
+                savedUsernameLen = strlen(usernameSaved_enc.c_str());
+                savedPasswordLen = strlen(passwordSaved_enc.c_str());
+
+                for (i = 0; i < savedUsernameLen; i++) {
+                    char_val = int(usernameSaved_enc[i]) - 10;
+                    usernameSavedClearText[i] = (char)char_val;
+                }
+                usernameSavedClearText[i] = '\0';
+                for (i = 0; i < savedPasswordLen; i++) {
+                    char_val = int(passwordSaved_enc[i]) - 10;
+                    passwordSavedClearText[i] = (char)char_val;
+                }
+                passwordSavedClearText[i] = '\0';
             }
-            //PASS TO AUTH SCRIPT HERE
+            //Use saved credentials if check box is checked
             if (state == BST_CHECKED) {
-                //USE usernameSaved and passwordSaved 
+                usernameClearText = usernameSavedClearText;
+                passwordClearText = passwordSavedClearText;
+                shellOperation.append(usernameClearText);
+                shellOperation.append(" ");
+                shellOperation.append(passwordClearText);
+
+                //Lauch program
+                SetWindowTextW(IGsubmit, L"Authenticating...");
+                WinExec((LPCSTR)shellOperation.c_str(), SW_HIDE);
+
             }
             else {
                 //USE igUsername and igPassword
             }
-            MIN_ONE_SITE_LOGGED_IN = true;
-            DestroyWindow(hWnd);
+
+            //Check if login success
+            //Wait one second then see if the logs show a success or a fail
+            Sleep(5000);
+            readOutputLog.open(".\\Program Data\\Logs\\IG_AUTH_LOGS\\log.txt", std::ios::in);
+            //Read in all lines, add to array of strings
+            if (readOutputLog.is_open())
+            {
+                while (std::getline(readOutputLog, line))
+                {
+                    outputContent.push_back(line);
+                    if (strcmp(line.c_str(), "SUCCESS") == 0) {
+                        IG_AUTH_FINISHED = true;
+                    }
+                    if (strcmp(line.c_str(), "FAILURE") == 0) {
+                        MessageBox(hWnd, L"Login Attempt Failed", L"Error on Login", MB_ICONERROR);
+                    }
+                }
+            }
+            if (IG_AUTH_FINISHED)
+            {
+                MIN_ONE_SITE_LOGGED_IN = true;
+                IG_LOGGED_IN = true;
+                DestroyWindow(hWnd);
+            }
             break;
-            //Add button controls, capture text, etc here
         }
 
         case WM_DESTROY:
@@ -715,9 +833,14 @@ LRESULT CALLBACK WndProcIGLogin(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 //Window Procedure for the Twitter Login Panel
 LRESULT CALLBACK WndProcTWLogin(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    int state, i;
+    int state, i, j, k, char_val, savedUsernameLen, savedPasswordLen;
     int wmId = LOWORD(wParam);
-    std::string usernameSaved, passwordSaved;
+    std::string usernameSaved_enc, passwordSaved_enc, usernameClearText, passwordClearText;
+    char c;
+    char usernameSavedClearText[50], passwordSavedClearText[50];
+    std::string line;
+    std::fstream readOutputLog;
+    std::vector<std::string>outputContent;
     switch (message)
     {
     case WM_CREATE:
@@ -726,40 +849,87 @@ LRESULT CALLBACK WndProcTWLogin(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
     case WM_COMMAND:
         switch (wmId)
         {
-        case TWITTER_LOGIN_SUBMIT:
+            shellOperation = "";
+            shellOperation.append("python3 authenticator.py TW ");
             //Grab values from the username and password fields, store in global variables
             GetWindowTextW(twUser, twUsername, 100);
             GetWindowTextW(twPass, twPassword, 100);
             SetWindowTextW(twUser, L"");
             SetWindowTextW(twPass, L"");
-            state = SendMessageW(checkboxFB, (UINT)BM_GETCHECK, (WPARAM)0, (LPARAM)0);
+            state = SendMessageW(checkboxTW, (UINT)BM_GETCHECK, (WPARAM)0, (LPARAM)0);
+            state = BST_CHECKED;
             if (state == BST_CHECKED)
             {
-                i = 0;
                 SAVED_CONFIG_FILE.open(".\\Program Data\\Configuration\\user_config.txt", std::ios::in);
                 //Read in all lines, fill in string array of elements
                 if (SAVED_CONFIG_FILE.is_open())
                 {
-                    std::string line;
-                    while (std::getline(SAVED_CONFIG_FILE, line))
-                    {
+
+                    for (i = 0; i < 18; i++) {
+                        std::getline(SAVED_CONFIG_FILE, line);
                         SAVED_CONFIG_ELEMENTS[i] = line;
                         i++;
                     }
                 }
-                usernameSaved = SAVED_CONFIG_ELEMENTS[7];
-                passwordSaved = SAVED_CONFIG_ELEMENTS[8];
+                //Decrpyt the usernames and passwords -10 to each character value
+                usernameSaved_enc = SAVED_CONFIG_ELEMENTS[14];
+                passwordSaved_enc = SAVED_CONFIG_ELEMENTS[16];
+
+                savedUsernameLen = strlen(usernameSaved_enc.c_str());
+                savedPasswordLen = strlen(passwordSaved_enc.c_str());
+
+                for (i = 0; i < savedUsernameLen; i++) {
+                    char_val = int(usernameSaved_enc[i]) - 10;
+                    usernameSavedClearText[i] = (char)char_val;
+                }
+                usernameSavedClearText[i] = '\0';
+                for (i = 0; i < savedPasswordLen; i++) {
+                    char_val = int(passwordSaved_enc[i]) - 10;
+                    passwordSavedClearText[i] = (char)char_val;
+                }
+                passwordSavedClearText[i] = '\0';
             }
-            //PASS TO AUTH SCRIPT HERE
+            //Use saved credentials if check box is checked
             if (state == BST_CHECKED) {
-                //USE usernameSaved and passwordSaved 
+                usernameClearText = usernameSavedClearText;
+                passwordClearText = passwordSavedClearText;
+                shellOperation.append(usernameClearText);
+                shellOperation.append(" ");
+                shellOperation.append(passwordClearText);
+
+                //Lauch program
+                SetWindowTextW(TWsubmit, L"Authenticating...");
+                WinExec((LPCSTR)shellOperation.c_str(), SW_HIDE);
+
             }
             else {
-                //USE fbUsername and fbPassword
+                //
             }
-            //PASS TO AUTH SCRIPT HERE
-            MIN_ONE_SITE_LOGGED_IN = true;
-            DestroyWindow(hWnd);
+
+            //Check if login success
+            //Wait 5 seconds then see if the logs show a success or a fail
+            Sleep(5000);
+            readOutputLog.open(".\\Program Data\\Logs\\TW_AUTH_LOGS\\log.txt", std::ios::in);
+            //Read in all lines, add to array of strings
+            if (readOutputLog.is_open())
+            {
+                while (std::getline(readOutputLog, line))
+                {
+                    outputContent.push_back(line);
+                    if (strcmp(line.c_str(), "SUCCESS") == 0) {
+                        IG_AUTH_FINISHED = true;
+                    }
+                    if (strcmp(line.c_str(), "FAILURE") == 0) {
+                        MessageBox(hWnd, L"Login Attempt Failed", L"Error on Login", MB_ICONERROR);
+                    }
+                }
+            }
+            if (TW_AUTH_FINISHED)
+            {
+                MIN_ONE_SITE_LOGGED_IN = true;
+                TW_LOGGED_IN = true;
+                DestroyWindow(hWnd);
+            }
             break;
         }
     case WM_DESTROY:
@@ -919,7 +1089,7 @@ void AddFBLoginControls(HWND hWnd)
     fbUser = CreateWindowW(L"Edit", L"", WS_VISIBLE | WS_CHILD | WS_BORDER| ES_MULTILINE | ES_AUTOVSCROLL | SS_LEFT, 95, 50, 100, 30, hWnd, NULL, NULL, NULL);
     HWND passwordTextBox = CreateWindowW(L"Static", L"Password:", WS_VISIBLE | WS_CHILD | SS_RIGHT, 20, 85, 70, 30, hWnd, NULL, NULL, NULL);
     fbPass = CreateWindowW(L"Edit", L"", WS_VISIBLE | WS_CHILD | WS_BORDER | ES_MULTILINE | ES_AUTOVSCROLL | SS_LEFT, 95, 85, 100, 30, hWnd, NULL, NULL, NULL);
-    HWND submit = CreateWindowW(L"Button", L"SUBMIT", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON | SS_CENTER, 160, 140, 60, 40, hWnd, (HMENU)FACEBOOK_LOGIN_SUBMIT, NULL, NULL);
+    FBsubmit = CreateWindowW(L"Button", L"SUBMIT", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON | SS_CENTER, 110, 140, 120, 40, hWnd, (HMENU)FACEBOOK_LOGIN_SUBMIT, NULL, NULL);
     HWND checkBoxText = CreateWindowW(L"Static", L"Use Saved?", WS_VISIBLE | WS_CHILD | WS_BORDER | SS_LEFT, 250, 80, 150, 30, hWnd, NULL, NULL, NULL);
     checkboxFB = CreateWindowW(L"Button", L"", WS_VISIBLE | WS_CHILD | BS_AUTOCHECKBOX | SS_CENTER, 350, 85, 20, 20, hWnd, NULL, NULL, NULL);
 }
@@ -933,7 +1103,7 @@ void AddIGLoginControls(HWND hWnd)
     igUser = CreateWindowW(L"Edit", L"", WS_VISIBLE | WS_CHILD | WS_BORDER | ES_MULTILINE | ES_AUTOVSCROLL | SS_LEFT, 95, 50, 100, 30, hWnd, NULL, NULL, NULL);
     HWND passwordTextBox = CreateWindowW(L"Static", L"Password:", WS_VISIBLE | WS_CHILD | SS_RIGHT, 20, 85, 70, 30, hWnd, NULL, NULL, NULL);
     igPass = CreateWindowW(L"Edit", L"", WS_VISIBLE | WS_CHILD | WS_BORDER | ES_MULTILINE | ES_AUTOVSCROLL | SS_LEFT, 95, 85, 100, 30, hWnd, NULL, NULL, NULL);
-    HWND submit = CreateWindowW(L"Button", L"SUBMIT", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON | SS_CENTER, 160, 140, 60, 40, hWnd, (HMENU)INSTAGRAM_LOGIN_SUBMIT, NULL, NULL);
+    IGsubmit = CreateWindowW(L"Button", L"SUBMIT", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON | SS_CENTER, 110, 140, 120, 40, hWnd, (HMENU)INSTAGRAM_LOGIN_SUBMIT, NULL, NULL);
     HWND checkBoxText = CreateWindowW(L"Static", L"Use Saved?", WS_VISIBLE | WS_CHILD | WS_BORDER | SS_LEFT, 250, 80, 150, 30, hWnd, NULL, NULL, NULL);
     checkboxIG = CreateWindowW(L"Button", L"", WS_VISIBLE | WS_CHILD | BS_AUTOCHECKBOX| SS_CENTER, 350, 85, 20, 20, hWnd, NULL, NULL, NULL);
 }
@@ -947,7 +1117,7 @@ void AddTWLoginControls(HWND hWnd)
     twUser = CreateWindowW(L"Edit", L"", WS_VISIBLE | WS_CHILD | WS_BORDER | ES_MULTILINE | ES_AUTOVSCROLL | SS_LEFT, 95, 50, 100, 30, hWnd, NULL, NULL, NULL);
     HWND passwordTextBox = CreateWindowW(L"Static", L"Password:", WS_VISIBLE | WS_CHILD | SS_RIGHT, 20, 85, 70, 30, hWnd, NULL, NULL, NULL);
     twPass = CreateWindowW(L"Edit", L"", WS_VISIBLE | WS_CHILD | WS_BORDER | ES_MULTILINE | ES_AUTOVSCROLL | SS_LEFT, 95, 85, 100, 30, hWnd, NULL, NULL, NULL);
-    HWND submit = CreateWindowW(L"Button", L"SUBMIT", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON | SS_CENTER, 160, 140, 60, 40, hWnd, (HMENU)TWITTER_LOGIN_SUBMIT, NULL, NULL);
+    TWsubmit = CreateWindowW(L"Button", L"SUBMIT", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON | SS_CENTER, 110, 140, 120, 40, hWnd, (HMENU)TWITTER_LOGIN_SUBMIT, NULL, NULL);
     HWND checkBoxText = CreateWindowW(L"Static", L"Use Saved?", WS_VISIBLE | WS_CHILD | WS_BORDER | SS_LEFT, 250, 80, 150, 30, hWnd, NULL, NULL, NULL);
     checkboxTW = CreateWindowW(L"Button", L"", WS_VISIBLE | WS_CHILD | BS_CHECKBOX | BST_CHECKED | SS_CENTER, 350, 85, 20, 20, hWnd, NULL, NULL, NULL);
 }
@@ -1067,7 +1237,7 @@ int openFileExplorer(int FLAG)
 
 
 
-//Should make the window header the facebook username if value is captured correctly
+//Should make the window header CWD if working right
 void Test() 
 {
     SetWindowTextW(MainWindow, CWD);
