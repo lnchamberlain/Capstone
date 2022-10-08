@@ -2,10 +2,34 @@ FACEBOOK:
 FB_USERNAME 
 FB_PASSWORD  
 INSTAGRAM: 
-vyqkxmrkwlo|vksxC:A  
+vyqkxmrkwlo|vksxC:A
 M]MOK>A:
 TWITTER: 
 TW_USERNAME 
 TW_PASSWORD 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 

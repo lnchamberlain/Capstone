@@ -640,15 +640,14 @@ LRESULT CALLBACK WndProcFBLogin(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
                 if (SAVED_CONFIG_FILE.is_open())
                 {
 
-                    for (i = 0; i < 18; i++) {
+                    for (i = 0; i < 9; i++) {
                         std::getline(SAVED_CONFIG_FILE, line);
                         SAVED_CONFIG_ELEMENTS[i] = line;
-                        i++;
                     }
                 }
                 //Decrpyt the usernames and passwords (-10 to each character value)
-                usernameSaved_enc = SAVED_CONFIG_ELEMENTS[4];
-                passwordSaved_enc = SAVED_CONFIG_ELEMENTS[6];
+                usernameSaved_enc = SAVED_CONFIG_ELEMENTS[1];
+                passwordSaved_enc = SAVED_CONFIG_ELEMENTS[2];
 
                 savedUsernameLen = strlen(usernameSaved_enc.c_str());
                 savedPasswordLen = strlen(passwordSaved_enc.c_str());
@@ -727,6 +726,7 @@ LRESULT CALLBACK WndProcIGLogin(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
     std::string line;
     std::fstream readOutputLog;
     std::vector<std::string>outputContent;
+    std::fstream f;
     switch (message)
     {
     case WM_CREATE:
@@ -736,6 +736,9 @@ LRESULT CALLBACK WndProcIGLogin(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
         switch (wmId)
         {
         case INSTAGRAM_LOGIN_SUBMIT:
+        {
+            IG_AUTH_FINISHED = false;
+            f.open("TESTING_TESTING.txt");
             shellOperation = "";
             shellOperation.append("python3 authenticator.py IG ");
             //Grab values from the username and password fields, store in global variables
@@ -744,7 +747,6 @@ LRESULT CALLBACK WndProcIGLogin(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
             SetWindowTextW(igUser, L"");
             SetWindowTextW(igPass, L"");
             state = SendMessageW(checkboxIG, (UINT)BM_GETCHECK, (WPARAM)0, (LPARAM)0);
-            state = BST_CHECKED;
             if (state == BST_CHECKED)
             {
                 SAVED_CONFIG_FILE.open(".\\Program Data\\Configuration\\user_config.txt", std::ios::in);
@@ -752,15 +754,14 @@ LRESULT CALLBACK WndProcIGLogin(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
                 if (SAVED_CONFIG_FILE.is_open())
                 {
 
-                    for (i = 0; i < 18; i++) {
+                    for (i = 0; i < 9; i++) {
                         std::getline(SAVED_CONFIG_FILE, line);
                         SAVED_CONFIG_ELEMENTS[i] = line;
-                        i++;
                     }
                 }
                 //Decrpyt the usernames and passwords (-10 to each character value)
-                usernameSaved_enc = SAVED_CONFIG_ELEMENTS[8];
-                passwordSaved_enc = SAVED_CONFIG_ELEMENTS[10];
+                usernameSaved_enc = SAVED_CONFIG_ELEMENTS[4];
+                passwordSaved_enc = SAVED_CONFIG_ELEMENTS[5];
 
                 savedUsernameLen = strlen(usernameSaved_enc.c_str());
                 savedPasswordLen = strlen(passwordSaved_enc.c_str());
@@ -783,46 +784,66 @@ LRESULT CALLBACK WndProcIGLogin(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
                 shellOperation.append(usernameClearText);
                 shellOperation.append(" ");
                 shellOperation.append(passwordClearText);
+                shellOperation.append(" ");
 
                 //Lauch program
-                SetWindowTextW(IGsubmit, L"Authenticating...");
                 WinExec((LPCSTR)shellOperation.c_str(), SW_HIDE);
-
+                SetWindowTextW(IGsubmit, L"Authenticating...");
             }
             else {
                 //USE igUsername and igPassword
-            }
+                std::wstring wideUsername(igUsername);
+                std::wstring widePassword(igPassword);
+                std::string correctedUsername(wideUsername.begin(), wideUsername.end());
+                std::string correctedPassword(widePassword.begin(), widePassword.end());
+                shellOperation = "";
+                shellOperation.append("python3 authenticator.py IG ");
+                shellOperation.append(correctedUsername);
+                shellOperation.append(" ");
+                shellOperation.append(correctedPassword);
+                shellOperation.append(" ");
+                f << shellOperation.c_str();
 
-            //Check if login success
-            //Wait one second then see if the logs show a success or a fail
-            Sleep(5000);
-            readOutputLog.open(".\\Program Data\\Logs\\IG_AUTH_LOGS\\log.txt", std::ios::in);
-            //Read in all lines, add to array of strings
-            if (readOutputLog.is_open())
-            {
-                while (std::getline(readOutputLog, line))
+                //Lauch program
+                WinExec((LPCSTR)shellOperation.c_str(), SW_HIDE);
+                SetWindowTextW(IGsubmit, L"Authenticating...");
+            }
+                //Check if login success
+                //Wait one second then see if the logs show a success or a fail
+                Sleep(7000);
+                readOutputLog.open(".\\Program Data\\Logs\\IG_AUTH_LOGS\\log.txt", std::ios::in);
+                //Read in all lines, add to array of strings
+                if (readOutputLog.is_open())
                 {
-                    outputContent.push_back(line);
-                    if (strcmp(line.c_str(), "SUCCESS") == 0) {
-                        IG_AUTH_FINISHED = true;
+                    while (std::getline(readOutputLog, line))
+                    {
+                        f << line;
+                        f << "\n";
+                        //outputContent.push_back(line);
+                        if (strcmp(line.c_str(), "SUCCESS") == 0) {
+                            IG_AUTH_FINISHED = true;
+                        }
+                        if (strcmp(line.c_str(), "FAIL") == 0) {
+                            MessageBox(hWnd, L"Login Attempt Failed", L"Error on Login", MB_ICONERROR);
+                            SetWindowTextW(IGsubmit, L"SUBMIT");
+                        }
                     }
-                    if (strcmp(line.c_str(), "FAILURE") == 0) {
-                        MessageBox(hWnd, L"Login Attempt Failed", L"Error on Login", MB_ICONERROR);
+
+                    if (IG_AUTH_FINISHED)
+                    {
+                        MIN_ONE_SITE_LOGGED_IN = true;
+                        IG_LOGGED_IN = true;
+                        DestroyWindow(hWnd);
                     }
                 }
-            }
-            if (IG_AUTH_FINISHED)
-            {
-                MIN_ONE_SITE_LOGGED_IN = true;
-                IG_LOGGED_IN = true;
-                DestroyWindow(hWnd);
-            }
             break;
         }
+
 
         case WM_DESTROY:
             //DestroyWindow(hWnd);
             break;
+        }
         
     default:
         return DefWindowProc(hWnd, message, wParam, lParam);
@@ -865,15 +886,14 @@ LRESULT CALLBACK WndProcTWLogin(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
                 if (SAVED_CONFIG_FILE.is_open())
                 {
 
-                    for (i = 0; i < 18; i++) {
+                    for (i = 0; i < 9; i++) {
                         std::getline(SAVED_CONFIG_FILE, line);
                         SAVED_CONFIG_ELEMENTS[i] = line;
-                        i++;
                     }
                 }
                 //Decrpyt the usernames and passwords -10 to each character value
-                usernameSaved_enc = SAVED_CONFIG_ELEMENTS[14];
-                passwordSaved_enc = SAVED_CONFIG_ELEMENTS[16];
+                usernameSaved_enc = SAVED_CONFIG_ELEMENTS[7];
+                passwordSaved_enc = SAVED_CONFIG_ELEMENTS[8];
 
                 savedUsernameLen = strlen(usernameSaved_enc.c_str());
                 savedPasswordLen = strlen(passwordSaved_enc.c_str());

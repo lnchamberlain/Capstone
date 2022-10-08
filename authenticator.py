@@ -95,7 +95,7 @@ class IG_AUTH:
 
         login_attempt_response = requests.post(login_url, data=payload, headers=login_header)
         json_data = json.loads(login_attempt_response.text)
-        #print("Response from login attempt in {}".format(login_attempt_response.text))
+        print("Response from login attempt in {}".format(login_attempt_response.text))
         time.sleep(5)
         if json_data["authenticated"]:
             raw_cookies = login_attempt_response.cookies
@@ -103,8 +103,9 @@ class IG_AUTH:
             encrypt_and_store(self, "IG")
         else:
             log_file = open("./Program Data/Logs/IG_AUTH_LOGS/log.txt", "w")
+            #log_file.write(login_attempt_response.text)
+            #log_file.write("\n")
             log_file.write("FAIL")
-            log_file.write(login_attempt_response.text)
             log_file.close()
             return "Fail"        
         return "Success"
@@ -121,6 +122,8 @@ def attempt_fb_login(username, password):
     auth = FB_AUTH(username, password)
    
 def attempt_ig_login(username, password):
+    #Clear previous log data first by opening in write mode
+    #log_file = open("./Program Data/Logs/IG_AUTH_LOGS/log.txt", "w")
     auth = IG_AUTH(username, password)
     attempt = auth.attempt_login()
     if(attempt != "Success"):
