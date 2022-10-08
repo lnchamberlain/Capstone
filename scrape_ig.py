@@ -15,6 +15,7 @@ from bs4 import BeautifulSoup
 import csv
 
 
+
 REGION_RESOLUTION_TABLE = {1:"./Program Data/Regions/ALL_ALASKA.csv", 2:"./Program Data/Regions/ANCHORAGE.csv", 3:"./Program Data/Regions/BETHEL.csv", 4:"./Program Data/Regions/FAIRBANKS.csv", 5:"./Program Data/Regions/JUNEAU.csv", 6:"./Program Data/Regions/TESTING.csv"}
 LOCATION_URLS = []
 KEYWORDS = [] 
@@ -61,8 +62,11 @@ def get_output_dir():
 
 
  #Requests data from location url, formats the return, searches captions and comments for keywords, adds posts to flagged posts
- def scrape_location(url):
-     print("This is a stub")
+def scrape_location(session, url):
+    response = session.get(url, cookies=COOKIE)
+    soup = BeautifulSoup(response.content, 'html.parser')
+    #FIGURE OUT HOW TO GRAB THE POSTS HERE 
+     
 
 
 
@@ -86,13 +90,19 @@ def main():
     get_cookie()
     get_output_dir()
 
+    session = requests.Session()
     #GENERAL PROCESS: scrape each location and flag posts, grab full info and write to file
     for url in LOCATION_URLS:
-        scrape_location(url)
+        #ADD RANDOM LATENCY HERE
+        time.sleep(2)
+        scrape_location(session, url)
 
     for post in FLAGGED_POSTS:
+        #ADD RANDOM LATENCY HERE 
+        time.sleep(2)
         get_full_info(post)
     
+    session.close()
 
 if __name__ == "__main__":
     main()
