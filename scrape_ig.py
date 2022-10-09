@@ -21,6 +21,7 @@ LOCATION_URLS = []
 KEYWORDS = [] 
 COOKIE = {}
 FLAGGED_POSTS = []
+FLAGGED_USERS = []
 OUTPUT_DIR = ''
 
 #Fills global variable with urls from the last column of the .csv file
@@ -38,7 +39,7 @@ def get_urls():
 #Fills global variable with value from wordlist
 def get_keywords():
     keywords_file = open("./Program Data/Wordlists/keywords.txt", "r+")
-    KEYWORDS = keywords_file.read()
+    KEYWORDS = keywords_file.read().split(",")
     
 
 #Fills global variable with value for IG_AUTH logs
@@ -60,6 +61,10 @@ def get_output_dir():
     else:
         OUTPUT_DIR = dir
 
+#Populates global list from flagged users list
+def get_flagged_users():
+    flagged_users_file = open("./Program Data/FlaggedUsers/IGFlaggedUsers/ig_flagged_users.txt", "r+")
+    FLAGGED_USERS = flagged_users_file.read().split(",")
 
  #Requests data from location url, formats the return, searches captions and comments for keywords, adds posts to flagged posts
 def scrape_location(session, url):
@@ -81,7 +86,6 @@ def get_full_info(flagged_post):
 def write_output(post_info):
     print("And here is another function stub")
 
-
 #Writes full post info to selected output file
 
 def main():
@@ -89,6 +93,7 @@ def main():
     get_keywords()
     get_cookie()
     get_output_dir()
+    get_flagged_users()
 
     session = requests.Session()
     #GENERAL PROCESS: scrape each location and flag posts, grab full info and write to file
