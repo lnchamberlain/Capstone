@@ -40,8 +40,8 @@ def encrypt_and_store(auth, mode):
     cleared_file.write(new_data)
     cleared_file.close()
     
-    log_file = open("./Program Data/Logs/IG_AUTH_LOGS/log.txt", "w")
     #write each element of the cookie to a line, last line must be SUCCESS
+    log_file = open("./Program Data/Logs/IG_AUTH_LOGS/log.txt", "w")
     for item in auth.cookie:
         log_file.write("{}:{}\n".format(item, auth.cookie[item]))
     log_file.write("SUCCESS")
@@ -70,13 +70,16 @@ class IG_AUTH:
     #REFERENCE CODE: https://github.com/softcoder24/insta_share/blob/master/insta_share/instagram.py
 
     def attempt_login(self):
+        #opening the file in write mode clears the previous login attempt
+        clear_log_file = open("./Program Data/Logs/IG_AUTH_LOGS/log.txt", "w")
+        clear_log_file.close()
         base_url = 'https://www.instagram.com/accounts/login'
         login_url = 'https://www.instagram.com/accounts/login/ajax/'
         current_time = time.time()
         #Have to get csrftoken to put into post header
         initial_response = requests.get(base_url)
         csrf = initial_response.cookies['csrftoken']
-        print("Inital response is {}".format(initial_response))
+        #print("Inital response is {}".format(initial_response))
         #build payload
         payload = {
             'username': self.username,
@@ -95,7 +98,7 @@ class IG_AUTH:
 
         login_attempt_response = requests.post(login_url, data=payload, headers=login_header)
         json_data = json.loads(login_attempt_response.text)
-        print("Response from login attempt in {}".format(login_attempt_response.text))
+        #print("Response from login attempt in {}".format(login_attempt_response.text))
         time.sleep(5)
         if json_data["authenticated"]:
             raw_cookies = login_attempt_response.cookies
@@ -103,8 +106,6 @@ class IG_AUTH:
             encrypt_and_store(self, "IG")
         else:
             log_file = open("./Program Data/Logs/IG_AUTH_LOGS/log.txt", "w")
-            #log_file.write(login_attempt_response.text)
-            #log_file.write("\n")
             log_file.write("FAIL")
             log_file.close()
             return "Fail"        
@@ -123,7 +124,6 @@ def attempt_fb_login(username, password):
    
 def attempt_ig_login(username, password):
     #Clear previous log data first by opening in write mode
-    #log_file = open("./Program Data/Logs/IG_AUTH_LOGS/log.txt", "w")
     auth = IG_AUTH(username, password)
     attempt = auth.attempt_login()
     if(attempt != "Success"):
@@ -138,10 +138,9 @@ def attempt_tw_login(username, password):
 # Entry point, grab argv values and pass to proper function. 
 if __name__ == "__main__":
     #takes in a mode, username, and password in argv
-    #mode can be 31 (FB) 32 (IG) or 33 (TW) 
-    #print(sys.argv)
+    #mode can be FB IG or TW 
     if(len(sys.argv) > 4):
-        #Send an error to the c++ program 
+        #close if too few arguments 
         sys.exit()
    
     mode_id = sys.argv[1]

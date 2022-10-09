@@ -1,1 +1,0 @@
-python3 authenticator.py IG loganchamberlain907 CSCEA470 FAIL

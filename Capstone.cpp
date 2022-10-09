@@ -22,6 +22,7 @@
 #include <algorithm>
 #include <bits.h>
 #include <vector>
+#include <windowsx.h>
 
 #define MAX_LOADSTRING 100
 #define EXPORT_FB 1
@@ -100,6 +101,7 @@ bool PREV_SCAN_COMPLETE = true;
 bool IG_AUTH_FINISHED = false;
 bool FB_AUTH_FINISHED = false;
 bool TW_AUTH_FINISHED = false;
+bool FB_AUTH_SUCCES, IG_AUTH_SUCCESS, TW_AUTH_SUCCESS;
 std::fstream SAVED_CONFIG_FILE;
 std::string shellOperation;
 
@@ -725,8 +727,6 @@ LRESULT CALLBACK WndProcIGLogin(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
     char usernameSavedClearText[50], passwordSavedClearText[50];
     std::string line;
     std::fstream readOutputLog;
-    std::vector<std::string>outputContent;
-    std::fstream f;
     switch (message)
     {
     case WM_CREATE:
@@ -737,8 +737,8 @@ LRESULT CALLBACK WndProcIGLogin(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
         {
         case INSTAGRAM_LOGIN_SUBMIT:
         {
+            IG_AUTH_SUCCESS = false;
             IG_AUTH_FINISHED = false;
-            f.open("TESTING_TESTING.txt");
             shellOperation = "";
             shellOperation.append("python3 authenticator.py IG ");
             //Grab values from the username and password fields, store in global variables
@@ -746,15 +746,15 @@ LRESULT CALLBACK WndProcIGLogin(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
             GetWindowTextW(igPass, igPassword, 100);
             SetWindowTextW(igUser, L"");
             SetWindowTextW(igPass, L"");
-            state = SendMessageW(checkboxIG, (UINT)BM_GETCHECK, (WPARAM)0, (LPARAM)0);
+            state = Button_GetCheck(checkboxIG);
             if (state == BST_CHECKED)
             {
                 SAVED_CONFIG_FILE.open(".\\Program Data\\Configuration\\user_config.txt", std::ios::in);
                 //Read in all lines, fill in string array of elements
                 if (SAVED_CONFIG_FILE.is_open())
                 {
-
-                    for (i = 0; i < 9; i++) {
+                    for (i = 0; i < 9; i++)
+                    {
                         std::getline(SAVED_CONFIG_FILE, line);
                         SAVED_CONFIG_ELEMENTS[i] = line;
                     }
@@ -776,9 +776,8 @@ LRESULT CALLBACK WndProcIGLogin(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
                     passwordSavedClearText[i] = (char)char_val;
                 }
                 passwordSavedClearText[i] = '\0';
-            }
-            //Use saved credentials if check box is checked
-            if (state == BST_CHECKED) {
+
+                //Use saved credentials to post login request
                 usernameClearText = usernameSavedClearText;
                 passwordClearText = passwordSavedClearText;
                 shellOperation.append(usernameClearText);
@@ -790,7 +789,9 @@ LRESULT CALLBACK WndProcIGLogin(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
                 WinExec((LPCSTR)shellOperation.c_str(), SW_HIDE);
                 SetWindowTextW(IGsubmit, L"Authenticating...");
             }
-            else {
+            //NOTE: if user puts stuff in the login but also checks used saved, will override and use saved info
+            if (state != BST_CHECKED)
+            {
                 //USE igUsername and igPassword
                 std::wstring wideUsername(igUsername);
                 std::wstring widePassword(igPassword);
@@ -802,49 +803,48 @@ LRESULT CALLBACK WndProcIGLogin(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
                 shellOperation.append(" ");
                 shellOperation.append(correctedPassword);
                 shellOperation.append(" ");
-                f << shellOperation.c_str();
 
                 //Lauch program
                 WinExec((LPCSTR)shellOperation.c_str(), SW_HIDE);
                 SetWindowTextW(IGsubmit, L"Authenticating...");
             }
-                //Check if login success
-                //Wait one second then see if the logs show a success or a fail
-                Sleep(7000);
+
+            //Wait three seconds then see if the logs show a success or a fail
+            while (!IG_AUTH_FINISHED)
+            {
+                Sleep(3000);
                 readOutputLog.open(".\\Program Data\\Logs\\IG_AUTH_LOGS\\log.txt", std::ios::in);
-                //Read in all lines, add to array of strings
+                //Read in all lines, check for SUCCESS or FAIL
                 if (readOutputLog.is_open())
                 {
                     while (std::getline(readOutputLog, line))
                     {
-                        f << line;
-                        f << "\n";
-                        //outputContent.push_back(line);
                         if (strcmp(line.c_str(), "SUCCESS") == 0) {
+                            IG_AUTH_SUCCESS = true;
                             IG_AUTH_FINISHED = true;
                         }
                         if (strcmp(line.c_str(), "FAIL") == 0) {
                             MessageBox(hWnd, L"Login Attempt Failed", L"Error on Login", MB_ICONERROR);
                             SetWindowTextW(IGsubmit, L"SUBMIT");
+                            IG_AUTH_FINISHED = true;
                         }
                     }
 
-                    if (IG_AUTH_FINISHED)
+                    if (IG_AUTH_SUCCESS)
                     {
                         MIN_ONE_SITE_LOGGED_IN = true;
                         IG_LOGGED_IN = true;
                         DestroyWindow(hWnd);
                     }
+                    readOutputLog.close();
                 }
+            }
             break;
         }
-
-
+        }
         case WM_DESTROY:
             //DestroyWindow(hWnd);
-            break;
-        }
-        
+            break;       
     default:
         return DefWindowProc(hWnd, message, wParam, lParam);
     }
