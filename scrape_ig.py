@@ -24,8 +24,7 @@ COOKIE = {}
 FLAGGED_POSTS = []
 FLAGGED_USERS = []
 OUTPUT_DIR = ''
-LOCATION_COUNTER = 0
-NUM_LOCATIONS = 0
+TOTAL_POSTS = 0
 
 #Fills global variable with urls from the last column of the .csv file
 def get_urls():
@@ -70,11 +69,19 @@ def get_flagged_users():
     FLAGGED_USERS = flagged_users_file.read().split(",")
 
  #Requests data from location url, formats the return, searches captions and comments for keywords, adds posts to flagged posts
-def scrape_location(session, location):
+def scrape_location(COUNTER, NUM_LOCATIONS, session, location):
+    print("\n*****************************************************************\n")
     print("Scraping {}...".format(location))
-    print("Url is {}".format(LOCATION_URLS[location]))
-    response = session.get(url, cookies=COOKIE)
-    soup = BeautifulSoup(response.content, 'html.parser')
+    print("Location number {}/{}".format(COUNTER, NUM_LOCATIONS))
+    response = session.get(LOCATION_URLS[location], cookies=COOKIE)
+    print("Response Status is {}".format(response))
+    post_list = response.content.split(b'"media":')
+    print("Number of found posts: {}".format(len(post_list)))
+    global TOTAL_POSTS
+    TOTAL_POSTS += len(post_list)
+    print("Total posts scanned: {}".format(TOTAL_POSTS))
+    print("\n*****************************************************************\n")
+    #print(post_list[1])
     #FIGURE OUT HOW TO GRAB THE POSTS HERE 
      
 
@@ -99,14 +106,17 @@ def main():
     get_cookie()
     get_output_dir()
     get_flagged_users()
+    COUNTER = 1
+    NUM_LOCATIONS = len(LOCATION_URLS)
+    TOTAL_POSTS = 0
 
     session = requests.Session()
     #GENERAL PROCESS: scrape each location and flag posts, grab full info and write to file
     for place in LOCATION_URLS:
         #ADD RANDOM LATENCY HERE
-        time.sleep(2)
-        scrape_location(session, place)
-
+        time.sleep(1)
+        scrape_location(COUNTER, NUM_LOCATIONS, session, place)
+        COUNTER += 1
     for post in FLAGGED_POSTS:
         #ADD RANDOM LATENCY HERE 
         time.sleep(2)
