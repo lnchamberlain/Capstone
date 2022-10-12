@@ -12,7 +12,7 @@ import sys
 import datetime
 import json
 import time
-from bs4 import BeautifulSoup
+import random
 import csv
 
 
@@ -25,6 +25,8 @@ FLAGGED_POSTS = []
 FLAGGED_USERS = []
 OUTPUT_DIR = ''
 TOTAL_POSTS = 0
+FOUND_FLAGGED = 0
+HTML_CODE = []
 
 #Fills global variable with urls from the last column of the .csv file
 def get_urls():
@@ -41,6 +43,7 @@ def get_urls():
 #Fills global variable with value from wordlist
 def get_keywords():
     keywords_file = open("./Program Data/Wordlists/keywords.txt", "r+")
+    global KEYWORDS
     KEYWORDS = keywords_file.read().split(",")
     
 
@@ -58,6 +61,7 @@ def get_cookie():
 #Establishes the output directory
 def get_output_dir():
     dir = sys.argv[2]
+    global OUTPUT_DIR
     if(dir == "DEFAULT"):
         OUTPUT_DIR = "./Program Data/FoundPosts/FoundPostsIG"
     else:
@@ -66,6 +70,7 @@ def get_output_dir():
 #Populates global list from flagged users list
 def get_flagged_users():
     flagged_users_file = open("./Program Data/FlaggedUsers/IGFlaggedUsers/ig_flagged_users.txt", "r+")
+    global FLAGGED_USERS
     FLAGGED_USERS = flagged_users_file.read().split(",")
 
  #Requests data from location url, formats the return, searches captions and comments for keywords, adds posts to flagged posts
@@ -78,25 +83,37 @@ def scrape_location(COUNTER, NUM_LOCATIONS, session, location):
     post_list = response.content.split(b'"media":')
     print("Number of found posts: {}".format(len(post_list)))
     global TOTAL_POSTS
+    global FLAGGED_POSTS
     TOTAL_POSTS += len(post_list)
-    print("Total posts scanned: {}".format(TOTAL_POSTS))
+    time.sleep(4)
+    flagged = 0
+    for post in post_list:
+        for word in KEYWORDS:
+            for author in FLAGGED_USERS:
+                if (bytes(word, "utf-8")in post) or (bytes(author, "utf-8") in post):
+                    FLAGGED_POSTS.append(post)
+                    flagged +=1
+    global FOUND_FLAGGED 
+    FOUND_FLAGGED += flagged
+    print("Found {} flagged posts at this location\nTotal Flagged Posts: {}".format(flagged, FOUND_FLAGGED))
     print("\n*****************************************************************\n")
-    #print(post_list[1])
-    #FIGURE OUT HOW TO GRAB THE POSTS HERE 
+    
      
 
 
 
 #Requests the full info for a flagged post
-def get_full_info(flagged_post):
-    print("This here is a stub")
-    full_post_info = ''
-    write_output(full_post_info)
+def format_found_post(flagged_post):
+    #GRAB THE VALUES WE WANT FROM THE FLAGGED POST, add to array of html code
+    global HTML_CODE
+    html_str = ''
 
 
-#Writes output into.html file
-def write_output(post_info):
-    print("And here is another function stub")
+#Iterate over array of lines of html code, write to scan output file
+def write_html_to_file():
+    for line in HTML_CODE:
+        print(line)
+    print("STUB")
 
 #Writes full post info to selected output file
 
@@ -108,19 +125,18 @@ def main():
     get_flagged_users()
     COUNTER = 1
     NUM_LOCATIONS = len(LOCATION_URLS)
-    TOTAL_POSTS = 0
 
     session = requests.Session()
-    #GENERAL PROCESS: scrape each location and flag posts, grab full info and write to file
+    #GENERAL PROCESS: scrape each location and flag posts, format post information and write to file
     for place in LOCATION_URLS:
         #ADD RANDOM LATENCY HERE
-        time.sleep(1)
+        time.sleep(random.randint(200,3000))
         scrape_location(COUNTER, NUM_LOCATIONS, session, place)
         COUNTER += 1
     for post in FLAGGED_POSTS:
-        #ADD RANDOM LATENCY HERE 
-        time.sleep(2)
-        get_full_info(post)
+        format_found_post(post)
+    
+    write_html_to_file()
     
     session.close()
 
