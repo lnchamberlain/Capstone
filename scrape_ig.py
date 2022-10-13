@@ -6,7 +6,7 @@
 # Format for use: python3 scrape_ig.py REGION_SELECTION (int 1-6) OUTPUT FOLDER (CAN PUT DEFAULT)
 # To use with test regions (much smaller): python3 scrape_ig.py 6 DEFAULT
 
-from xml.sax.xmlreader import Locator
+import datetime
 import requests
 import sys
 import datetime
@@ -14,6 +14,7 @@ import json
 import time
 import random
 import csv
+
 
 
 
@@ -27,6 +28,7 @@ OUTPUT_DIR = ''
 TOTAL_POSTS = 0
 FOUND_FLAGGED = 0
 HTML_CODE = []
+SCAN_NAME = ''
 
 #Fills global variable with urls from the last column of the .csv file
 def get_urls():
@@ -85,7 +87,7 @@ def scrape_location(COUNTER, NUM_LOCATIONS, session, location):
     global TOTAL_POSTS
     global FLAGGED_POSTS
     TOTAL_POSTS += len(post_list)
-    time.sleep(4)
+    print("Total posts searched: {}".format(TOTAL_POSTS))
     flagged = 0
     for post in post_list:
         for word in KEYWORDS:
@@ -95,7 +97,7 @@ def scrape_location(COUNTER, NUM_LOCATIONS, session, location):
                     flagged +=1
     global FOUND_FLAGGED 
     FOUND_FLAGGED += flagged
-    print("Found {} flagged posts at this location\nTotal Flagged Posts: {}".format(flagged, FOUND_FLAGGED))
+    print("Found {} flagged posts at this location\nTotal Flagged Posts: {}".format(flagged, len(FLAGGED_POSTS)))
     print("\n*****************************************************************\n")
     
      
@@ -106,13 +108,61 @@ def scrape_location(COUNTER, NUM_LOCATIONS, session, location):
 def format_found_post(flagged_post):
     #GRAB THE VALUES WE WANT FROM THE FLAGGED POST, add to array of html code
     global HTML_CODE
-    html_str = ''
+    post_str = flagged_post.decode("utf-8")
+    post_str_list = post_str.split(",")
+    decomposed_post = {}
+    for string in post_str_list:
+        #Build dictionary of values in post
+        if(string[:4] != '"http'):
+            str_list = string.split(":")
+        if(len(str_list) >= 2):
+            if decomposed_post.get(str_list[0]) == None:
+                decomposed_post[str_list[0]] = str_list[1]
+    html_str = '<tr>'
+    #for key in decomposed_post.keys():
+    #     print(key)
+    timestamp_epoch = int(decomposed_post['{"taken_at"'])
+    timestamp = datetime.datetime.utcfromtimestamp(timestamp_epoch)
+    lat = str(decomposed_post['"lat"'])
+    lng = str(decomposed_post['"lng"'])
+    lat_lng = lat + ", " + lng
+    username = decomposed_post['"username"']
+    full_name = decomposed_post['"full_name"']
+    #GET BIO HERE
+    bio = ""
+    caption = str(decomposed_post['"text"'])
+    if caption == "null":
+        caption = ""
+    link = "https://www.instagram.com/p/" + str(decomposed_post['"code"'][1:-1])
+    #SPLICE OUT IMAGE URL HERE
+    img_url = decomposed_post['"url"']
+    #GRAB AND STORE IMAGE HERE
+    html_str += "<td>" + timestamp.strftime("%m/%d/%Y %H:%M:%S") + "</td><td>" + lat_lng + "</td><td>" + username + "</td><td>" + full_name + "</td><td>" + bio + "</td><td>" + caption + "</td><td><a href=" + link + ">link</a></td><td>" + img_url + "</td></tr>"
+    print(html_str)
+    a = open("autopsy_file.txt", 'a')
+    for string in post_str_list:
+        a.write(string)
+        a.write("\n")
+    a.write("\n\n")
+    a.close()
+    HTML_CODE.append(html_str)
+
+
 
 
 #Iterate over array of lines of html code, write to scan output file
 def write_html_to_file():
+    output_file = open(OUTPUT_DIR + "/" + SCAN_NAME + ".html", 'w+')
+    #Fill in the table header and footer of the html document
+    global HTML_CODE 
+    HTML_CODE.insert(0, "<html><body><table><head><link rel='stylesheet' href='./styles.css'></head>\n")
+    HTML_CODE.insert(1, "<h1 style='text-align:center;'>" + SCAN_NAME + "</h1>")
+    HTML_CODE.insert(2, "<tr><th>Date/Time</th><th>Lat/Long</th><th>Username</th><th>Full Name</th><th>Bio</th><th>Caption/Comment</th><th>Link</th><th>Media</th></tr>")
+    HTML_CODE.append("</table></body></html>\n")
+    HTML_CODE.append("")
     for line in HTML_CODE:
-        print(line)
+        output_file.write(line)
+    output_file.close()
     print("STUB")
 
 #Writes full post info to selected output file
@@ -125,18 +175,23 @@ def main():
     get_flagged_users()
     COUNTER = 1
     NUM_LOCATIONS = len(LOCATION_URLS)
-
+    global SCAN_NAME 
+    currTime = datetime.datetime.now()
+    SCAN_NAME = "IG SCAN REPORT " + currTime.strftime("%m/%d/%Y %H:%M:%S")
     session = requests.Session()
     #GENERAL PROCESS: scrape each location and flag posts, format post information and write to file
     for place in LOCATION_URLS:
-        #ADD RANDOM LATENCY HERE
-        time.sleep(random.randint(200,3000))
+        #Random Latency
+        delay = random.randint(200, 3000)
+        delay /= 1000
+        print("delay is {}".format(delay))
+        time.sleep(delay)
         scrape_location(COUNTER, NUM_LOCATIONS, session, place)
         COUNTER += 1
     for post in FLAGGED_POSTS:
         format_found_post(post)
     
-    write_html_to_file()
+    #write_html_to_file()
     
     session.close()
 
