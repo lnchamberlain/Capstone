@@ -80,7 +80,7 @@ def scrape_location(COUNTER, NUM_LOCATIONS, session, location):
     print("\n*****************************************************************\n")
     print("Scraping {}...".format(location))
     print("Location number {}/{}".format(COUNTER, NUM_LOCATIONS))
-    response = session.get(LOCATION_URLS[location], cookies=COOKIE)
+    response = session.get(LOCATION_URLS[location] + "/?__a=1", cookies=COOKIE)
     print("Response Status is {}".format(response))
     post_list = response.content.split(b'"media":')
     print("Number of found posts: {}".format(len(post_list)))
@@ -119,6 +119,10 @@ def format_found_post(flagged_post):
             if decomposed_post.get(str_list[0]) == None:
                 decomposed_post[str_list[0]] = str_list[1]
     html_str = '<tr>'
+    #post_json = json.dumps(decomposed_post, indent = 4)
+    #print(post_json)
+    #print("\n\n")
+    
     #for key in decomposed_post.keys():
     #     print(key)
     timestamp_epoch = int(decomposed_post['{"taken_at"'])
@@ -134,6 +138,14 @@ def format_found_post(flagged_post):
     if caption == "null":
         caption = ""
     link = "https://www.instagram.com/p/" + str(decomposed_post['"code"'][1:-1])
+    #indivual_post = requests.get("https://instagram.com/" + username+"/?__a=1", cookies=COOKIE)
+    #print("Post response is {}".format(indivual_post))
+    #if(indivual_post.status_code == 200):
+     #   f = open("user_account.txt", "w")
+      #  print(indivual_post.content)
+       # f.write(indivual_post.content.decode("utf-8"))
+       # f.close()
+    #sys.exit()
     #SPLICE OUT IMAGE URL HERE
     img_url = decomposed_post['"url"']
     #GRAB AND STORE IMAGE HERE
@@ -146,6 +158,7 @@ def format_found_post(flagged_post):
     a.write("\n\n")
     a.close()
     HTML_CODE.append(html_str)
+    
 
 
 
