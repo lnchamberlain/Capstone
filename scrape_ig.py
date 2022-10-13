@@ -138,7 +138,11 @@ def format_found_post(flagged_post):
     if caption == "null":
         caption = ""
     link = "https://www.instagram.com/p/" + str(decomposed_post['"code"'][1:-1])
-    #indivual_post = requests.get("https://instagram.com/" + username+"/?__a=1", cookies=COOKIE)
+    individual_page = requests.get("https://instagram.com/" + username, cookies=COOKIE)
+    print("Profile page response is {}".format(individual_page))
+    f = open("profile_source.txt", "w")
+    f.write(individual_page.content.decode("utf-8"))
+    sys.exit()
     #print("Post response is {}".format(indivual_post))
     #if(indivual_post.status_code == 200):
      #   f = open("user_account.txt", "w")
