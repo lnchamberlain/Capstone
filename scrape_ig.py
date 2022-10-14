@@ -7,6 +7,7 @@
 # To use with test regions (much smaller): python3 scrape_ig.py 6 DEFAULT
 
 import datetime
+from urllib.request import urlretrieve
 import requests
 import sys
 import datetime
@@ -14,11 +15,17 @@ import json
 import time
 import random
 import csv
+import urllib
+import hashlib
+from PIL import Image
+import shutil
+import os
 
 
 
 
 REGION_RESOLUTION_TABLE = {1:"./Program Data/Regions/ALL_ALASKA.csv", 2:"./Program Data/Regions/ANCHORAGE.csv", 3:"./Program Data/Regions/BETHEL.csv", 4:"./Program Data/Regions/FAIRBANKS.csv", 5:"./Program Data/Regions/JUNEAU.csv", 6:"./Program Data/Regions/TESTING.csv"}
+MONTH_RESOLUTION_TABLE = {1:"Jan", 2:"Feb", 3:"Mar", 4:"Apr", 5:"May", 6:"Jun", 7:"Jul", 8:"Aug", 9:"Sep", 10:"Oct", 11:"Nov", 12:"Dec"}
 LOCATION_URLS = {}
 KEYWORDS = [] 
 COOKIE = {}
@@ -108,59 +115,61 @@ def scrape_location(COUNTER, NUM_LOCATIONS, session, location):
 def format_found_post(flagged_post):
     #GRAB THE VALUES WE WANT FROM THE FLAGGED POST, add to array of html code
     global HTML_CODE
+    urls = []
+    usernames = []
+    full_names = [] 
+    texts = []
+    comment_count = 0
     post_str = flagged_post.decode("utf-8")
     post_str_list = post_str.split(",")
     decomposed_post = {}
     for string in post_str_list:
         #Build dictionary of values in post
-        if(string[:4] != '"http'):
+        if(string[:4] != '"url'):
             str_list = string.split(":")
+        else:
+            urls.append(string[7:])
         if(len(str_list) >= 2):
-            if decomposed_post.get(str_list[0]) == None:
+            if(str_list[0] == '"username"'):
+                usernames.append(str_list[1])
+            if(str_list[0] == '"full_name"'):
+                full_names.append(str_list[1])
+            if(str_list[0] == '"text"'):
+                texts.append(str_list[1])
+            else:
                 decomposed_post[str_list[0]] = str_list[1]
     html_str = '<tr>'
-    #post_json = json.dumps(decomposed_post, indent = 4)
-    #print(post_json)
-    #print("\n\n")
-    
-    #for key in decomposed_post.keys():
-    #     print(key)
+    username = usernames[-1][1:-1]
+    full_name = full_names[-1][1:-1]
+    caption = texts[-3][1:]
+  
     timestamp_epoch = int(decomposed_post['{"taken_at"'])
     timestamp = datetime.datetime.utcfromtimestamp(timestamp_epoch)
     lat = str(decomposed_post['"lat"'])
     lng = str(decomposed_post['"lng"'])
     lat_lng = lat + ", " + lng
-    username = decomposed_post['"username"']
-    full_name = decomposed_post['"full_name"']
-    #GET BIO HERE
-    bio = ""
-    caption = str(decomposed_post['"text"'])
+    #TEMP FIX, LINK TO PROFILE RATHER THAN GRABBING BIO
+    profile_link = "https://instagram.com/" + username[1:-1]
     if caption == "null":
         caption = ""
     link = "https://www.instagram.com/p/" + str(decomposed_post['"code"'][1:-1])
-    individual_page = requests.get("https://instagram.com/" + username, cookies=COOKIE)
-    print("Profile page response is {}".format(individual_page))
-    f = open("profile_source.txt", "w")
-    f.write(individual_page.content.decode("utf-8"))
-    sys.exit()
-    #print("Post response is {}".format(indivual_post))
-    #if(indivual_post.status_code == 200):
-     #   f = open("user_account.txt", "w")
-      #  print(indivual_post.content)
-       # f.write(indivual_post.content.decode("utf-8"))
-       # f.close()
-    #sys.exit()
     #SPLICE OUT IMAGE URL HERE
-    img_url = decomposed_post['"url"']
-    #GRAB AND STORE IMAGE HERE
-    html_str += "<td>" + timestamp.strftime("%m/%d/%Y %H:%M:%S") + "</td><td>" + lat_lng + "</td><td>" + username + "</td><td>" + full_name + "</td><td>" + bio + "</td><td>" + caption + "</td><td><a href=" + link + ">link</a></td><td>" + img_url + "</td></tr>"
-    print(html_str)
-    a = open("autopsy_file.txt", 'a')
-    for string in post_str_list:
-        a.write(string)
-        a.write("\n")
-    a.write("\n\n")
-    a.close()
+    img_url = urls[-13][:-2] #should be the 1080 pixel size url
+
+    #Retrieve image and store temporarily, compute hash and store in images
+    urlretrieve(img_url, "./Program Data/temp_img.jpg")
+    img_hash = hashlib.md5(Image.open("./Program Data/temp_img.jpg").tobytes())
+    hash_str = img_hash.hexdigest()
+    img_path = "./Program Data/Images/ImagesIG/" + hash_str + ".jpg"
+    img_path_html = str("../../../Program Data/Images/ImagesIG/"+ hash_str + ".jpg")
+    #Save if novel image
+    if(not os.path.exists(img_path)):
+        shutil.copy("./Program Data/temp_img.jpg", img_path)
+    #Get rid of temporary image
+    os.remove("./Program Data/temp_img.jpg")
+
+    #Compile into HTML string
+    html_str += "<td>" + timestamp.strftime("%m/%d/%Y %H:%M:%S") + "</td><td>" + lat_lng + "</td><td>" + username + "</td><td>" + full_name + "</td><td><a href=" + profile_link + ">link</a></td><td>" + caption + "</td><td><a href=" + link + ">link</a></td><td><img style='max-width:200px;' src='" + img_path_html + "'></td></tr>"
     HTML_CODE.append(html_str)
     
 
@@ -172,15 +181,15 @@ def write_html_to_file():
     output_file = open(OUTPUT_DIR + "/" + SCAN_NAME + ".html", 'w+')
     #Fill in the table header and footer of the html document
     global HTML_CODE 
-    HTML_CODE.insert(0, "<html><body><table><head><link rel='stylesheet' href='./styles.css'></head>\n")
+    HTML_CODE.insert(0, "<html><body><table><head><link rel='stylesheet' href='../../../styles.css'></head>\n")
     HTML_CODE.insert(1, "<h1 style='text-align:center;'>" + SCAN_NAME + "</h1>")
-    HTML_CODE.insert(2, "<tr><th>Date/Time</th><th>Lat/Long</th><th>Username</th><th>Full Name</th><th>Bio</th><th>Caption/Comment</th><th>Link</th><th>Media</th></tr>")
+    HTML_CODE.insert(2, "<tr><th>Date/Time</th><th>Lat/Long</th><th>Username</th><th>Full Name</th><th>Profile</th><th>Caption/Comment</th><th>Link</th><th>Media</th></tr>")
     HTML_CODE.append("</table></body></html>\n")
-    HTML_CODE.append("")
+    #HTML_CODE.append("")
     for line in HTML_CODE:
         output_file.write(line)
     output_file.close()
-    print("STUB")
+    print("WRITE COMPLETE")
 
 #Writes full post info to selected output file
 
@@ -194,7 +203,8 @@ def main():
     NUM_LOCATIONS = len(LOCATION_URLS)
     global SCAN_NAME 
     currTime = datetime.datetime.now()
-    SCAN_NAME = "IG SCAN REPORT " + currTime.strftime("%m/%d/%Y %H:%M:%S")
+    date_and_time_formatted = MONTH_RESOLUTION_TABLE[currTime.month] + " "+str(currTime.day) +" "+ str(currTime.year) + "  " + str(currTime.hour) + ";" + str(currTime.minute) + ";" + str(currTime.second) 
+    SCAN_NAME = "IG SCAN REPORT " + date_and_time_formatted
     session = requests.Session()
     #GENERAL PROCESS: scrape each location and flag posts, format post information and write to file
     for place in LOCATION_URLS:
@@ -208,7 +218,7 @@ def main():
     for post in FLAGGED_POSTS:
         format_found_post(post)
     
-    #write_html_to_file()
+    write_html_to_file()
     
     session.close()
 
