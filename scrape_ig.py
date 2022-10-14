@@ -37,6 +37,7 @@ FOUND_FLAGGED = 0
 HTML_CODE = []
 SCAN_NAME = ''
 
+
 #Fills global variable with urls from the last column of the .csv file
 def get_urls():
     #Resolve region number into path
@@ -84,30 +85,54 @@ def get_flagged_users():
 
  #Requests data from location url, formats the return, searches captions and comments for keywords, adds posts to flagged posts
 def scrape_location(COUNTER, NUM_LOCATIONS, session, location):
+    ALL_POSTS = []
+    MEDIA_ARRAYS =[]
     print("\n*****************************************************************\n")
     print("Scraping {}...".format(location))
     print("Location number {}/{}".format(COUNTER, NUM_LOCATIONS))
     response = session.get(LOCATION_URLS[location] + "/?__a=1", cookies=COOKIE)
     print("Response Status is {}".format(response))
-    post_list = response.content.split(b'"media":')
-    print("Number of found posts: {}".format(len(post_list)))
+    response_dict = json.loads(response.content)
+    sections = response_dict["native_location_data"]["recent"]["sections"]
+    for i in range(len(sections)):
+        try:
+            MEDIA_ARRAYS.append(sections[i]["layout_content"]["medias"])
+        except KeyError:
+            continue
+    for array in MEDIA_ARRAYS:
+        for post in array:
+            ALL_POSTS.append(post["media"])
+    
+    #for post in ALL_POSTS:
+    #    print(type(post["media"]))
+    #    for key in post["media"].keys():
+    #        print(key)
+    #    print("\n*******************************************\n")
+
+    print("Number of found posts: {}".format(len(ALL_POSTS)))
     global TOTAL_POSTS
     global FLAGGED_POSTS
-    TOTAL_POSTS += len(post_list)
+    TOTAL_POSTS += len(ALL_POSTS)
     print("Total posts searched: {}".format(TOTAL_POSTS))
     flagged = 0
-    for post in post_list:
+    for post in ALL_POSTS:
+        if(post["caption"] is not None):
+            caption = post["caption"]["text"]
+        else:
+            caption = " "
+        user = post["user"]["username"]
+        comments = post["comments"]
         for word in KEYWORDS:
             for author in FLAGGED_USERS:
-                if (bytes(word, "utf-8")in post) or (bytes(author, "utf-8") in post):
+                if (word in caption) or (user == author): # or (word in comments):
                     FLAGGED_POSTS.append(post)
                     flagged +=1
+     
     global FOUND_FLAGGED 
     FOUND_FLAGGED += flagged
     print("Found {} flagged posts at this location\nTotal Flagged Posts: {}".format(flagged, len(FLAGGED_POSTS)))
     print("\n*****************************************************************\n")
-    
-     
+   
 
 
 
@@ -115,59 +140,35 @@ def scrape_location(COUNTER, NUM_LOCATIONS, session, location):
 def format_found_post(flagged_post):
     #GRAB THE VALUES WE WANT FROM THE FLAGGED POST, add to array of html code
     global HTML_CODE
-    urls = []
-    usernames = []
-    full_names = [] 
-    texts = []
-    comment_count = 0
-    post_str = flagged_post.decode("utf-8")
-    post_str_list = post_str.split(",")
-    decomposed_post = {}
-    for string in post_str_list:
-        #Build dictionary of values in post
-        if(string[:4] != '"url'):
-            str_list = string.split(":")
-        else:
-            urls.append(string[7:])
-        if(len(str_list) >= 2):
-            if(str_list[0] == '"username"'):
-                usernames.append(str_list[1])
-            if(str_list[0] == '"full_name"'):
-                full_names.append(str_list[1])
-            if(str_list[0] == '"text"'):
-                texts.append(str_list[1])
-            else:
-                decomposed_post[str_list[0]] = str_list[1]
+    lat = flagged_post["lat"]
+    lng = flagged_post["lng"]
+    lat_lng = str(lat) + ", " + str(lng)
     html_str = '<tr>'
-    username = usernames[-1][1:-1]
-    full_name = full_names[-1][1:-1]
-    caption = texts[-3][1:]
-  
-    timestamp_epoch = int(decomposed_post['{"taken_at"'])
+    username = flagged_post["user"]["username"]
+    full_name = flagged_post["user"]["full_name"]
+    caption = ''
+    if(flagged_post["caption"] is not None):
+        caption = flagged_post["caption"]["text"] 
+    timestamp_epoch = flagged_post["taken_at"]
     timestamp = datetime.datetime.utcfromtimestamp(timestamp_epoch)
-    lat = str(decomposed_post['"lat"'])
-    lng = str(decomposed_post['"lng"'])
-    lat_lng = lat + ", " + lng
     #TEMP FIX, LINK TO PROFILE RATHER THAN GRABBING BIO
-    profile_link = "https://instagram.com/" + username[1:-1]
-    if caption == "null":
-        caption = ""
-    link = "https://www.instagram.com/p/" + str(decomposed_post['"code"'][1:-1])
-    #SPLICE OUT IMAGE URL HERE
-    img_url = urls[-13][:-2] #should be the 1080 pixel size url
-
-    #Retrieve image and store temporarily, compute hash and store in images
-    urlretrieve(img_url, "./Program Data/temp_img.jpg")
-    img_hash = hashlib.md5(Image.open("./Program Data/temp_img.jpg").tobytes())
-    hash_str = img_hash.hexdigest()
-    img_path = "./Program Data/Images/ImagesIG/" + hash_str + ".jpg"
-    img_path_html = str("../../../Program Data/Images/ImagesIG/"+ hash_str + ".jpg")
-    #Save if novel image
-    if(not os.path.exists(img_path)):
-        shutil.copy("./Program Data/temp_img.jpg", img_path)
-    #Get rid of temporary image
-    os.remove("./Program Data/temp_img.jpg")
-
+    profile_link = "https://instagram.com/" + username 
+    link = "https://www.instagram.com/p/" + flagged_post["code"]
+    try:
+        img_url = flagged_post["image_versions2"]["candidates"][0]["url"] 
+        #Retrieve image and store temporarily, compute hash and store in images
+        urlretrieve(img_url, "./Program Data/temp_img.jpg")
+        img_hash = hashlib.md5(Image.open("./Program Data/temp_img.jpg").tobytes())
+        hash_str = img_hash.hexdigest()
+        img_path = "./Program Data/Images/ImagesIG/" + hash_str + ".jpg"
+        img_path_html = str("../../../Program Data/Images/ImagesIG/"+ hash_str + ".jpg")
+        #Save if novel image
+        if(not os.path.exists(img_path)):
+            shutil.copy("./Program Data/temp_img.jpg", img_path)
+        #Get rid of temporary image
+        os.remove("./Program Data/temp_img.jpg")
+    except KeyError:
+        img_path_html = ""
     #Compile into HTML string
     html_str += "<td>" + timestamp.strftime("%m/%d/%Y %H:%M:%S") + "</td><td>" + lat_lng + "</td><td>" + username + "</td><td>" + full_name + "</td><td><a href=" + profile_link + ">link</a></td><td>" + caption + "</td><td><a href=" + link + ">link</a></td><td><img style='max-width:200px;' src='" + img_path_html + "'></td></tr>"
     HTML_CODE.append(html_str)
@@ -178,20 +179,20 @@ def format_found_post(flagged_post):
 
 #Iterate over array of lines of html code, write to scan output file
 def write_html_to_file():
-    output_file = open(OUTPUT_DIR + "/" + SCAN_NAME + ".html", 'w+')
+    output_file = open(OUTPUT_DIR + "/" + SCAN_NAME + ".html", 'w+', encoding="utf-8")
     #Fill in the table header and footer of the html document
     global HTML_CODE 
+    #Clear out duplicate entries
+    HTML_CODE = set(HTML_CODE)
+    HTML_CODE = list(HTML_CODE)
     HTML_CODE.insert(0, "<html><body><table><head><link rel='stylesheet' href='../../../styles.css'></head>\n")
     HTML_CODE.insert(1, "<h1 style='text-align:center;'>" + SCAN_NAME + "</h1>")
     HTML_CODE.insert(2, "<tr><th>Date/Time</th><th>Lat/Long</th><th>Username</th><th>Full Name</th><th>Profile</th><th>Caption/Comment</th><th>Link</th><th>Media</th></tr>")
     HTML_CODE.append("</table></body></html>\n")
-    #HTML_CODE.append("")
     for line in HTML_CODE:
         output_file.write(line)
     output_file.close()
     print("WRITE COMPLETE")
-
-#Writes full post info to selected output file
 
 def main():
     get_urls()
