@@ -9,6 +9,7 @@ import sys
 import datetime
 import json
 import time
+import random
 
 #Simple encryption, adds 10 to each character value, writes it into the right place
 def encrypt_and_store(auth, mode):
@@ -87,10 +88,14 @@ class IG_AUTH:
             'queryParams': {},
             'optIntoOneTap': 'false'       
         } 
-
+        
+        with open("UserAgents.txt", "r") as file: #Filename works, full path better??
+            line = random.randint(1, 72) #remove hardcoded line value
+            userAgent = file.readlines()[line] 
+            userAgent = userAgent.replace("\n","")
+            
         login_header = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko)"
-                          " Chrome/77.0.3865.120 Safari/537.36", 
+            "User-Agent": userAgent, 
                           "X-Requested-With": "XMLHttpRequest",
                           "Referer": "https://www.instagram.com/accounts/login",
                           "x-csrftoken": csrf       
