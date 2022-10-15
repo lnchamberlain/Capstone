@@ -1082,9 +1082,9 @@ void AddControls(HWND hWnd)
     HWND instagramLoginButton = CreateWindowW(L"Button", L"LOGIN", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON, 575, 205, 55, 30, hWnd, (HMENU)INSTAGRAM_LOGIN, NULL, NULL);
     HWND twitterLoginButton = CreateWindowW(L"Button", L"LOGIN", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON, 925, 205, 55, 30, hWnd, (HMENU)TWITTER_LOGIN, NULL, NULL);
 
-    facebookResultsSummary = CreateWindowW(L"Edit", L"Scan Summary:", WS_VISIBLE | WS_CHILD | WS_BORDER, 150, 250, 200, 250, hWnd, NULL, NULL, NULL);
-    instagramResultsSummary = CreateWindowW(L"Edit", L"Scan Summary:", WS_VISIBLE | WS_CHILD | WS_BORDER, 500, 250, 200, 250, hWnd, NULL, NULL, NULL);
-    twitterResultsSummary = CreateWindowW(L"Edit", L"Scan Summary:", WS_VISIBLE | WS_CHILD | WS_BORDER, 850, 250, 200, 250, hWnd, NULL, NULL, NULL);
+    facebookResultsSummary = CreateWindowW(L"Edit", L"Scan Summary:", WS_VISIBLE | WS_CHILD | WS_BORDER | ES_MULTILINE, 150, 250, 200, 250, hWnd, NULL, NULL, NULL);
+    instagramResultsSummary = CreateWindowW(L"Edit", L"Scan Summary:", WS_VISIBLE | WS_CHILD | WS_BORDER | ES_MULTILINE, 500, 250, 200, 250, hWnd, NULL, NULL, NULL);
+    twitterResultsSummary = CreateWindowW(L"Edit", L"Scan Summary:", WS_VISIBLE | WS_CHILD | WS_BORDER | ES_MULTILINE, 850, 250, 200, 250, hWnd, NULL, NULL, NULL);
 
     //Populate flagged users buttons
     HWND facebookFlaggedUserButton = CreateWindowW(L"Button", L"Flagged Users", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON, 290, 130, 100, 30, hWnd, (HMENU)OPEN_FLAGGED_FB, NULL, NULL);
@@ -1436,28 +1436,22 @@ void readIGScrapeLog()
     {
         Sleep(2000);
         readOutputLog.open(".\\Program Data\\Logs\\IG_SCRAPE_LOGS\\log.txt", std::ios::in);
-        //Read in all lines, check for SUCCESS or FAIL
         if (readOutputLog.is_open())
         {
-            SetWindowTextW(MainWindow, L" ");
-            Sleep(1000);
-            SetWindowTextW(MainWindow, L"File Open");
             while (std::getline(readOutputLog, line))
             {
                 
                 full_log_text.append(line);
-                //std::wstring wide_string = std::wstring(full_log_text.begin(), full_log_text.end());
-                //const wchar_t* scanUpdate = wide_string.c_str();
-                //SetWindowTextW(MainWindow, scanUpdate);
                 if (strcmp(line.c_str(), "SCAN COMPELTE") == 0) {
                     END_THREAD = true;
                 }
             }
             std::wstring wide_string = std::wstring(full_log_text.begin(), full_log_text.end());
             const wchar_t* scanUpdate = wide_string.c_str();
-            SetWindowTextW(MainWindow, scanUpdate);
+            SetWindowTextW(instagramResultsSummary, scanUpdate);
             full_log_text = "";
         }
+        readOutputLog.close();
     }
     //Kill this thread
     std::terminate();

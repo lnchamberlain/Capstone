@@ -92,8 +92,8 @@ def scrape_location(COUNTER, NUM_LOCATIONS, session, location):
     print("\n*****************************************************************\n")
     print("Scraping {}...".format(location))
     temp_file.write("Scraping {}...\n".format(location))
-    print("Location number {}/{}".format(COUNTER, NUM_LOCATIONS))
-    temp_file.write("Location number {}/{}\n".format(COUNTER, NUM_LOCATIONS))
+    print("Number {}/{}".format(COUNTER, NUM_LOCATIONS))
+    temp_file.write("Number {}/{}\n".format(COUNTER, NUM_LOCATIONS))
     response = session.get(LOCATION_URLS[location] + "/?__a=1", cookies=COOKIE)
     if(response.status_code != 200):
         print("Error")
@@ -111,19 +111,13 @@ def scrape_location(COUNTER, NUM_LOCATIONS, session, location):
         for post in array:
             ALL_POSTS.append(post["media"])
     
-    #for post in ALL_POSTS:
-    #    print(type(post["media"]))
-    #    for key in post["media"].keys():
-    #        print(key)
-    #    print("\n*******************************************\n")
-
     print("Number of found posts: {}\n".format(len(ALL_POSTS)))
-    temp_file.write("Number of scraped posts: {}\n".format(len(ALL_POSTS)))
+    temp_file.write("Scraped Posts: {}\n".format(len(ALL_POSTS)))
     global TOTAL_POSTS
     global FLAGGED_POSTS
     TOTAL_POSTS += len(ALL_POSTS)
     print("Total posts searched: {}".format(TOTAL_POSTS))
-    temp_file.write(("Total posts searched: {}\n".format(TOTAL_POSTS)))
+    temp_file.write(("Total Posts: {}\n".format(TOTAL_POSTS)))
     flagged = 0
     for post in ALL_POSTS:
         if(post["caption"] is not None):
@@ -142,7 +136,7 @@ def scrape_location(COUNTER, NUM_LOCATIONS, session, location):
     global FOUND_FLAGGED 
     FOUND_FLAGGED += flagged
     print("Found {} flagged posts at this location\nTotal Flagged Posts: {}".format(flagged, len(FLAGGED_POSTS)))
-    temp_file.write("Found {} flagged posts at this location\nTotal Flagged Posts: {}\n".format(flagged, len(FLAGGED_POSTS)))
+    temp_file.write("Flagged Posts: {}\nTotal Flagged Posts: {}\n".format(flagged, len(FLAGGED_POSTS)))
     #copy temp file into log file
     temp_file.close()
     shutil.copy("./Program Data/Logs/IG_SCRAPE_LOGS/temp.txt", "./Program Data/Logs/IG_SCRAPE_LOGS/log.txt")
@@ -222,6 +216,8 @@ def main():
     currTime = datetime.datetime.now()
     date_and_time_formatted = MONTH_RESOLUTION_TABLE[currTime.month] + " "+str(currTime.day) +" "+ str(currTime.year) + " @ " + str(currTime.hour) + " " + str(currTime.minute) + " " + str(currTime.second) 
     SCAN_NAME = "IG SCAN REPORT " + date_and_time_formatted
+    clear_log = open("./Program Data/Logs/IG_SCRAPE_LOGS/log.txt", "w", encoding="utf-8")
+    clear_log.close()
     session = requests.Session()
     #GENERAL PROCESS: scrape each location and flag posts, format post information and write to file
     for place in LOCATION_URLS:
