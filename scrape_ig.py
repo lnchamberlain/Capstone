@@ -42,7 +42,7 @@ SCAN_NAME = ''
 def get_urls():
     #Resolve region number into path
     region_file = REGION_RESOLUTION_TABLE[int(sys.argv[1])]
-    with open(region_file, newline='') as csvfile:
+    with open(region_file, newline='', encoding="utf-8") as csvfile:
         csv_data = csv.reader(csvfile, delimiter=',')
         for row in csv_data:
             LOCATION_URLS[row[1]] = row[-1]
@@ -85,13 +85,21 @@ def get_flagged_users():
 
  #Requests data from location url, formats the return, searches captions and comments for keywords, adds posts to flagged posts
 def scrape_location(COUNTER, NUM_LOCATIONS, session, location):
+    #open temporary file to write to
+    temp_file = open("./Program Data/Logs/IG_SCRAPE_LOGS/temp.txt", "w", encoding="utf-8")
     ALL_POSTS = []
     MEDIA_ARRAYS =[]
     print("\n*****************************************************************\n")
     print("Scraping {}...".format(location))
+    temp_file.write("Scraping {}...\n".format(location))
     print("Location number {}/{}".format(COUNTER, NUM_LOCATIONS))
+    temp_file.write("Location number {}/{}\n".format(COUNTER, NUM_LOCATIONS))
     response = session.get(LOCATION_URLS[location] + "/?__a=1", cookies=COOKIE)
+    if(response.status_code != 200):
+        print("Error")
+        return
     print("Response Status is {}".format(response))
+    temp_file.write("Response Status is {}\n".format(response))
     response_dict = json.loads(response.content)
     sections = response_dict["native_location_data"]["recent"]["sections"]
     for i in range(len(sections)):
@@ -109,11 +117,13 @@ def scrape_location(COUNTER, NUM_LOCATIONS, session, location):
     #        print(key)
     #    print("\n*******************************************\n")
 
-    print("Number of found posts: {}".format(len(ALL_POSTS)))
+    print("Number of found posts: {}\n".format(len(ALL_POSTS)))
+    temp_file.write("Number of scraped posts: {}\n".format(len(ALL_POSTS)))
     global TOTAL_POSTS
     global FLAGGED_POSTS
     TOTAL_POSTS += len(ALL_POSTS)
     print("Total posts searched: {}".format(TOTAL_POSTS))
+    temp_file.write(("Total posts searched: {}\n".format(TOTAL_POSTS)))
     flagged = 0
     for post in ALL_POSTS:
         if(post["caption"] is not None):
@@ -121,7 +131,8 @@ def scrape_location(COUNTER, NUM_LOCATIONS, session, location):
         else:
             caption = " "
         user = post["user"]["username"]
-        comments = post["comments"]
+        if(post.get("comments") is not None):
+            comments = post["comments"]
         for word in KEYWORDS:
             for author in FLAGGED_USERS:
                 if (word in caption) or (user == author): # or (word in comments):
@@ -131,6 +142,12 @@ def scrape_location(COUNTER, NUM_LOCATIONS, session, location):
     global FOUND_FLAGGED 
     FOUND_FLAGGED += flagged
     print("Found {} flagged posts at this location\nTotal Flagged Posts: {}".format(flagged, len(FLAGGED_POSTS)))
+    temp_file.write("Found {} flagged posts at this location\nTotal Flagged Posts: {}\n".format(flagged, len(FLAGGED_POSTS)))
+    #copy temp file into log file
+    temp_file.close()
+    shutil.copy("./Program Data/Logs/IG_SCRAPE_LOGS/temp.txt", "./Program Data/Logs/IG_SCRAPE_LOGS/log.txt")
+        #Get rid of temporary image
+    os.remove("./Program Data/Logs/IG_SCRAPE_LOGS/temp.txt")
     print("\n*****************************************************************\n")
    
 
@@ -192,7 +209,6 @@ def write_html_to_file():
     for line in HTML_CODE:
         output_file.write(line)
     output_file.close()
-    print("WRITE COMPLETE")
 
 def main():
     get_urls()
@@ -204,7 +220,7 @@ def main():
     NUM_LOCATIONS = len(LOCATION_URLS)
     global SCAN_NAME 
     currTime = datetime.datetime.now()
-    date_and_time_formatted = MONTH_RESOLUTION_TABLE[currTime.month] + " "+str(currTime.day) +" "+ str(currTime.year) + "  " + str(currTime.hour) + ";" + str(currTime.minute) + ";" + str(currTime.second) 
+    date_and_time_formatted = MONTH_RESOLUTION_TABLE[currTime.month] + " "+str(currTime.day) +" "+ str(currTime.year) + " @ " + str(currTime.hour) + " " + str(currTime.minute) + " " + str(currTime.second) 
     SCAN_NAME = "IG SCAN REPORT " + date_and_time_formatted
     session = requests.Session()
     #GENERAL PROCESS: scrape each location and flag posts, format post information and write to file
@@ -220,7 +236,10 @@ def main():
         format_found_post(post)
     
     write_html_to_file()
-    
+    #Clear log file, write final summary
+    log_file = open("./Program Data/Logs/IG_SCRAPE_LOGS/log.txt", "w")
+    log_file.write("TOTAL SCRAPED POSTS: {}\nTOTAL FLAGGED POSTS: {}\nSCAN COMPLETE".format(TOTAL_POSTS, FOUND_FLAGGED))
+    log_file.close()
     session.close()
 
 if __name__ == "__main__":

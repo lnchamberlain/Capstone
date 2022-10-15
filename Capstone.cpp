@@ -23,6 +23,7 @@
 #include <bits.h>
 #include <vector>
 #include <windowsx.h>
+#include <thread>
 
 #define MAX_LOADSTRING 100
 #define EXPORT_FB 1
@@ -84,9 +85,9 @@ const WCHAR *configClassName = L"ConfigClassName";
 const WCHAR* FBLoginClassName = L"FacebookLoginClassName";
 const WCHAR* IGLoginClassName = L"InstagramLoginClassName";
 const WCHAR* TWLoginClassName = L"TwitterLoginClassName";
-const char* REGIONS[5] = { "Alaska", "Anchorage", "Juneau", "Fairbanks", "Bethel" };
+const char* REGIONS[5] = { "1", "2", "3", "4", "5" };
 std::string SAVED_CONFIG_ELEMENTS[18] = { "" };
-const char* REGION_SELECTION;
+const char *REGION_SELECTION;
 bool STOP_SCANNING = false;
 bool CONFIG_SET = false;
 bool CHECKED_USE_SAVED_FB = false;
@@ -129,6 +130,11 @@ void AddTWLoginControls(HWND);
 int openFileExplorer(int FLAG);
 void Test();
 void InitializeTimer();
+void beginListeningforScrapeResults(bool fbSet, bool igSet, bool twSet);
+void lauchScanners(bool fbSet, bool igSet, bool twSet);
+void readFBScrapeLog();
+void readIGScrapeLog();
+void readTWScrapeLog();
 
 
 
@@ -453,23 +459,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             hInstanceTWLogin = (HINSTANCE)GetWindowLong(hWnd, GWLP_HINSTANCE);
             createTwitterLoginWindow(twLoginWindow, hInstanceTWLogin, SW_SHOW, hWnd);
             break;
-        case LAUNCH:
-            //Only launch if configuration is all set up and login success
-            // 
-            //BEGIN TEST OF RUNNING A PYTHON PROGRAM HERE
-            /*
-
-            Py_Initialize();
-            fp = _Py_wfopen(filename, L"r");
-            PyRun_SimpleFile(fp, file_location);
-            Py_Finalize();
-            */
-            //END TEST OF PYTHON 
+        case LAUNCH: 
             ScanCount = 0;
             if (CONFIG_SET && MIN_ONE_SITE_LOGGED_IN) 
             {
                 InitializeTimer();
                 COUNT = 0;
+                lauchScanners(FB_LOGGED_IN, IG_LOGGED_IN, TW_LOGGED_IN);
+                beginListeningforScrapeResults(FB_LOGGED_IN, IG_LOGGED_IN, TW_LOGGED_IN);
             }
             else
             {
@@ -571,6 +568,8 @@ LRESULT CALLBACK WndProcConfig(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
             //Grab cursor index for region dropdown list, 
             RegionItemIndex = SendMessageW(Region, (UINT)CB_GETCURSEL, (WPARAM)0, (LPARAM)0); 
             REGION_SELECTION = REGIONS[RegionItemIndex];
+            //REGION_SELECTION = (char)(RegionItemIndex + 1);
+
 
             // Compute and store COUNT and RESET COUNT
             hoursVal = _wtoi(hoursCaptured);
@@ -1301,8 +1300,200 @@ int openFileExplorer(int FLAG)
     return 1;
 }
 
+//Execute shell commands to begin scraping for logged in sites
+void lauchScanners(bool fbSet, bool igSet, bool twSet)
+{
+ 
+    std::string shellOperation;
+    std::string outputDir;
+    char outputDirShell[100];
+    std::string regionSelection(REGION_SELECTION);
+    std::string defaultPath = "DEFAULT";
+    shellOperation.append("python3 ");
+    if (NOT_DEFAULT_OUTPUT_DIR)
+    {
+        size_t wcharSize = wcslen(outputDirCaptured) + 1;
+        size_t convertedChars = 0;
+        const size_t newSize = wcharSize * 2;
+        wcstombs_s(&convertedChars, outputDirShell, newSize, outputDirCaptured, _TRUNCATE);
+    }
+
+    if (fbSet)
+    {
+        shellOperation.append("scrape_fb.py ");
+        shellOperation.append(regionSelection);
+        shellOperation.append(" ");
+        if (!NOT_DEFAULT_OUTPUT_DIR)
+        {
+            shellOperation.append(defaultPath);
+        }
+        else
+        {
+            shellOperation.append(outputDirShell);
+        }        
+        WinExec((LPCSTR)shellOperation.c_str(), SW_HIDE);
+        SetWindowTextW(facebookResultsSummary, L"Scanning....");
+    }
+    if (igSet)
+    {
+        shellOperation.append("scrape_ig.py ");
+        shellOperation.append(regionSelection);
+        shellOperation.append(" ");
+        if (!NOT_DEFAULT_OUTPUT_DIR)
+        {
+            shellOperation.append(defaultPath);
+        }
+        else
+        {
+            shellOperation.append(outputDirShell);
+        }
+
+        std::wstring widestr = std::wstring(shellOperation.begin(), shellOperation.end());
+        const wchar_t* widecstr = widestr.c_str();
+        SetWindowTextW(MainWindow, widecstr);
+
+        WinExec((LPCSTR)shellOperation.c_str(), SW_SHOW);
+        SetWindowTextW(instagramResultsSummary, L"Scanning....");
+    }
+    if (twSet)
+    {
+        shellOperation.append("scrape_tw.py ");
+        shellOperation.append(regionSelection);
+        shellOperation.append(" ");
+        if (!NOT_DEFAULT_OUTPUT_DIR)
+        {
+            shellOperation.append(defaultPath);
+        }
+        else
+        {
+            shellOperation.append(outputDirShell);
+        }
+        WinExec((LPCSTR)shellOperation.c_str(), SW_HIDE);
+        SetWindowTextW(twitterResultsSummary, L"Scanning....");
+    }
+
+}
+//On "Launch", start a thread for each site where a login has been set, read from the incoming file 
+void beginListeningforScrapeResults(bool fbSet, bool igSet, bool twSet)
+{
+    if (fbSet)
+    {
+        std::thread fbThread(readFBScrapeLog);
+        fbThread.detach();
+    }
+    if (igSet)
+    {
+        std::thread igThread(readIGScrapeLog);
+        igThread.detach();
+    }
+    if (twSet)
+    {
+        std::thread twThread(readTWScrapeLog);
+        twThread.detach();
+    }
+}
 
 
+void readFBScrapeLog()
+{
+    std::fstream readOutputLog;
+    std::string line;
+    std::string full_log_text;
+    bool END_THREAD = false;
+    while (!END_THREAD)
+    {
+        Sleep(2000);
+        readOutputLog.open(".\\Program Data\\Logs\\FB_SCRAPE_LOGS\\log.txt", std::ios::in);
+        //Read in all lines, check for SUCCESS or FAIL
+        if (readOutputLog.is_open())
+        {
+            while (std::getline(readOutputLog, line))
+            {
+                full_log_text.append("\n");
+                full_log_text.append(line);
+                if (strcmp(line.c_str(), "SCAN COMPELTE") == 0) {
+                    END_THREAD = true;
+                }
+            }
+            std::wstring wide_string = std::wstring(full_log_text.begin(), full_log_text.end());
+            const wchar_t* scanUpdate = wide_string.c_str();
+            SetWindowTextW(facebookResultsSummary, scanUpdate);
+        }
+    }
+    //Kill this thread
+   std::terminate();
+
+}
+void readIGScrapeLog()
+{
+    SetWindowTextW(instagramResultsSummary, L"In read scrape log");
+    Sleep(2000);
+    std::fstream readOutputLog;
+    std::string line;
+    std::string full_log_text = "";
+    bool END_THREAD = false;
+    while (!END_THREAD)
+    {
+        Sleep(2000);
+        readOutputLog.open(".\\Program Data\\Logs\\IG_SCRAPE_LOGS\\log.txt", std::ios::in);
+        //Read in all lines, check for SUCCESS or FAIL
+        if (readOutputLog.is_open())
+        {
+            SetWindowTextW(MainWindow, L" ");
+            Sleep(1000);
+            SetWindowTextW(MainWindow, L"File Open");
+            while (std::getline(readOutputLog, line))
+            {
+                
+                full_log_text.append(line);
+                //std::wstring wide_string = std::wstring(full_log_text.begin(), full_log_text.end());
+                //const wchar_t* scanUpdate = wide_string.c_str();
+                //SetWindowTextW(MainWindow, scanUpdate);
+                if (strcmp(line.c_str(), "SCAN COMPELTE") == 0) {
+                    END_THREAD = true;
+                }
+            }
+            std::wstring wide_string = std::wstring(full_log_text.begin(), full_log_text.end());
+            const wchar_t* scanUpdate = wide_string.c_str();
+            SetWindowTextW(MainWindow, scanUpdate);
+            full_log_text = "";
+        }
+    }
+    //Kill this thread
+    std::terminate();
+}
+
+
+void readTWScrapeLog()
+{
+    std::fstream readOutputLog;
+    std::string line;
+    std::string full_log_text;
+    bool END_THREAD = false;
+    while (!END_THREAD)
+    {
+        Sleep(2000);
+        readOutputLog.open(".\\Program Data\\Logs\\TW_SCRAPE_LOGS\\log.txt", std::ios::in);
+        //Read in all lines, check for SUCCESS or FAIL
+        if (readOutputLog.is_open())
+        {
+            while (std::getline(readOutputLog, line))
+            {
+                full_log_text.append("\n");
+                full_log_text.append(line);
+                if (strcmp(line.c_str(), "SCAN COMPELTE") == 0) {
+                    END_THREAD = true;
+                }
+            }
+            std::wstring wide_string = std::wstring(full_log_text.begin(), full_log_text.end());
+            const wchar_t* scanUpdate = wide_string.c_str();
+            SetWindowTextW(facebookResultsSummary, scanUpdate);
+        }
+    }
+    //Kill this thread
+    std::terminate();
+
+}
 
 //Should make the window header CWD if working right
 void Test() 
