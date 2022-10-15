@@ -1440,7 +1440,7 @@ void readIGScrapeLog()
         {
             while (std::getline(readOutputLog, line))
             {
-                
+                full_log_text.append("\n");
                 full_log_text.append(line);
                 if (strcmp(line.c_str(), "SCAN COMPELTE") == 0) {
                     END_THREAD = true;
