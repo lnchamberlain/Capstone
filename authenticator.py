@@ -89,10 +89,11 @@ class IG_AUTH:
             'optIntoOneTap': 'false'       
         } 
         
-        line = random.randint(1, 72) #edit so that 72 is not hardcode, number of lines from file by function.
-        with open("UserAgents.txt", "r") as file: #Filename vs full path?? test future.
+        with open("UserAgents.txt", "r") as file: #Filename works, full path better??
+            line = random.randint(1, 72) #remove hardcoded line value
             userAgent = file.readlines()[line] 
-        
+            userAgent = userAgent.replace("\n","")
+            
         login_header = {
             "User-Agent": userAgent, 
                           "X-Requested-With": "XMLHttpRequest",
