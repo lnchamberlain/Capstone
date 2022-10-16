@@ -24,7 +24,7 @@ import os
 
 
 
-REGION_RESOLUTION_TABLE = {1:"./Program Data/Regions/ALL_ALASKA.csv", 2:"./Program Data/Regions/ANCHORAGE.csv", 3:"./Program Data/Regions/BETHEL.csv", 4:"./Program Data/Regions/FAIRBANKS.csv", 5:"./Program Data/Regions/JUNEAU.csv", 6:"./Program Data/Regions/TESTING.csv"}
+REGION_RESOLUTION_TABLE = {1:"./Program Data/Regions/ALASKA.csv", 2:"./Program Data/Regions/ANCHORAGE.csv", 3:"./Program Data/Regions/BETHEL.csv", 4:"./Program Data/Regions/FAIRBANKS.csv", 5:"./Program Data/Regions/JUNEAU.csv", 6:"./Program Data/Regions/TESTING.csv"}
 MONTH_RESOLUTION_TABLE = {1:"Jan", 2:"Feb", 3:"Mar", 4:"Apr", 5:"May", 6:"Jun", 7:"Jul", 8:"Aug", 9:"Sep", 10:"Oct", 11:"Nov", 12:"Dec"}
 LOCATION_URLS = {}
 KEYWORDS = [] 
@@ -48,6 +48,7 @@ def get_urls():
             LOCATION_URLS[row[1]] = row[-1]
     #First pair of values are header values
     LOCATION_URLS.pop("Location Name", None)
+
 
 
 #Fills global variable with value from wordlist
@@ -90,10 +91,10 @@ def scrape_location(COUNTER, NUM_LOCATIONS, session, location):
     ALL_POSTS = []
     MEDIA_ARRAYS =[]
     print("\n*****************************************************************\n")
-    print("Scraping {}...".format(location))
-    temp_file.write("Scraping {}...\n".format(location))
-    print("Number {}/{}".format(COUNTER, NUM_LOCATIONS))
-    temp_file.write("Number {}/{}\n".format(COUNTER, NUM_LOCATIONS))
+    print("Scraping Location {}...".format(location))
+    temp_file.write(location + "\n")
+    print("Location {}/{}".format(COUNTER, NUM_LOCATIONS))
+    temp_file.write("Location {}/{}\n".format(COUNTER, NUM_LOCATIONS))
     response = session.get(LOCATION_URLS[location] + "/?__a=1", cookies=COOKIE)
     if(response.status_code != 200):
         print("Error")

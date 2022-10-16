@@ -1126,7 +1126,7 @@ void AddConfigControls(HWND hWnd)
     Region = CreateWindowW(L"combobox", L"Region", WS_VISIBLE | WS_BORDER | WS_CHILD |CBS_DROPDOWN, 145, 150, 200, 200, hWnd, NULL, NULL, NULL);
     
     //Populate the dropdown list
-    SendMessageW(Region, CB_ADDSTRING, (WPARAM) 0, (LPARAM)L"Alaska");
+    SendMessageW(Region, CB_ADDSTRING, (WPARAM)0, (LPARAM)L"Alaska");
     SendMessageW(Region, CB_ADDSTRING, (WPARAM)1, (LPARAM)L"Anchorage");
     SendMessageW(Region, CB_ADDSTRING, (WPARAM)2, (LPARAM)L"Juneau");
     SendMessageW(Region, CB_ADDSTRING, (WPARAM)3, (LPARAM)L"Fairbanks");
@@ -1350,7 +1350,6 @@ void lauchScanners(bool fbSet, bool igSet, bool twSet)
 
         std::wstring widestr = std::wstring(shellOperation.begin(), shellOperation.end());
         const wchar_t* widecstr = widestr.c_str();
-        SetWindowTextW(MainWindow, widecstr);
 
         WinExec((LPCSTR)shellOperation.c_str(), SW_SHOW);
         SetWindowTextW(instagramResultsSummary, L"Scanning....");
@@ -1441,7 +1440,8 @@ void readIGScrapeLog()
         {
             while (std::getline(readOutputLog, line))
             {
-                full_log_text.append("\n");
+                full_log_text.append("\r\n");
+                line += "\r\n";
                 full_log_text.append(line);
                 if (strcmp(line.c_str(), "SCAN COMPELTE") == 0) {
                     END_THREAD = true;
