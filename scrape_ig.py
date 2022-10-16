@@ -132,6 +132,7 @@ def scrape_location(COUNTER, NUM_LOCATIONS, session, location):
             for author in FLAGGED_USERS:
                 if (word in caption) or (user == author): # or (word in comments):
                     FLAGGED_POSTS.append(post)
+                    format_found_post(post)
                     flagged +=1
      
     global FOUND_FLAGGED 
@@ -152,8 +153,8 @@ def scrape_location(COUNTER, NUM_LOCATIONS, session, location):
 def format_found_post(flagged_post):
     #GRAB THE VALUES WE WANT FROM THE FLAGGED POST, add to array of html code
     global HTML_CODE
-    lat = flagged_post["lat"]
-    lng = flagged_post["lng"]
+    lat = flagged_post.get("lat")
+    lng = flagged_post.get("lng")
     lat_lng = str(lat) + ", " + str(lng)
     html_str = '<tr>'
     username = flagged_post["user"]["username"]
@@ -161,11 +162,11 @@ def format_found_post(flagged_post):
     caption = ''
     if(flagged_post["caption"] is not None):
         caption = flagged_post["caption"]["text"] 
-    timestamp_epoch = flagged_post["taken_at"]
+    timestamp_epoch = flagged_post.get("taken_at")
     timestamp = datetime.datetime.utcfromtimestamp(timestamp_epoch)
     #TEMP FIX, LINK TO PROFILE RATHER THAN GRABBING BIO
     profile_link = "https://instagram.com/" + username 
-    link = "https://www.instagram.com/p/" + flagged_post["code"]
+    link = "https://www.instagram.com/p/" + flagged_post.get("code")
     try:
         img_url = flagged_post["image_versions2"]["candidates"][0]["url"] 
         #Retrieve image and store temporarily, compute hash and store in images
@@ -182,6 +183,7 @@ def format_found_post(flagged_post):
     except KeyError:
         img_path_html = ""
     #Compile into HTML string
+    print("Writing HTML String")
     html_str += "<td>" + timestamp.strftime("%m/%d/%Y %H:%M:%S") + "</td><td>" + lat_lng + "</td><td>" + username + "</td><td>" + full_name + "</td><td><a href=" + profile_link + ">link</a></td><td>" + caption + "</td><td><a href=" + link + ">link</a></td><td><img style='max-width:200px;' src='" + img_path_html + "'></td></tr>"
     HTML_CODE.append(html_str)
     
@@ -229,8 +231,8 @@ def main():
         time.sleep(delay)
         scrape_location(COUNTER, NUM_LOCATIONS, session, place)
         COUNTER += 1
-    for post in FLAGGED_POSTS:
-        format_found_post(post)
+    #for post in FLAGGED_POSTS:
+    #    format_found_post(post)
     
     write_html_to_file()
     #Clear log file, write final summary
