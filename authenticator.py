@@ -10,6 +10,9 @@ import datetime
 import json
 import time
 import random
+import selenium
+from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.options import Options
 
 #Simple encryption, adds 10 to each character value, writes it into the right place
 def encrypt_and_store(auth, mode):
@@ -21,8 +24,9 @@ def encrypt_and_store(auth, mode):
         enc_password += chr(ord(char) + 10)
     
     #open the file in read mode
-    f = open("./Program Data/Configuration/user_config.txt", 'r+')
+    f = open("./Program Data/Configuration/user_config.txt", 'r+', encoding="utf-8")
     data = f.read().split("\n")
+    print(data)
     f.close()
     if(mode == "FB"):
         data[1] = enc_username
@@ -34,32 +38,74 @@ def encrypt_and_store(auth, mode):
         data[7] = enc_username
         data[8] = enc_password
     #clear out old data and assemble new string
-    cleared_file = open("./Program Data/Configuration/user_config.txt", "w")
+    cleared_file = open("./Program Data/Configuration/user_config.txt", "w", encoding="utf-8")
     new_data = ''
     for item in data:
         new_data += item + "\n"
     cleared_file.write(new_data)
     cleared_file.close()
-    
-    #write each element of the cookie to a line, last line must be SUCCESS
-    log_file = open("./Program Data/Logs/IG_AUTH_LOGS/log.txt", "w")
-    for item in auth.cookie:
-        log_file.write("{}:{}\n".format(item, auth.cookie[item]))
-    log_file.write("SUCCESS")
-    log_file.close()
+   
 
 
 class FB_AUTH:
-    def __init__(self, username, password):
-       self.username = username
+    def __init__(self, email, password):
+       self.username = email
        self.password = password
        self.cookie = ""
     
-    #REFERENCE FOR PROCESS: https://stackoverflow.com/questions/21928368/login-to-facebook-using-python-requests
-    
+    #Log in using Selenium browser emulation
     def attempt_login(self):
-        print("This is a stub")
+        #opening the file in write mode clears the previous login attempt
+        clear_log_file = open("./Program Data/Logs/FB_AUTH_LOGS/log.txt", "w")
+        clear_log_file.close()
+        chrome_options = Options()
+        #--headless makes the window not pop up
+        chrome_options.add_argument("--headless")
+        driver = selenium.webdriver.Chrome("./chromedriver", options=chrome_options)
+        driver.get("https://facebook.com")
+        print("FB opened")
+        time.sleep(1)
+        print(driver.title)
 
+        email_form = driver.find_element(By.ID,'email')
+        password_form = driver.find_element(By.ID, 'pass')
+        #Fill forms
+        email_form.send_keys(self.username)
+        time.sleep(1)
+        print("Entered email")
+        password_form.send_keys(self.password)
+        time.sleep(1)
+        print("Entered Password")
+        submit_form = driver.find_element(By.NAME, "login")
+        time.sleep(1)
+        submit_form.click()
+        print("Submitted")
+        time.sleep(5)
+        log_file = open("./Program Data/Logs/FB_AUTH_LOGS/log.txt", "w")
+        #Title will change to Facebook if logged in
+        if(driver.title == "Facebook"):
+            self.cookie = driver.get_cookies()
+            if self.cookie is not None:
+                print("Log in success")
+                log_file.write(json.dumps(self.cookie))
+                log_file.write("\n")
+                log_file.write("SUCCESS")
+                log_file.close()
+                driver.quit()
+                encrypt_and_store(self, "FB")
+                print("DONE")
+                return "Success"
+        else:
+            print("Log in fail")
+            log_file.write("FAIL")
+            log_file.close()
+            driver.quit()
+            print("DONE")
+            return "Fail"
+        
+   
+  
+        
 
 class IG_AUTH:
     def __init__(self, username, password):
@@ -103,14 +149,19 @@ class IG_AUTH:
 
         login_attempt_response = requests.post(login_url, data=payload, headers=login_header)
         json_data = json.loads(login_attempt_response.text)
-        #print("Response from login attempt in {}".format(login_attempt_response.text))
         time.sleep(5)
         if json_data["authenticated"]:
             raw_cookies = login_attempt_response.cookies
-            self.cookie = raw_cookies.get_dict()
+            self.cookie = json.dumps(raw_cookies.get_dict())
             encrypt_and_store(self, "IG")
+            #write cookie to file, last line must be SUCCESS
+            log_file = open("./Program Data/Logs/IG_AUTH_LOGS/log.txt", "w", encoding="utf-8")
+            log_file.write(self.cookie)
+            log_file.write("\n")
+            log_file.write("SUCCESS")
+            log_file.close()
         else:
-            log_file = open("./Program Data/Logs/IG_AUTH_LOGS/log.txt", "w")
+            log_file = open("./Program Data/Logs/IG_AUTH_LOGS/log.txt", "w", encoding="utf-8")
             log_file.write("FAIL")
             log_file.close()
             return "Fail"        
@@ -124,9 +175,14 @@ class TW_AUTH:
        self.cookie = ""
    
 
-def attempt_fb_login(username, password):
-    auth = FB_AUTH(username, password)
-   
+def attempt_fb_login(email, password):
+    auth = FB_AUTH(email, password)
+    attempt = auth.attempt_login()
+    if(attempt != "Success"):
+       return 0 
+    else:
+        return 1
+
 def attempt_ig_login(username, password):
     #Clear previous log data first by opening in write mode
     auth = IG_AUTH(username, password)

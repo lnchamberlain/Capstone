@@ -1151,7 +1151,7 @@ void AddFBLoginControls(HWND hWnd)
 {
 
     HWND titleText = CreateWindowW(L"Static", L"Facebook Login", WS_VISIBLE | WS_CHILD | SS_CENTER, 120, 10, 150, 30, hWnd, NULL, NULL, NULL);
-    HWND usernameTextBox = CreateWindowW(L"Static", L"Username:", WS_VISIBLE | WS_CHILD | SS_RIGHT, 20, 50, 70, 30, hWnd, NULL, NULL, NULL);
+    HWND usernameTextBox = CreateWindowW(L"Static", L"Email:", WS_VISIBLE | WS_CHILD | SS_RIGHT, 20, 50, 70, 30, hWnd, NULL, NULL, NULL);
     fbUser = CreateWindowW(L"Edit", L"", WS_VISIBLE | WS_CHILD | WS_BORDER| ES_MULTILINE | ES_AUTOVSCROLL | SS_LEFT, 95, 50, 100, 30, hWnd, NULL, NULL, NULL);
     HWND passwordTextBox = CreateWindowW(L"Static", L"Password:", WS_VISIBLE | WS_CHILD | SS_RIGHT, 20, 85, 70, 30, hWnd, NULL, NULL, NULL);
     fbPass = CreateWindowW(L"Edit", L"", WS_VISIBLE | WS_CHILD | WS_BORDER | ES_MULTILINE | ES_AUTOVSCROLL | SS_LEFT, 95, 85, 100, 30, hWnd, NULL, NULL, NULL);
@@ -1396,15 +1396,15 @@ void beginListeningforScrapeResults(bool fbSet, bool igSet, bool twSet)
 
 void readFBScrapeLog()
 {
+    Sleep(2000);
     std::fstream readOutputLog;
     std::string line;
-    std::string full_log_text;
+    std::string full_log_text = "";
     bool END_THREAD = false;
     while (!END_THREAD)
     {
         Sleep(2000);
         readOutputLog.open(".\\Program Data\\Logs\\FB_SCRAPE_LOGS\\log.txt", std::ios::in);
-        //Read in all lines, check for SUCCESS or FAIL
         if (readOutputLog.is_open())
         {
             while (std::getline(readOutputLog, line))
@@ -1417,16 +1417,17 @@ void readFBScrapeLog()
             }
             std::wstring wide_string = std::wstring(full_log_text.begin(), full_log_text.end());
             const wchar_t* scanUpdate = wide_string.c_str();
-            SetWindowTextW(facebookResultsSummary, scanUpdate);
+            SetWindowTextW(instagramResultsSummary, scanUpdate);
+            full_log_text = "";
         }
+        readOutputLog.close();
     }
     //Kill this thread
-   std::terminate();
-
+    std::terminate();
 }
+
 void readIGScrapeLog()
 {
-    SetWindowTextW(instagramResultsSummary, L"In read scrape log");
     Sleep(2000);
     std::fstream readOutputLog;
     std::string line;
@@ -1460,15 +1461,15 @@ void readIGScrapeLog()
 
 void readTWScrapeLog()
 {
+    Sleep(2000);
     std::fstream readOutputLog;
     std::string line;
-    std::string full_log_text;
+    std::string full_log_text = "";
     bool END_THREAD = false;
     while (!END_THREAD)
     {
         Sleep(2000);
         readOutputLog.open(".\\Program Data\\Logs\\TW_SCRAPE_LOGS\\log.txt", std::ios::in);
-        //Read in all lines, check for SUCCESS or FAIL
         if (readOutputLog.is_open())
         {
             while (std::getline(readOutputLog, line))
@@ -1481,8 +1482,10 @@ void readTWScrapeLog()
             }
             std::wstring wide_string = std::wstring(full_log_text.begin(), full_log_text.end());
             const wchar_t* scanUpdate = wide_string.c_str();
-            SetWindowTextW(facebookResultsSummary, scanUpdate);
+            SetWindowTextW(instagramResultsSummary, scanUpdate);
+            full_log_text = "";
         }
+        readOutputLog.close();
     }
     //Kill this thread
     std::terminate();
