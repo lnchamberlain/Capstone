@@ -63,7 +63,18 @@ def get_cookie():
     ig_auth_log_file = open("./Program Data/Logs/FB_AUTH_LOGS/log.txt")
     values = ig_auth_log_file.read().split("\n")
     #Maybe need to cast?
-    COOKIE = line[1]
+    global COOKIE
+    val = values[0][1:-1]
+    cookie_dict = {}
+    val = (values[0][1:-1]).split(":")
+    for i in range(len(val) - 1):
+        cookie_dict[val[i]] = val[i+1]
+        i += 1
+    
+    print(cookie_dict)
+    sys.exit()
+    #COOKIE = json.loads(val)
+    COOKIE = cookie_dict
     
 
 
@@ -87,7 +98,9 @@ def scrape_location(session, location):
     #open temporary file to write to
     temp_file = open("./Program Data/Logs/FB_SCRAPE_LOGS/temp.txt", "w", encoding="utf-8")
     print("\n*****************************************************************\n")
-    print("STUB")
+    print("Cookie is {}\nLocation is {}\n".format(COOKIE, location))
+    response = session.get(LOCATION_URLS[location], cookies=COOKIE)
+    print("Response is {}".format(response))
     print("\n*****************************************************************\n")
    
 
