@@ -24,7 +24,7 @@ import os
 
 
 
-REGION_RESOLUTION_TABLE = {1:"./Program Data/Regions/ALASKA.csv", 2:"./Program Data/Regions/ANCHORAGE.csv", 3:"./Program Data/Regions/BETHEL.csv", 4:"./Program Data/Regions/FAIRBANKS.csv", 5:"./Program Data/Regions/JUNEAU.csv", 6:"./Program Data/Regions/TESTING.csv"}
+REGION_RESOLUTION_TABLE = {1:"./Program Data/Regions/ALASKA_IG.csv", 2:"./Program Data/Regions/ANCHORAGE_IG.csv", 3:"./Program Data/Regions/BETHEL_IG.csv", 4:"./Program Data/Regions/FAIRBANKS_IG.csv", 5:"./Program Data/Regions/JUNEAU_IG.csv", 6:"./Program Data/Regions/TESTING_IG.csv"}
 MONTH_RESOLUTION_TABLE = {1:"Jan", 2:"Feb", 3:"Mar", 4:"Apr", 5:"May", 6:"Jun", 7:"Jul", 8:"Aug", 9:"Sep", 10:"Oct", 11:"Nov", 12:"Dec"}
 LOCATION_URLS = {}
 KEYWORDS = [] 
