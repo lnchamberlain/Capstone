@@ -7,6 +7,7 @@
 # To use with test regions (much smaller): python3 scrape_fb.py 6 DEFAULT
 
 import datetime
+from tempfile import tempdir
 from urllib.request import urlretrieve
 import requests
 import sys
@@ -20,7 +21,7 @@ import hashlib
 from PIL import Image
 import shutil
 import os
-
+import pickle
 
 
 
@@ -58,23 +59,19 @@ def get_keywords():
     KEYWORDS = keywords_file.read().split(",")
     
 
-#Fills global variable with value for IG_AUTH logs
+#Grabs cookie value from AUTH logs, creates a session with the cookie values
 def get_cookie():
     ig_auth_log_file = open("./Program Data/Logs/FB_AUTH_LOGS/log.txt")
-    values = ig_auth_log_file.read().split("\n")
+    values = ig_auth_log_file.read()
     #Maybe need to cast?
     global COOKIE
-    val = values[0][1:-1]
-    cookie_dict = {}
-    val = (values[0][1:-1]).split(":")
-    for i in range(len(val) - 1):
-        cookie_dict[val[i]] = val[i+1]
-        i += 1
-    
-    print(cookie_dict)
-    sys.exit()
-    #COOKIE = json.loads(val)
-    COOKIE = cookie_dict
+    #print(values[0])
+    cookies = pickle.load(open("./Program Data/Logs/FB_AUTH_LOGS/fb_cookies.pkl", "rb"))
+    session = requests.Session()
+    for cookie in cookies:
+        session.cookies.set(cookie['name'], cookie['value'])
+    return session
+
     
 
 
@@ -99,8 +96,9 @@ def scrape_location(session, location):
     temp_file = open("./Program Data/Logs/FB_SCRAPE_LOGS/temp.txt", "w", encoding="utf-8")
     print("\n*****************************************************************\n")
     print("Cookie is {}\nLocation is {}\n".format(COOKIE, location))
-    response = session.get(LOCATION_URLS[location], cookies=COOKIE)
+    response = session.get(LOCATION_URLS[location],cookies=COOKIE)
     print("Response is {}".format(response))
+    print("Content is {}".format(response.content))
     print("\n*****************************************************************\n")
    
 
@@ -136,7 +134,7 @@ def write_html_to_file():
 def main():
     get_urls()
     get_keywords()
-    get_cookie()
+    session = get_cookie()
     get_output_dir()
     get_flagged_users()
     COUNTER = 1
@@ -147,7 +145,7 @@ def main():
     SCAN_NAME = "FB SCAN REPORT " + date_and_time_formatted
     clear_log = open("./Program Data/Logs/FB_SCRAPE_LOGS/log.txt", "w", encoding="utf-8")
     clear_log.close()
-    session = requests.Session()
+    #session = requests.Session()
     #GENERAL PROCESS: scrape each location and flag posts, format post information and write to file
     for place in LOCATION_URLS:
         #Random Latency

@@ -13,6 +13,7 @@ import random
 import selenium
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
+import pickle
 
 #Simple encryption, adds 10 to each character value, writes it into the right place
 def encrypt_and_store(auth, mode):
@@ -26,7 +27,7 @@ def encrypt_and_store(auth, mode):
     #open the file in read mode
     f = open("./Program Data/Configuration/user_config.txt", 'r+', encoding="utf-8")
     data = f.read().split("\n")
-    print(data)
+    #print(data)
     f.close()
     if(mode == "FB"):
         data[1] = enc_username
@@ -87,8 +88,7 @@ class FB_AUTH:
             self.cookie = driver.get_cookies()
             if self.cookie is not None:
                 print("Log in success")
-                log_file.write(json.dumps(self.cookie))
-                log_file.write("\n")
+                pickle.dump(self.cookie, open("./Program Data/Logs/FB_AUTH_LOGS/fb_cookies.pkl", "wb"))
                 log_file.write("SUCCESS")
                 log_file.close()
                 driver.quit()
