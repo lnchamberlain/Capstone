@@ -1,3 +1,5 @@
+# coding=utf-8
+
 # UnderCover Recovery 
 # Windows Desktop Application for scraping and storing keywords and flagged users from social media sites 
 # Developed by Tyler and Logan 
@@ -138,14 +140,13 @@ def scrape_location(driver, location, counter):
             time.sleep(SCROLL_PAUSE)
             curr_height = driver.execute_script(GET_CURRENT_SCROLL_HEIGHT)
             if curr_height == prev_height:
-                #l.append(s.find_all("div", {"class":"x1ja2u2z xh8yej3 x1n2onr6 x1yztbdb"}))
                 break 
             prev_height = curr_height
         
         print("FOUND POSTS: {}".format(len(l)))
         TOTAL_POSTS += len(l)
         print("TOTAL FOUND POSTS: {}\n".format(TOTAL_POSTS))
-        for i in range(2):
+        for i in range(1):
             format_found_post(l[i])
        
     print("\n*****************************************************************\n")
@@ -160,13 +161,52 @@ def format_found_post(flagged_posts):
     global HTML_CODE
     HEADER_STR = "<html><head></head><body>"
     END_STR = "</body></html>"
+
     for post in flagged_posts:
-        print(len(flagged_posts))
+        AUTHOR = ''
+        LOCATION = ''
+        TIMESTAMP = ''
+        CAPTION = ''
+        LINK = ''
+        ACCOUNT_LINK = ''
+        MEDIA_LINK = ''
         closed_html = HEADER_STR + str(post) + END_STR
         s = BeautifulSoup(closed_html, "html.parser")
-        f = open("POST_FB_AUTOSPY.txt", "w+", encoding='utf-8')
-        f.write(s.prettify())
-        f.write("\n\n")
+        l = s.get_text()
+        a = l.split(" ")
+        #Find indexes of places to split up text into components we care about 
+        name_index = a.index("is")
+        for i in range(name_index):
+            AUTHOR += a[i] + " "
+        
+        if(" is in " in l):
+            location_start_index = a.index("in")
+        elif(" at " in l):
+            location_start_index = a.index("at")
+        location_end_index = 30#a.index("\b7")
+        for i in range(location_start_index, location_end_index):
+            LOCATION += a[i] + " "
+
+        
+        
+        #LOCATION = l[name_index + len(" is in "):place_index + len("\xa0")] 
+        #TIMESTAMP = l[place_index + len("\xa0"):date_index] 
+        #CAPTION = l[date_index+len("Shared with Public"):comment_index + - 1]
+
+        print("AUTHOR: {}\nLOCATION: {}\nTIMESTAMP: {}\nCAPTION: {}\n".format(AUTHOR, LOCATION, TIMESTAMP, CAPTION))
+        print("\n")
+        print(a)
+        
+        
+       # print(a)
+        #print(l)
+        #l = s.find_all("div", {"style":"text-align:"})
+        #print(l)
+        #sys.exit()
+
+        #f = open("POST_FB_AUTOSPY.txt", "w+", encoding='utf-8')
+        #f.write(s.prettify())
+        #f.write("\n\n")
  
     
     
