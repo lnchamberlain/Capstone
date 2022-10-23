@@ -9,11 +9,8 @@
 # To use with test regions (much smaller): python3 scrape_fb.py 6 DEFAULT
 
 import datetime
-from tempfile import tempdir
-from tkinter import END
 from urllib.request import urlretrieve
 from bs4 import BeautifulSoup
-import requests
 import sys
 import datetime
 import json
@@ -108,10 +105,14 @@ def scrape_location(driver, location, counter):
     SCROLL_COUNT = 0
     GET_CURRENT_SCROLL_HEIGHT = "return document.body.scrollHeight"
     SCROLL_DOWN_SCRIPT = "window.scrollTo(0, document.body.scrollHeight);"
+    #HEADER_STR = "<html><head></head><body>"
+    #END_STR = "</body></html>"
     print("\n*****************************************************************\n")
     print("\nScraping Location {}...".format(location))
     print("Number {}/{}\n".format(counter, len(LOCATION_URLS)))
     l = []
+    posts = []
+
     for word in KEYWORDS:
         url_base = LOCATION_URLS[location].split("word")
         #add keyword to crafted url
@@ -130,8 +131,6 @@ def scrape_location(driver, location, counter):
                 return
         #Keep scrolling and grabbing posts until bottom is reached
         while True:
-            s = BeautifulSoup(driver.page_source, 'html.parser')
-            l.append(s.find_all("div", {"class":"x1ja2u2z xh8yej3 x1n2onr6 x1yztbdb"}))
             print("Scroll count:{}\n".format(SCROLL_COUNT))
             driver.execute_script(SCROLL_DOWN_SCRIPT)
             SCROLL_COUNT +=1
@@ -142,12 +141,18 @@ def scrape_location(driver, location, counter):
             if curr_height == prev_height:
                 break 
             prev_height = curr_height
-        
-        print("FOUND POSTS: {}".format(len(l)))
-        TOTAL_POSTS += len(l)
-        print("TOTAL FOUND POSTS: {}\n".format(TOTAL_POSTS))
-        for i in range(1):
-            format_found_post(l[i])
+    s = BeautifulSoup(driver.page_source, 'html.parser')
+    l.append(s.find_all("div", {"class": "x1ja2u2z xh8yej3 x1n2onr6 x1yztbdb"}))
+    for segment in l:
+        for post in segment:
+            posts.append(post)
+    print("FOUND POSTS: {}".format(len(posts)))
+    TOTAL_POSTS += len(posts)
+    print("TOTAL FOUND POSTS: {}\n".format(TOTAL_POSTS))
+
+    #posts is an array of beautifulsoup objects, one per post 
+    for post in posts:
+       format_found_post(post)
        
     print("\n*****************************************************************\n")
 
@@ -156,60 +161,72 @@ def scrape_location(driver, location, counter):
 
 
 #Requests the full info for a flagged post
-def format_found_post(flagged_posts):
+def format_found_post(flagged_post):
     #GRAB THE VALUES WE WANT FROM THE FLAGGED POST, add to array of html code
     global HTML_CODE
-    HEADER_STR = "<html><head></head><body>"
-    END_STR = "</body></html>"
+    AUTHOR = ''
+    LOCATION = ''
+    TIMESTAMP = ''
+    CAPTION = ''
+    POST_LINK = ''
+    ACCOUNT_LINK = ''
+    MEDIA_LINK = ''
+    TYPE = None
+    links = flagged_post.find_all("a", {"class":"x1i10hfl xjbqb8w x6umtig x1b1mbwd xaqea5y xav7gou x9f619 x1ypdohk xt0psk2 xe8uvvx xdj266r x11i5rnm xat24cr x1mh8g0r xexx8yu x4uap5 x18d9i69 xkhd6sd x16tdsg8 x1hl2dhg xggy1nq x1a2a7pz xt0b8zv xzsf02u x1s688f"})
+    AUTHOR = links[0].get_text()
+    account_tag = str(links[0])
+    href_index = account_tag.find(" href=")
+    href_end = account_tag.find("?", href_index)
+    ACCOUNT_LINK = account_tag[(href_index + 7):href_end]
+    LOCATION = links[-1].get_text()   
+    times = flagged_post.find_all("a", {"class":"x1i10hfl xjbqb8w x6umtig x1b1mbwd xaqea5y xav7gou x9f619 x1ypdohk xt0psk2 xe8uvvx xdj266r x11i5rnm xat24cr x1mh8g0r xexx8yu x4uap5 x18d9i69 xkhd6sd x16tdsg8 x1hl2dhg xggy1nq x1a2a7pz x1heor9g xt0b8zv xo1l8bm"})
+    timestamp_text = times[0].get_text()
+    timestamp_obj, unit = convert_timestamp_text(timestamp_text)
+    if(unit == 'h' or unit == 'm'):
+        TIMESTAMP = timestamp_obj.strftime("%m/%d/%Y %H:%M")
+    if(unit == 'no_formatting'):
+        TIMESTAMP = timestamp_obj
+    if(unit == 'd'):
+        TIMESTAMP = timestamp_obj.strftime("%m/%d/%Y")
+    captions = flagged_post.find_all("span", {"class":"x193iq5w xeuugli x13faqbe x1vvkbs x1xmvt09 x1lliihq x1s928wv xhkezso x1gmr53x x1cpjm7i x1fgarty x1943h6x xudqn12 x3x7a5m x6prxxf xvq8zen xo1l8bm xzsf02u x1yc453h"})
+    CAPTION = captions[0].get_text()
+    
+   #While we figure out how to split them, grab links for only posts with a single image
+    TYPE = "Image"
+    if(TYPE == "Image"):
+        post_links = flagged_post.find_all("a", {"class":"x1i10hfl x1qjc9v5 xjbqb8w xjqpnuy xa49m3k xqeqjp1 x2hbi6w x13fuv20 xu3j5b3 x1q0q8m5 x26u7qi x972fbf xcfux6l x1qhh985 xm0m39n x9f619 x1ypdohk xdl72j9 x2lah0s xe8uvvx xdj266r x11i5rnm xat24cr x1mh8g0r x2lwn1j xeuugli xexx8yu x4uap5 x18d9i69 xkhd6sd x1n2onr6 x16tdsg8 x1hl2dhg xggy1nq x1ja2u2z x1t137rt x1o1ewxj x3x9cwd x1e5q0jg x13rtm0m x1q0g3np x87ps6o x1lku1pv x1a2a7pz x1lliihq x1pdlv7q"})
+        if(len(post_links) > 0):
+            post_links_str = str(post_links[0])
+            href_index = post_links_str.find(" href=")
+            href_end = post_links_str.find("&", href_index)
+            POST_LINK = post_links_str[(href_index + 7):href_end]
+        else:
+            POST_LINK = "MULTIPLE IMAGES OR VIDEO"
 
-    for post in flagged_posts:
-        AUTHOR = ''
-        LOCATION = ''
-        TIMESTAMP = ''
-        CAPTION = ''
-        LINK = ''
-        ACCOUNT_LINK = ''
-        MEDIA_LINK = ''
-        closed_html = HEADER_STR + str(post) + END_STR
-        s = BeautifulSoup(closed_html, "html.parser")
-        l = s.get_text()
-        a = l.split(" ")
-        #Find indexes of places to split up text into components we care about 
-        name_index = a.index("is")
-        for i in range(name_index):
-            AUTHOR += a[i] + " "
-        
-        if(" is in " in l):
-            location_start_index = a.index("in")
-        elif(" at " in l):
-            location_start_index = a.index("at")
-        location_end_index = 30#a.index("\b7")
-        for i in range(location_start_index, location_end_index):
-            LOCATION += a[i] + " "
+    print("AUTHOR: {}\nLOCATION: {}\nTIMESTAMP: {}\nCAPTION: {}\nLINK: {}\nACCOUNT_LINK: {}\nMEDIA_LINK: {}\n".format(AUTHOR, LOCATION, TIMESTAMP, CAPTION, POST_LINK, ACCOUNT_LINK, MEDIA_LINK))
 
-        
-        
-        #LOCATION = l[name_index + len(" is in "):place_index + len("\xa0")] 
-        #TIMESTAMP = l[place_index + len("\xa0"):date_index] 
-        #CAPTION = l[date_index+len("Shared with Public"):comment_index + - 1]
-
-        print("AUTHOR: {}\nLOCATION: {}\nTIMESTAMP: {}\nCAPTION: {}\n".format(AUTHOR, LOCATION, TIMESTAMP, CAPTION))
-        print("\n")
-        print(a)
-        
-        
-       # print(a)
-        #print(l)
-        #l = s.find_all("div", {"style":"text-align:"})
-        #print(l)
-        #sys.exit()
-
-        #f = open("POST_FB_AUTOSPY.txt", "w+", encoding='utf-8')
-        #f.write(s.prettify())
-        #f.write("\n\n")
  
-    
-    
+ 
+#Takes in a time string and returns a datetime object (example: '1d' -> datetime for yesterday)
+def convert_timestamp_text(text):
+    unit = text[-1]
+    #Posts older than a few days will be listed as a date with a time or just a date, in that case return the given string
+    if(unit == 's'):
+        number = float(text[:-1])
+        final_time = datetime.datetime.now() - datetime.timedelta(seconds=number)
+    elif(unit == 'm'):
+        number = float(text[:-1])
+        final_time = datetime.datetime.now() - datetime.timedelta(minutes=number)
+    elif(unit == 'h'):
+        number = float(text[:-1])
+        final_time = datetime.datetime.now() - datetime.timedelta(hours=number)
+    elif(unit == 'd'):
+        number = float(text[:-1])
+        final_time = datetime.datetime.now() - datetime.timedelta(weeks=(number / 7))
+    else:
+        unit = 'no_formatting'
+        final_time = text
+    return final_time, unit
 
 
 
@@ -261,6 +278,7 @@ def main():
         scrape_location(driver, place, COUNTER)
         COUNTER += 1
         sys.exit()
+    
    
     
     #write_html_to_file()
