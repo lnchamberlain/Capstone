@@ -44,6 +44,7 @@ TOTAL_POSTS = 0
 FOUND_FLAGGED = 0
 HTML_CODE = []
 SCAN_NAME = ''
+NUM_LOCATIONS = 0
 
 
 #Fills global variable with urls from the last column of the .csv file
@@ -55,6 +56,8 @@ def get_urls():
         for row in csv_data:
             LOCATION_URLS[row[1]] = row[-1]
     #First pair of values are header values
+    global NUM_LOCATIONS
+    NUM_LOCATIONS = len(LOCATION_URLS)
     LOCATION_URLS.pop("Location Name", None)
 
 
@@ -71,10 +74,6 @@ def get_cookie():
     ig_auth_log_file = open("./Program Data/Logs/FB_AUTH_LOGS/log.txt")
     global COOKIE
     cookies = pickle.load(open("./Program Data/Logs/FB_AUTH_LOGS/fb_cookies.pkl", "rb"))
-    #cookies_dict = {}
-    #for cookie in cookies:
-    #    cookies_dict[cookie['name']] = cookie['value']
-    #COOKIE = cookies_dict
     COOKIE = cookies
 
 
@@ -100,6 +99,8 @@ def get_flagged_users():
 def scrape_location(driver, location, counter):
     #open temporary file to write to
     temp_file = open("./Program Data/Logs/FB_SCRAPE_LOGS/temp.txt", "w", encoding="utf-8")
+    temp_file.write(location + "\n")
+    temp_file.write("Location {}/{}\n".format(counter, NUM_LOCATIONS))
     global TOTAL_POSTS
     SCROLL_PAUSE = 1
     SCROLL_COUNT = 0
@@ -141,15 +142,21 @@ def scrape_location(driver, location, counter):
             if curr_height == prev_height:
                 break 
             prev_height = curr_height
+    temp_file.write("Scrolled {} times\n".format(SCROLL_COUNT))
     s = BeautifulSoup(driver.page_source, 'html.parser')
     l.append(s.find_all("div", {"class": "x1ja2u2z xh8yej3 x1n2onr6 x1yztbdb"}))
     for segment in l:
         for post in segment:
             posts.append(post)
     print("FOUND POSTS: {}".format(len(posts)))
+    temp_file.write("Scraped Posts: {}\n".format(len(posts)))
     TOTAL_POSTS += len(posts)
     print("TOTAL FOUND POSTS: {}\n".format(TOTAL_POSTS))
-
+    temp_file.write(("Total Posts: {}\n".format(TOTAL_POSTS)))
+    temp_file.close()
+    shutil.copy("./Program Data/Logs/FB_SCRAPE_LOGS/temp.txt", "./Program Data/Logs/FB_SCRAPE_LOGS/log.txt")
+        #Get rid of temporary file
+    os.remove("./Program Data/Logs/FB_SCRAPE_LOGS/temp.txt")
     #posts is an array of beautifulsoup objects, one per post 
     for post in posts:
        format_found_post(post)
@@ -294,14 +301,14 @@ def main():
         time.sleep(delay)
         scrape_location(driver, place, COUNTER)
         COUNTER += 1
-        sys.exit()
+
     
    
     
     #write_html_to_file()
     #Clear log file, write final summary
     log_file = open("./Program Data/Logs/FB_SCRAPE_LOGS/log.txt", "w")
-    log_file.write("TOTAL SCRAPED POSTS: {}\nTOTAL FLAGGED POSTS: {}\nSCAN COMPLETE".format(TOTAL_POSTS, FOUND_FLAGGED))
+    log_file.write("TOTAL FLAGGED POSTS: {}\nSCAN COMPLETE".format(TOTAL_POSTS))
     log_file.close()
     session.close()
 

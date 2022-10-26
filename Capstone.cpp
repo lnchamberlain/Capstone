@@ -808,7 +808,7 @@ LRESULT CALLBACK WndProcIGLogin(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
                 shellOperation.append(" ");
 
                 //Lauch program
-                WinExec((LPCSTR)shellOperation.c_str(), SW_HIDE);
+                WinExec((LPCSTR)shellOperation.c_str(), SW_SHOW);
                 SetWindowTextW(IGsubmit, L"Authenticating...");
             }
             //NOTE: if user puts stuff in the login but also checks used saved, will override and use saved info
