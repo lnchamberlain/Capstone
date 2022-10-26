@@ -178,9 +178,23 @@ def format_found_post(flagged_post):
     href_index = account_tag.find(" href=")
     href_end = account_tag.find("?", href_index)
     ACCOUNT_LINK = account_tag[(href_index + 7):href_end]
-    LOCATION = links[-1].get_text()   
-    times = flagged_post.find_all("a", {"class":"x1i10hfl xjbqb8w x6umtig x1b1mbwd xaqea5y xav7gou x9f619 x1ypdohk xt0psk2 xe8uvvx xdj266r x11i5rnm xat24cr x1mh8g0r xexx8yu x4uap5 x18d9i69 xkhd6sd x16tdsg8 x1hl2dhg xggy1nq x1a2a7pz x1heor9g xt0b8zv xo1l8bm"})
-    timestamp_text = times[0].get_text()
+    LOCATION = links[-1].get_text()
+    times = flagged_post.find_all("span", {"id": "jsc_c_k9"})
+    #print(times)
+    #times = flagged_post.find_all("a", {"class":"x1i10hfl xjbqb8w x6umtig x1b1mbwd xaqea5y xav7gou x1ypdohk xe8uvvx xdj266r x11i5rnm xat24cr x1mh8g0r xexx8yu x4uap5 x18d9i69 xkhd6sd x16tdsg8 x1hl2dhg xggy1nq x1o1ewxj x3x9cwd x1e5q0jg x13rtm0m x87ps6o x1lku1pv x1a2a7pz x9f619 x3nfvp2 xdt5ytf xl56j7k x1n2onr6 xh8yej3"})
+    #f = open('FB_AUTOPSY_FILE.txt', 'w', encoding='utf-8')
+    #f.write(flagged_post.prettify())
+    #f.close()
+    if(len(times) > 1):
+        timestamp_text = times[0].get_text()
+    else:
+        timestamp_text = ''
+    #print(times)
+    #for time in times:
+    #    print(time.get_text())
+    #    print("\n")
+    #print(timestamp_text)
+    #sys.exit()
     timestamp_obj, unit = convert_timestamp_text(timestamp_text)
     if(unit == 'h' or unit == 'm'):
         TIMESTAMP = timestamp_obj.strftime("%m/%d/%Y %H:%M")
@@ -209,7 +223,10 @@ def format_found_post(flagged_post):
  
 #Takes in a time string and returns a datetime object (example: '1d' -> datetime for yesterday)
 def convert_timestamp_text(text):
-    unit = text[-1]
+    if(len(text)>1):
+        unit = text[-1]
+    else:
+        return text, "no_formatting"
     #Posts older than a few days will be listed as a date with a time or just a date, in that case return the given string
     if(unit == 's'):
         number = float(text[:-1])
