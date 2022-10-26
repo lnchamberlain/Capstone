@@ -147,13 +147,7 @@ class IG_AUTH:
                           "x-csrftoken": csrf       
         }
         
-        proxie_chain = { #Seems that we can specify http vs https, Ip and port are more independant.
-            'https': '37.236.59.83:8080',
-            'https': '117.160.250.134:8081',
-            'https': '71.86.129.131:8080'
-        }
-        
-        login_attempt_response = requests.post(login_url, data=payload, headers=login_header, proxies=proxie_chain)
+        login_attempt_response = requests.post(login_url, data=payload, headers=login_header)
         json_data = json.loads(login_attempt_response.text)
         time.sleep(5)
         if json_data["authenticated"]:
