@@ -76,10 +76,6 @@ def get_cookie():
     cookies = pickle.load(open("./Program Data/Logs/FB_AUTH_LOGS/fb_cookies.pkl", "rb"))
     COOKIE = cookies
 
-
-    
-
-
 #Establishes the output directory
 def get_output_dir():
     dir = sys.argv[2]
@@ -106,8 +102,6 @@ def scrape_location(driver, location, counter):
     SCROLL_COUNT = 0
     GET_CURRENT_SCROLL_HEIGHT = "return document.body.scrollHeight"
     SCROLL_DOWN_SCRIPT = "window.scrollTo(0, document.body.scrollHeight);"
-    #HEADER_STR = "<html><head></head><body>"
-    #END_STR = "</body></html>"
     print("\n*****************************************************************\n")
     print("\nScraping Location {}...".format(location))
     print("Number {}/{}\n".format(counter, len(LOCATION_URLS)))
@@ -159,16 +153,15 @@ def scrape_location(driver, location, counter):
     os.remove("./Program Data/Logs/FB_SCRAPE_LOGS/temp.txt")
     #posts is an array of beautifulsoup objects, one per post 
     for post in posts:
-       format_found_post(post)
+       format_found_post(post, driver)
        
     print("\n*****************************************************************\n")
 
-   
 
 
 
 #Requests the full info for a flagged post
-def format_found_post(flagged_post):
+def format_found_post(flagged_post, driver):
     #GRAB THE VALUES WE WANT FROM THE FLAGGED POST, add to array of html code
     global HTML_CODE
     AUTHOR = ''
@@ -177,31 +170,28 @@ def format_found_post(flagged_post):
     CAPTION = ''
     POST_LINK = ''
     ACCOUNT_LINK = ''
-    MEDIA_LINK = ''
+    IMG_PATH_HTML = ''
+    img_hash = ''
+    html_str = ''
     TYPE = None
     links = flagged_post.find_all("a", {"class":"x1i10hfl xjbqb8w x6umtig x1b1mbwd xaqea5y xav7gou x9f619 x1ypdohk xt0psk2 xe8uvvx xdj266r x11i5rnm xat24cr x1mh8g0r xexx8yu x4uap5 x18d9i69 xkhd6sd x16tdsg8 x1hl2dhg xggy1nq x1a2a7pz xt0b8zv xzsf02u x1s688f"})
-    AUTHOR = links[0].get_text()
-    account_tag = str(links[0])
-    href_index = account_tag.find(" href=")
-    href_end = account_tag.find("?", href_index)
-    ACCOUNT_LINK = account_tag[(href_index + 7):href_end]
-    LOCATION = links[-1].get_text()
-    times = flagged_post.find_all("span", {"id": "jsc_c_k9"})
+    if(len(links)>0):
+        AUTHOR = links[0].get_text()
+        account_tag = str(links[0])
+        href_index = account_tag.find(" href=")
+        href_end = account_tag.find("?", href_index)
+        ACCOUNT_LINK = account_tag[(href_index + 7):href_end]
+        LOCATION = links[-1].get_text()
+        times = flagged_post.find_all("span", {"id": "jsc_c_k9"})
     #print(times)
     #times = flagged_post.find_all("a", {"class":"x1i10hfl xjbqb8w x6umtig x1b1mbwd xaqea5y xav7gou x1ypdohk xe8uvvx xdj266r x11i5rnm xat24cr x1mh8g0r xexx8yu x4uap5 x18d9i69 xkhd6sd x16tdsg8 x1hl2dhg xggy1nq x1o1ewxj x3x9cwd x1e5q0jg x13rtm0m x87ps6o x1lku1pv x1a2a7pz x9f619 x3nfvp2 xdt5ytf xl56j7k x1n2onr6 xh8yej3"})
-    #f = open('FB_AUTOPSY_FILE.txt', 'w', encoding='utf-8')
-    #f.write(flagged_post.prettify())
-    #f.close()
+    f = open('FB_AUTOPSY_FILE.txt', 'w', encoding='utf-8')
+    f.write(flagged_post.prettify())
+    f.close()
     if(len(times) > 1):
         timestamp_text = times[0].get_text()
     else:
         timestamp_text = ''
-    #print(times)
-    #for time in times:
-    #    print(time.get_text())
-    #    print("\n")
-    #print(timestamp_text)
-    #sys.exit()
     timestamp_obj, unit = convert_timestamp_text(timestamp_text)
     if(unit == 'h' or unit == 'm'):
         TIMESTAMP = timestamp_obj.strftime("%m/%d/%Y %H:%M")
@@ -210,8 +200,8 @@ def format_found_post(flagged_post):
     if(unit == 'd'):
         TIMESTAMP = timestamp_obj.strftime("%m/%d/%Y")
     captions = flagged_post.find_all("span", {"class":"x193iq5w xeuugli x13faqbe x1vvkbs x1xmvt09 x1lliihq x1s928wv xhkezso x1gmr53x x1cpjm7i x1fgarty x1943h6x xudqn12 x3x7a5m x6prxxf xvq8zen xo1l8bm xzsf02u x1yc453h"})
-    CAPTION = captions[0].get_text()
-    
+    if(len(captions)>0):
+        CAPTION = captions[0].get_text()
    #While we figure out how to split them, grab links for only posts with a single image
     TYPE = "Image"
     if(TYPE == "Image"):
@@ -223,11 +213,39 @@ def format_found_post(flagged_post):
             POST_LINK = post_links_str[(href_index + 7):href_end]
         else:
             POST_LINK = "MULTIPLE IMAGES OR VIDEO"
+    img_arr = flagged_post.find_all("img", {"class": "x1ey2m1c xds687c x5yr21d x10l6tqk x17qophe x13vifvy xh8yej3 xl1xv1r"})
+    if(len(img_arr)>0):
+        img_tag = str(img_arr[0])
+        src_index = img_tag.find(" src=")
+        src_end = img_tag.find('width=', src_index)    
+        img_url = img_tag[(src_index + 6):src_end -2]
+        img_url = img_url.replace("stp=dst-jpg_p843x403&amp;", "")
+        img_url = img_url.replace("amp;", "")
+        driver.get(img_url)
+        time.sleep(0.25)
+        driver.save_screenshot("./Program Data/temp_img.png")
+        img_hash = hashlib.md5(Image.open("./Program Data/temp_img.png").tobytes())
+        hash_str = img_hash.hexdigest()
+        img_path = "./Program Data/Images/ImagesFB/" + hash_str + ".png"
+        IMG_PATH_HTML = str("../../../Program Data/Images/ImagesFB/"+ hash_str + ".png")
+        if(not os.path.exists(img_path)):
+           shutil.copy("./Program Data/temp_img.png", img_path)
+        #Get rid of temporary image
+        os.remove("./Program Data/temp_img.png")
+         
+    else:
+        IMG_PATH_HTML = 'MULTIPLE IMAGES OR VIDEO'
+    if(img_hash == '71d215bf7423fb2ce380c0864da58040'):
+        #screenshot of 'URL Signature Mismatch' screen
+        IMG_PATH_HTML = ''
 
-    print("AUTHOR: {}\nLOCATION: {}\nTIMESTAMP: {}\nCAPTION: {}\nLINK: {}\nACCOUNT_LINK: {}\nMEDIA_LINK: {}\n".format(AUTHOR, LOCATION, TIMESTAMP, CAPTION, POST_LINK, ACCOUNT_LINK, MEDIA_LINK))
-
+    print("AUTHOR: {}\nLOCATION: {}\nTIMESTAMP: {}\nCAPTION: {}\nLINK: {}\nACCOUNT_LINK: {}\nMEDIA_LINK: {}\n".format(AUTHOR, LOCATION, TIMESTAMP, CAPTION, POST_LINK, ACCOUNT_LINK, IMG_PATH_HTML))
+    html_str += "<td>" + AUTHOR + "</td><td>" + LOCATION + "</td><td>" + CAPTION + "</td><td><a href=" + POST_LINK + ">link</a><td><a href=" + ACCOUNT_LINK + ">link</a><td><img style='max-width:200px;' src='" + IMG_PATH_HTML + "'></td></tr>"
+    HTML_CODE.append(html_str)
  
  
+
+
 #Takes in a time string and returns a datetime object (example: '1d' -> datetime for yesterday)
 def convert_timestamp_text(text):
     if(len(text)>1):
@@ -265,7 +283,7 @@ def write_html_to_file():
     HTML_CODE = list(HTML_CODE)
     HTML_CODE.insert(0, "<html><head><link rel='stylesheet' href='../../../styles.css'></head><body><table>\n")
     HTML_CODE.insert(1, "<h1 style='text-align:center;'>" + SCAN_NAME + "</h1>")
-    #HTML_CODE.insert(2, "<tr><th>Date/Time</th><th>Lat/Long</th><th>Username</th><th>Full Name</th><th>Profile</th><th>Caption/Comment</th><th>Link</th><th>Media</th></tr>")
+    HTML_CODE.insert(2, "<tr><th>Post Author</th><th>Location</th><th>Caption</th><th>Post Link</th><th>Account Link</th><th>Media</th></tr>")
     HTML_CODE.append("</table></body></html>\n")
     for line in HTML_CODE:
         output_file.write(line)
@@ -305,12 +323,11 @@ def main():
     
    
     
-    #write_html_to_file()
+    write_html_to_file()
     #Clear log file, write final summary
     log_file = open("./Program Data/Logs/FB_SCRAPE_LOGS/log.txt", "w")
     log_file.write("TOTAL FLAGGED POSTS: {}\nSCAN COMPLETE".format(TOTAL_POSTS))
     log_file.close()
-    session.close()
 
 if __name__ == "__main__":
     main()
