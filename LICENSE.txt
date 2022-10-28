@@ -1,13 +1,33 @@
-Copyright 2022 Logan Chamberlain and Tyler Lukacz
+                                END USER LICENSE AGREEMENT
+***********************************************************************************************
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
+LICENSE:
 
-    http://www.apache.org/licenses/LICENSE-2.0
+Under this End User License Agreement, (the “Agreement”), Logan Chamberlain and Tyler Lukacz (the “Authors”) grants to the user (the “License”) a non-exclusive and non-transferable license to use Undercover Recovery (the “Software”). 
 
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+Title, copyright, intellectual property rights and distribution rights of the Software remain exclusively with the Vendor. IP rights include the look and feel of the Software. This Agreement constitutes a license for use only and is not in any way a transfer of ownership rights. 
+
+Modifications to include decompilation and reverse-engineering, additions, distributions, and expanded or extended use are allowed only with the express permission of the Authors. 
+
+Failure to comply with any of the terms under this License will be considered a material breach of this Agreement. 
+
+LIMITATIONS OF LIABILITY:
+
+The Software is be used at the user’s own risk, the Software is provided “as-is”, and the Authors are not liable for any general, special, incidental, or consequential damages including, but not limited to, loss of production, loss of data, and potential lawsuits resulting from the collection of user data. The consequences of using this Software are solely assumed by the user and in no way the Authors. 
+
+ACCEPTANCE:
+
+All terms, conditions, and obligations of this Agreement will be considered Accepted by the User on installation and/or use of the Software. 
+
+This Agreement and the terms and conditions contained in this Agreement apply to and are binding upon the Author’s successors and assigns. 
+
+NOTICES:
+
+Permission inquiries shall be directed to the Authors at the following corresponding email:
+tylerlukacz@gmail.com or chamberlain.logan@yahoo.com
+
+Copyright Logan Chamberlain and Tyler Lukacz 2022
+
+***********************************************************************************************
+
+
