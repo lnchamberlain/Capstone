@@ -808,7 +808,7 @@ LRESULT CALLBACK WndProcIGLogin(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
                 shellOperation.append(" ");
 
                 //Lauch program
-                WinExec((LPCSTR)shellOperation.c_str(), SW_SHOW);
+                WinExec((LPCSTR)shellOperation.c_str(), SW_HIDE);
                 SetWindowTextW(IGsubmit, L"Authenticating...");
             }
             //NOTE: if user puts stuff in the login but also checks used saved, will override and use saved info
@@ -1336,6 +1336,7 @@ void lauchScanners(bool fbSet, bool igSet, bool twSet)
     }
     if (igSet)
     {
+        shellOperation = "python3 ";
         shellOperation.append("scrape_ig.py ");
         shellOperation.append(regionSelection);
         shellOperation.append(" ");
@@ -1352,10 +1353,11 @@ void lauchScanners(bool fbSet, bool igSet, bool twSet)
         const wchar_t* widecstr = widestr.c_str();
 
         WinExec((LPCSTR)shellOperation.c_str(), SW_SHOW);
-        SetWindowTextW(instagramResultsSummary, L"Scanning....");
+        SetWindowTextW(instagramResultsSummary, L"IG SET....");
     }
     if (twSet)
     {
+        shellOperation = "python3 ";
         shellOperation.append("scrape_tw.py ");
         shellOperation.append(regionSelection);
         shellOperation.append(" ");
@@ -1408,7 +1410,8 @@ void readFBScrapeLog()
         {
             while (std::getline(readOutputLog, line))
             {
-                full_log_text.append("\n");
+                full_log_text.append("\r\n");
+                line += "\r\n";
                 full_log_text.append(line);
                 if (strcmp(line.c_str(), "SCAN COMPELTE") == 0) {
                     END_THREAD = true;
@@ -1416,7 +1419,7 @@ void readFBScrapeLog()
             }
             std::wstring wide_string = std::wstring(full_log_text.begin(), full_log_text.end());
             const wchar_t* scanUpdate = wide_string.c_str();
-            SetWindowTextW(instagramResultsSummary, scanUpdate);
+            SetWindowTextW(facebookResultsSummary, scanUpdate);
             full_log_text = "";
         }
         readOutputLog.close();
@@ -1482,7 +1485,7 @@ void readTWScrapeLog()
             }
             std::wstring wide_string = std::wstring(full_log_text.begin(), full_log_text.end());
             const wchar_t* scanUpdate = wide_string.c_str();
-            SetWindowTextW(instagramResultsSummary, scanUpdate);
+            SetWindowTextW(twitterResultsSummary, scanUpdate);
             full_log_text = "";
         }
         readOutputLog.close();
