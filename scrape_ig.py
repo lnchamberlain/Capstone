@@ -20,6 +20,7 @@ import hashlib
 from PIL import Image
 import shutil
 import os
+import pickle
 
 
 
@@ -58,15 +59,14 @@ def get_keywords():
     KEYWORDS = keywords_file.read().split(",")
     
 
-#Fills global variable with value for IG_AUTH logs
+#Reads cookie value from pickle file, sets session cookies then returns session
 def get_cookie():
-    ig_auth_log_file = open("./Program Data/Logs/IG_AUTH_LOGS/log.txt")
-    #Rebuild cookie dictionary from text file
-    values = ig_auth_log_file.read().split("\n")
-    for line in values:
-        if(line != "SUCCESS"):
-            line = line.split(":")
-            COOKIE[line[0]] = line[1]
+    session = requests.Session()
+    cookies = pickle.load(open("./Program Data/Logs/IG_AUTH_LOGS/ig_cookies.pkl", "rb"))
+    c = cookies[0]
+    session.cookies.set(c['name'], c['value'])
+    return session
+
 
 
 #Establishes the output directory
@@ -95,7 +95,7 @@ def scrape_location(COUNTER, NUM_LOCATIONS, session, location):
     temp_file.write(location + "\n")
     print("Location {}/{}".format(COUNTER, NUM_LOCATIONS))
     temp_file.write("Location {}/{}\n".format(COUNTER, NUM_LOCATIONS))
-    response = session.get(LOCATION_URLS[location] + "/?__a=1", cookies=COOKIE)
+    response = session.get(LOCATION_URLS[location] + "/?__a=1")
     if(response.status_code != 200):
         print("Error")
         return
@@ -133,10 +133,6 @@ def scrape_location(COUNTER, NUM_LOCATIONS, session, location):
             search_words = [(" " + word + " "), (" " + word + "."), (" " + word + "!"), (" " + word + "?"), ("#" + word + " ")]
             for author in FLAGGED_USERS:
                 for word in search_words:
-                    print(word)
-                    print(caption)
-                    print(word in caption)
-                    print("\n")
                     if (word in caption) or (user == author): # or (word in comments):
                         FLAGGED_POSTS.append(post)
                         format_found_post(post)
@@ -195,9 +191,6 @@ def format_found_post(flagged_post):
     HTML_CODE.append(html_str)
     
 
-
-
-
 #Iterate over array of lines of html code, write to scan output file
 def write_html_to_file():
     output_file = open(OUTPUT_DIR + "/" + SCAN_NAME + ".html", 'w+', encoding="utf-8")
@@ -214,10 +207,14 @@ def write_html_to_file():
         output_file.write(line)
     output_file.close()
 
+
+
+
+
 def main():
     get_urls()
     get_keywords()
-    get_cookie()
+    session = get_cookie()
     get_output_dir()
     get_flagged_users()
     COUNTER = 1
@@ -228,7 +225,6 @@ def main():
     SCAN_NAME = "IG SCAN REPORT " + date_and_time_formatted
     clear_log = open("./Program Data/Logs/IG_SCRAPE_LOGS/log.txt", "w", encoding="utf-8")
     clear_log.close()
-    session = requests.Session()
     #GENERAL PROCESS: scrape each location and flag posts, format post information and write to file
     for place in LOCATION_URLS:
         #Random Latency
@@ -238,8 +234,6 @@ def main():
         time.sleep(delay)
         scrape_location(COUNTER, NUM_LOCATIONS, session, place)
         COUNTER += 1
-    #for post in FLAGGED_POSTS:
-    #    format_found_post(post)
     
     write_html_to_file()
     #Clear log file, write final summary
