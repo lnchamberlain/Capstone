@@ -1,4 +1,0 @@
-To search "Near Me" "Latest" Since Jan 1 2020 for word "cat"
-https://twitter.com/search?q=cat%20until%3A2022-12-31%20since%3A2020-01-01&src=typed_query&f=live&lf=on
-To search "Near Me" "Latest" Since Jan 1 2020 for "#cat"
-https://twitter.com/search?q=%23cat%20until%3A2022-12-31%20since%3A2020-01-01&src=typed_query&f=live&lf=on

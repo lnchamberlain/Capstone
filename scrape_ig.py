@@ -221,7 +221,7 @@ def main():
     NUM_LOCATIONS = len(LOCATION_URLS)
     global SCAN_NAME 
     currTime = datetime.datetime.now()
-    date_and_time_formatted = MONTH_RESOLUTION_TABLE[currTime.month] + " "+str(currTime.day) +" "+ str(currTime.year) + " @ " + str(currTime.hour) + " " + str(currTime.minute) + " " + str(currTime.second) 
+    date_and_time_formatted = MONTH_RESOLUTION_TABLE[currTime.month] + " "+str(currTime.day) +" "+ str(currTime.year) + " @ " + str(currTime.hour) + "." + str(currTime.minute) + "." + str(currTime.second) 
     SCAN_NAME = "IG SCAN REPORT " + date_and_time_formatted
     clear_log = open("./Program Data/Logs/IG_SCRAPE_LOGS/log.txt", "w", encoding="utf-8")
     clear_log.close()
