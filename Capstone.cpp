@@ -105,6 +105,7 @@ bool TW_AUTH_FINISHED = false;
 bool FB_AUTH_SUCCESS, IG_AUTH_SUCCESS, TW_AUTH_SUCCESS;
 std::fstream SAVED_CONFIG_FILE;
 std::string shellOperation;
+HBITMAP img;
 
 
 
@@ -135,6 +136,7 @@ void lauchScanners(bool fbSet, bool igSet, bool twSet);
 void readFBScrapeLog();
 void readIGScrapeLog();
 void readTWScrapeLog();
+void loadImages();
 
 
 
@@ -344,7 +346,14 @@ void createTwitterLoginWindow(WNDCLASSEXW& tw_cl, HINSTANCE& hInst_tw, int nCmdS
 
 }
 
+//loads all the images used by the GUI from the GUI_IMAGES folder
+void loadImages()
+{
+    //img = (HBITMAP)LoadImageW(NULL, L".\\GUI_IMAGES\\pale_blue.bmp", IMAGE_BITMAP, 300, 500, LR_LOADFROMFILE);
+    img = (HBITMAP)LoadImageW(NULL, L"orange.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
 
+
+}
 //Helper function to enumerate over child windows and set the font to 'font'
 bool CALLBACK SetFont(HWND child, LPARAM font) {
     SendMessage(child, WM_SETFONT, font, true);
@@ -362,6 +371,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     switch (message)
     {
     case WM_CREATE:
+        loadImages();
         AddMenu(hWnd);
         AddControls(hWnd);
         points = 10;
@@ -1089,6 +1099,8 @@ void AddControls(HWND hWnd)
     instagramSection = CreateWindowW(L"Static", L"Instagram", WS_VISIBLE | WS_CHILD | WS_BORDER, 450, 130, 300, 500, hWnd, NULL, NULL, NULL);
     twitterSection = CreateWindowW(L"Static", L"Twitter", WS_VISIBLE | WS_CHILD | WS_BORDER, 800, 130, 300, 500, hWnd, NULL, NULL, NULL, NULL);
 
+    
+
     //Populate login buttons
     HWND facebookLoginButton = CreateWindowW(L"Button", L"LOGIN", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON, 225, 205, 55, 30, hWnd, (HMENU)FACEBOOK_LOGIN, NULL, NULL);
     HWND instagramLoginButton = CreateWindowW(L"Button", L"LOGIN", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON, 575, 205, 55, 30, hWnd, (HMENU)INSTAGRAM_LOGIN, NULL, NULL);
@@ -1109,7 +1121,7 @@ void AddControls(HWND hWnd)
     HWND twitterExportButton = CreateWindowW(L"Button", L"Export Full Scan Results", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON | BS_MULTILINE, 990, 560, 100, 60, hWnd, (HMENU)EXPORT_TW, NULL, NULL);
 
     HWND launchButton = CreateWindowW(L"Button", L"LAUCH SCAN", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON| BS_CENTER, 550, 655, 100, 60, hWnd, (HMENU)LAUNCH, NULL, NULL);
-   
+    //SendMessageW(instagramSection, STM_SETIMAGE, IMAGE_BITMAP, (LPARAM)img);
 }
 
 //Add elements to the configuration window
