@@ -345,20 +345,32 @@ void createTwitterLoginWindow(WNDCLASSEXW& tw_cl, HINSTANCE& hInst_tw, int nCmdS
 }
 
 
+//Helper function to enumerate over child windows and set the font to 'font'
+bool CALLBACK SetFont(HWND child, LPARAM font) {
+    SendMessage(child, WM_SETFONT, font, true);
+    return true;
+}
+
 //Main Window Procedure
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {    
     wchar_t hOut[100], mOut[100], sOut[100], limitOut[20];
-    //PYTHON TESTING VALUES 
-    PyObject* pyobj;
-    wchar_t filename[] = L"testing.py";
-    char file_location[] = "testing.py";
-    FILE* fp;
+    static const int points_per_inch = 72;
+    int points, pixels_per_inch, pixels_height;
+    HFONT font;
+    HDC hDC;
     switch (message)
     {
     case WM_CREATE:
         AddMenu(hWnd);
-        AddControls(hWnd);  
+        AddControls(hWnd);
+        points = 10;
+        hDC = GetDC(0);
+        pixels_per_inch = GetDeviceCaps(hDC, LOGPIXELSY);
+        pixels_height = -(points * pixels_per_inch / points_per_inch);
+        font = CreateFontA(pixels_height, 0, 0, 0, 500, false, false, false, DEFAULT_CHARSET, OUT_OUTLINE_PRECIS, CLIP_DEFAULT_PRECIS, PROOF_QUALITY, VARIABLE_PITCH | FF_SWISS, "Century Gothic");
+        SendMessage(hWnd, WM_SETFONT, (WPARAM)font, TRUE);
+        EnumChildWindows(hWnd, (WNDENUMPROC)SetFont, (LPARAM)font);
         break;
     case WM_TIMER:
         
