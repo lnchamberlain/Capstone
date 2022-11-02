@@ -203,6 +203,7 @@ def format_found_post(flagged_post, driver):
     if(len(captions)>0):
         CAPTION = captions[0].get_text()
    #While we figure out how to split them, grab links for only posts with a single image
+    '''
     TYPE = "Image"
     if(TYPE == "Image"):
         post_links = flagged_post.find_all("a", {"class":"x1i10hfl x1qjc9v5 xjbqb8w xjqpnuy xa49m3k xqeqjp1 x2hbi6w x13fuv20 xu3j5b3 x1q0q8m5 x26u7qi x972fbf xcfux6l x1qhh985 xm0m39n x9f619 x1ypdohk xdl72j9 x2lah0s xe8uvvx xdj266r x11i5rnm xat24cr x1mh8g0r x2lwn1j xeuugli xexx8yu x4uap5 x18d9i69 xkhd6sd x1n2onr6 x16tdsg8 x1hl2dhg xggy1nq x1ja2u2z x1t137rt x1o1ewxj x3x9cwd x1e5q0jg x13rtm0m x1q0g3np x87ps6o x1lku1pv x1a2a7pz x1lliihq x1pdlv7q"})
@@ -213,6 +214,7 @@ def format_found_post(flagged_post, driver):
             POST_LINK = post_links_str[(href_index + 7):href_end]
         else:
             POST_LINK = "MULTIPLE IMAGES OR VIDEO"
+    '''
     img_arr = flagged_post.find_all("img", {"class": "x1ey2m1c xds687c x5yr21d x10l6tqk x17qophe x13vifvy xh8yej3 xl1xv1r"})
     if(len(img_arr)>0):
         img_tag = str(img_arr[0])
@@ -238,10 +240,27 @@ def format_found_post(flagged_post, driver):
     if(img_hash == '71d215bf7423fb2ce380c0864da58040'):
         #screenshot of 'URL Signature Mismatch' screen
         IMG_PATH_HTML = ''
+    
+    TYPE = "Image"
+    if(TYPE == "Image"):
+        post_links = flagged_post.find_all("a", {"class":"x1i10hfl x1qjc9v5 xjbqb8w xjqpnuy xa49m3k xqeqjp1 x2hbi6w x13fuv20 xu3j5b3 x1q0q8m5 x26u7qi x972fbf xcfux6l x1qhh985 xm0m39n x9f619 x1ypdohk xdl72j9 x2lah0s xe8uvvx xdj266r x11i5rnm xat24cr x1mh8g0r x2lwn1j xeuugli xexx8yu x4uap5 x18d9i69 xkhd6sd x1n2onr6 x16tdsg8 x1hl2dhg xggy1nq x1ja2u2z x1t137rt x1o1ewxj x3x9cwd x1e5q0jg x13rtm0m x1q0g3np x87ps6o x1lku1pv x1a2a7pz x1lliihq x1pdlv7q"})
+        if(len(post_links) > 0):
+            post_links_str = str(post_links[0])
+            href_index = post_links_str.find(" href=")
+            href_end = post_links_str.find("&", href_index)
+            POST_LINK = post_links_str[(href_index + 7):href_end]
+            print("AUTHOR: {}\nLOCATION: {}\nTIMESTAMP: {}\nCAPTION: {}\nLINK: {}\nACCOUNT_LINK: {}\nMEDIA_LINK: {}\n".format(AUTHOR, LOCATION, TIMESTAMP, CAPTION, POST_LINK, ACCOUNT_LINK, IMG_PATH_HTML))
+            html_str += "<td>" + AUTHOR + "</td><td>" + LOCATION + "</td><td>" + CAPTION + "</td><td><a href=" + POST_LINK + ">link</a><td><a href=" + ACCOUNT_LINK + ">link</a><td><img style='max-width:200px;' src='" + IMG_PATH_HTML + "'></td></tr>"
+            HTML_CODE.append(html_str)
+        else:
+             POST_LINK = "MULTIPLE IMAGES OR VIDEO"
+             print("AUTHOR: {}\nLOCATION: {}\nTIMESTAMP: {}\nCAPTION: {}\nLINK: {}\nACCOUNT_LINK: {}\nMEDIA_LINK: {}\n".format(AUTHOR, LOCATION, TIMESTAMP, CAPTION, POST_LINK, ACCOUNT_LINK, IMG_PATH_HTML))
+             html_str += "<td>" + AUTHOR + "</td><td>" + LOCATION + "</td><td>" + CAPTION + "</td><td>" + '' + "</td><td><a href=" + ACCOUNT_LINK + ">link</a><td>" + POST_LINK + "</td></tr>"
+             HTML_CODE.append(html_str)
 
-    print("AUTHOR: {}\nLOCATION: {}\nTIMESTAMP: {}\nCAPTION: {}\nLINK: {}\nACCOUNT_LINK: {}\nMEDIA_LINK: {}\n".format(AUTHOR, LOCATION, TIMESTAMP, CAPTION, POST_LINK, ACCOUNT_LINK, IMG_PATH_HTML))
-    html_str += "<td>" + AUTHOR + "</td><td>" + LOCATION + "</td><td>" + CAPTION + "</td><td><a href=" + POST_LINK + ">link</a><td><a href=" + ACCOUNT_LINK + ">link</a><td><img style='max-width:200px;' src='" + IMG_PATH_HTML + "'></td></tr>"
-    HTML_CODE.append(html_str)
+    #print("AUTHOR: {}\nLOCATION: {}\nTIMESTAMP: {}\nCAPTION: {}\nLINK: {}\nACCOUNT_LINK: {}\nMEDIA_LINK: {}\n".format(AUTHOR, LOCATION, TIMESTAMP, CAPTION, POST_LINK, ACCOUNT_LINK, IMG_PATH_HTML))
+    #html_str += "<td>" + AUTHOR + "</td><td>" + LOCATION + "</td><td>" + CAPTION + "</td><td><a href=" + POST_LINK + ">link</a><td><a href=" + ACCOUNT_LINK + ">link</a><td><img style='max-width:200px;' src='" + IMG_PATH_HTML + "'></td></tr>"
+    #HTML_CODE.append(html_str)
  
  
 

@@ -129,7 +129,7 @@ def scrape_location(COUNTER, NUM_LOCATIONS, session, location):
         if(post.get("comments") is not None):
             comments = post["comments"]
         for word in KEYWORDS:
-            word = word[1:-1]
+           # word = word[1:-1]
             search_words = [(" " + word + " "), (" " + word + "."), (" " + word + "!"), (" " + word + "?"), ("#" + word + " ")]
             for author in FLAGGED_USERS:
                 for word in search_words:

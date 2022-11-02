@@ -1096,7 +1096,7 @@ void AddControls(HWND hWnd)
 
     //Main three blocks
     facebookSection = CreateWindowW(L"Static", L"Facebook", WS_VISIBLE | WS_CHILD | WS_BORDER, 100, 130, 300, 500, hWnd, NULL, NULL, NULL);
-    instagramSection = CreateWindowW(L"Static", L"Instagram", WS_VISIBLE | WS_CHILD | WS_BORDER, 450, 130, 300, 500, hWnd, NULL, NULL, NULL);
+    instagramSection = CreateWindowW(L"Static", L"Instagram", WS_VISIBLE | WS_CHILD | WS_BORDER | SS_BITMAP, 450, 130, 300, 500, hWnd, NULL, NULL, NULL);
     twitterSection = CreateWindowW(L"Static", L"Twitter", WS_VISIBLE | WS_CHILD | WS_BORDER, 800, 130, 300, 500, hWnd, NULL, NULL, NULL, NULL);
 
     
@@ -1121,7 +1121,7 @@ void AddControls(HWND hWnd)
     HWND twitterExportButton = CreateWindowW(L"Button", L"Export Full Scan Results", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON | BS_MULTILINE, 990, 560, 100, 60, hWnd, (HMENU)EXPORT_TW, NULL, NULL);
 
     HWND launchButton = CreateWindowW(L"Button", L"LAUCH SCAN", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON| BS_CENTER, 550, 655, 100, 60, hWnd, (HMENU)LAUNCH, NULL, NULL);
-    //SendMessageW(instagramSection, STM_SETIMAGE, IMAGE_BITMAP, (LPARAM)img);
+    SendMessageW(instagramSection, STM_SETIMAGE, IMAGE_BITMAP, (LPARAM)img);
 }
 
 //Add elements to the configuration window
@@ -1355,7 +1355,7 @@ void lauchScanners(bool fbSet, bool igSet, bool twSet)
         {
             shellOperation.append(outputDirShell);
         }        
-        WinExec((LPCSTR)shellOperation.c_str(), SW_HIDE);
+        WinExec((LPCSTR)shellOperation.c_str(), SW_SHOW);
         SetWindowTextW(facebookResultsSummary, L"Scanning....");
     }
     if (igSet)
