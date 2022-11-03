@@ -349,7 +349,7 @@ void createTwitterLoginWindow(WNDCLASSEXW& tw_cl, HINSTANCE& hInst_tw, int nCmdS
 //loads all the images used by the GUI from the GUI_IMAGES folder
 void loadImages()
 {
-    //img = (HBITMAP)LoadImageW(NULL, L".\\GUI_IMAGES\\pale_blue.bmp", IMAGE_BITMAP, 300, 500, LR_LOADFROMFILE);
+    
     img = (HBITMAP)LoadImageW(NULL, L".\\GUI_IMAGES\\red.bmp", IMAGE_BITMAP, 300, 500, LR_LOADFROMFILE);
 
 
