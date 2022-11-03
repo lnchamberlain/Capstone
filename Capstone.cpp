@@ -350,7 +350,7 @@ void createTwitterLoginWindow(WNDCLASSEXW& tw_cl, HINSTANCE& hInst_tw, int nCmdS
 void loadImages()
 {
     //img = (HBITMAP)LoadImageW(NULL, L".\\GUI_IMAGES\\pale_blue.bmp", IMAGE_BITMAP, 300, 500, LR_LOADFROMFILE);
-    img = (HBITMAP)LoadImageW(NULL, L"orange.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+    img = (HBITMAP)LoadImageW(NULL, L".\\GUI_IMAGES\\red.bmp", IMAGE_BITMAP, 300, 500, LR_LOADFROMFILE);
 
 
 }
