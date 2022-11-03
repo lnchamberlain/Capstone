@@ -24,7 +24,11 @@
 #include <vector>
 #include <windowsx.h>
 #include <thread>
+#include <dwmapi.h>
 
+#ifndef DWMWA_USE_IMMERSIVE_DARK_MODE
+#define DWMWA_USE_IMMERSIVE_DARK_MODE 20
+#endif
 #define MAX_LOADSTRING 100
 #define EXPORT_FB 1
 #define EXPORT_IG 2
@@ -221,7 +225,10 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    HWND hWnd = CreateWindowW(szWindowClass, L"UnderCover Recovery", WS_OVERLAPPEDWINDOW,
       200, 100, 1200, 850, nullptr, nullptr, hInstance, nullptr);
    //Main Window Coordinates (0,0) upper left, (1200, 800) lower right
-   
+   BOOL USE_DARK_MODE = true;
+   BOOL SET_IMMERSIVE_DARK_MODE_SUCCESS = ::DwmSetWindowAttribute(hWnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &USE_DARK_MODE, sizeof(USE_DARK_MODE));
+   //COLORREF DARK_COLOR = 0x00505050;
+   //BOOL SET_CAPTION_COLOR = SUCCEEDED(DwmSetWindowAttribute(hWnd, DWMWINDOWATTRIBUTE::DWMWA_BORDER_COLOR,&DARK_COLOR, sizeof(DARK_COLOR)));
    // Store in global variable
    MainWindow = hWnd;
 
