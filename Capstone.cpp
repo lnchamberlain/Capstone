@@ -375,9 +375,9 @@ void loadImages()
 {
     
     backgroundImg = (HBITMAP)LoadImageW(NULL, L".\\GUI_IMAGES\\nodes_bw.bmp", IMAGE_BITMAP, 1300, 900, LR_LOADFROMFILE);
-    //toolbarImg = (HBITMAP)LoadImageW(NULL, L".\\GUI_IMAGES\\gradient_blue.bmp", IMAGE_BITMAP, 1200, 30, LR_LOADFROMFILE);
     //redButtonImg = (HBITMAP)LoadImageW(NULL, L".\\GUI_IMAGES\\red_button.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
     //greenButtonImg = (HBITMAP)LoadImageW(NULL, L".\\GUI_IMAGES\\green_button.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+    //scanningButtonImg = (HBITMAP)LoadImageW(NULL, L".\\GUI_IMAGES\\scanning_button.bmp", IMAGE_BITMAP, 0,0,LR_LOADFROMFILE);
 
 
 

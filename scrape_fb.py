@@ -9,6 +9,8 @@
 # To use with test regions (much smaller): python3 scrape_fb.py 6 DEFAULT
 
 import datetime
+from operator import iadd
+from re import I
 from urllib.request import urlretrieve
 from bs4 import BeautifulSoup
 import sys
@@ -42,7 +44,8 @@ FLAGGED_USERS = []
 OUTPUT_DIR = ''
 TOTAL_POSTS = 0
 FOUND_FLAGGED = 0
-HTML_CODE = []
+HTML_CODE_KEYWORDS = []
+HTML_CODE_FLAGGED_USERS = []
 SCAN_NAME = ''
 NUM_LOCATIONS = 0
 
@@ -66,7 +69,12 @@ def get_urls():
 def get_keywords():
     keywords_file = open("./Program Data/Wordlists/keywords.txt", "r+")
     global KEYWORDS
-    KEYWORDS = keywords_file.read().split(",")
+    lines = keywords_file.readlines()[7:]
+    KEYWORDS = lines[0].split(",")
+    #Advanced search only support for IG
+    for elem in KEYWORDS:
+        if("BEFORE" in elem) or ("AFTER" in elem) or ("+" in elem):
+            KEYWORDS.remove(elem)
     
 
 #Grabs cookie value from AUTH logs, rebuilds dictionary and sets global variable
@@ -113,6 +121,12 @@ def scrape_location(driver, location, counter):
         #add keyword to crafted url
         url = url_base[0] + word[1:-1] + url_base[1]
         driver.get(url)
+        time.sleep(0.2)
+        if("We didn't find any results" in driver.page_source):
+                print("FOUND POSTS: 0")
+                print("TOTAL FOUND POSTS: {}\n".format(TOTAL_POSTS))
+                print("\n*****************************************************************\n") 
+                return
         try:
             WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, 'x9f619 x1n2onr6 x1ja2u2z xdt5ytf x193iq5w xeuugli x1r8uery x1iyjqo2 xs83m0k x78zum5 x1t2pt76')))
         except TimeoutException:
@@ -153,7 +167,77 @@ def scrape_location(driver, location, counter):
     os.remove("./Program Data/Logs/FB_SCRAPE_LOGS/temp.txt")
     #posts is an array of beautifulsoup objects, one per post 
     for post in posts:
-       format_found_post(post, driver)
+       format_found_post(post, driver, "KEYWORDS")
+       
+    print("\n*****************************************************************\n")
+
+
+
+
+
+     #Requests data from location url, formats the return, searches captions and comments for keywords, adds posts to flagged posts
+def scrape_flagged_user(driver, username, counter):
+    #open temporary file to write to
+    temp_file = open("./Program Data/Logs/FB_SCRAPE_LOGS/temp.txt", "w", encoding="utf-8")
+    temp_file.write(username + "\n")
+    temp_file.write("user {}/{}\n".format(counter, len(FLAGGED_USERS)))
+    global TOTAL_POSTS
+    SCROLL_PAUSE = 1
+    SCROLL_COUNT = 0
+    SCROLL_LIMIT = 20
+    GET_CURRENT_SCROLL_HEIGHT = "return document.body.scrollHeight"
+    SCROLL_DOWN_SCRIPT = "window.scrollTo(0, document.body.scrollHeight);"
+    print("\n*****************************************************************\n")
+    print("\nScraping User {}...".format(username))
+    print("Number {}/{}\n".format(counter, len(FLAGGED_USERS)))
+    l = []
+    posts = []
+    url = "https://www.facebook.com/" + username.strip()
+    print(url)
+    time.sleep(1)
+    driver.get(url)
+    try:
+            WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, 'x9f619 x1n2onr6 x1ja2u2z xdt5ytf x193iq5w xeuugli x1r8uery x1iyjqo2 xs83m0k x78zum5 x1t2pt76')))
+    except TimeoutException:
+            print("Advacing to scrolling")
+    prev_height = driver.execute_script(GET_CURRENT_SCROLL_HEIGHT)
+    #No results case
+    if("This Page Isn't Available" in driver.page_source):
+        print("FOUND POSTS: 0")
+        print("TOTAL FOUND POSTS: {}\n".format(TOTAL_POSTS))
+        print("\n*****************************************************************\n") 
+        return
+    #Keep scrolling and grabbing posts until bottom is reached
+    while True:
+        print("Scroll count:{}\n".format(SCROLL_COUNT))
+        driver.execute_script(SCROLL_DOWN_SCRIPT)
+        SCROLL_COUNT +=1
+        SCROLL_PAUSE = random.randint(500, 2000)
+        SCROLL_PAUSE /= 1000
+        time.sleep(SCROLL_PAUSE)
+        curr_height = driver.execute_script(GET_CURRENT_SCROLL_HEIGHT)
+        if(curr_height == prev_height) or (SCROLL_COUNT >= SCROLL_LIMIT):
+                break 
+        prev_height = curr_height
+
+    temp_file.write("Scrolled {} times\n".format(SCROLL_COUNT))
+    s = BeautifulSoup(driver.page_source, 'html.parser')
+    l.append(s.find_all("div", {"class": "x1ja2u2z xh8yej3 x1n2onr6 x1yztbdb"}))
+    for segment in l:
+        for post in segment:
+            posts.append(post)
+    print("FOUND POSTS: {}".format(len(posts)))
+    temp_file.write("Scraped Posts: {}\n".format(len(posts)))
+    TOTAL_POSTS += len(posts)
+    print("TOTAL FOUND POSTS: {}\n".format(TOTAL_POSTS))
+    temp_file.write(("Total Posts: {}\n".format(TOTAL_POSTS)))
+    temp_file.close()
+    shutil.copy("./Program Data/Logs/FB_SCRAPE_LOGS/temp.txt", "./Program Data/Logs/FB_SCRAPE_LOGS/log.txt")
+        #Get rid of temporary file
+    os.remove("./Program Data/Logs/FB_SCRAPE_LOGS/temp.txt")
+    #posts is an array of beautifulsoup objects, one per post 
+    for post in posts:
+       format_found_post(post, driver, "FLAGGED_USERS")
        
     print("\n*****************************************************************\n")
 
@@ -161,7 +245,7 @@ def scrape_location(driver, location, counter):
 
 
 #Requests the full info for a flagged post
-def format_found_post(flagged_post, driver):
+def format_found_post(flagged_post, driver, mode):
     #GRAB THE VALUES WE WANT FROM THE FLAGGED POST, add to array of html code
     global HTML_CODE
     AUTHOR = ''
@@ -183,11 +267,6 @@ def format_found_post(flagged_post, driver):
         ACCOUNT_LINK = account_tag[(href_index + 7):href_end]
         LOCATION = links[-1].get_text()
         times = flagged_post.find_all("span", {"id": "jsc_c_k9"})
-    #print(times)
-    #times = flagged_post.find_all("a", {"class":"x1i10hfl xjbqb8w x6umtig x1b1mbwd xaqea5y xav7gou x1ypdohk xe8uvvx xdj266r x11i5rnm xat24cr x1mh8g0r xexx8yu x4uap5 x18d9i69 xkhd6sd x16tdsg8 x1hl2dhg xggy1nq x1o1ewxj x3x9cwd x1e5q0jg x13rtm0m x87ps6o x1lku1pv x1a2a7pz x9f619 x3nfvp2 xdt5ytf xl56j7k x1n2onr6 xh8yej3"})
-    f = open('FB_AUTOPSY_FILE.txt', 'w', encoding='utf-8')
-    f.write(flagged_post.prettify())
-    f.close()
     if(len(times) > 1):
         timestamp_text = times[0].get_text()
     else:
@@ -203,18 +282,6 @@ def format_found_post(flagged_post, driver):
     if(len(captions)>0):
         CAPTION = captions[0].get_text()
    #While we figure out how to split them, grab links for only posts with a single image
-    '''
-    TYPE = "Image"
-    if(TYPE == "Image"):
-        post_links = flagged_post.find_all("a", {"class":"x1i10hfl x1qjc9v5 xjbqb8w xjqpnuy xa49m3k xqeqjp1 x2hbi6w x13fuv20 xu3j5b3 x1q0q8m5 x26u7qi x972fbf xcfux6l x1qhh985 xm0m39n x9f619 x1ypdohk xdl72j9 x2lah0s xe8uvvx xdj266r x11i5rnm xat24cr x1mh8g0r x2lwn1j xeuugli xexx8yu x4uap5 x18d9i69 xkhd6sd x1n2onr6 x16tdsg8 x1hl2dhg xggy1nq x1ja2u2z x1t137rt x1o1ewxj x3x9cwd x1e5q0jg x13rtm0m x1q0g3np x87ps6o x1lku1pv x1a2a7pz x1lliihq x1pdlv7q"})
-        if(len(post_links) > 0):
-            post_links_str = str(post_links[0])
-            href_index = post_links_str.find(" href=")
-            href_end = post_links_str.find("&", href_index)
-            POST_LINK = post_links_str[(href_index + 7):href_end]
-        else:
-            POST_LINK = "MULTIPLE IMAGES OR VIDEO"
-    '''
     img_arr = flagged_post.find_all("img", {"class": "x1ey2m1c xds687c x5yr21d x10l6tqk x17qophe x13vifvy xh8yej3 xl1xv1r"})
     if(len(img_arr)>0):
         img_tag = str(img_arr[0])
@@ -225,22 +292,21 @@ def format_found_post(flagged_post, driver):
         img_url = img_url.replace("amp;", "")
         driver.get(img_url)
         time.sleep(0.25)
-        driver.save_screenshot("./Program Data/temp_img.png")
-        img_hash = hashlib.md5(Image.open("./Program Data/temp_img.png").tobytes())
-        hash_str = img_hash.hexdigest()
-        img_path = "./Program Data/Images/ImagesFB/" + hash_str + ".png"
-        IMG_PATH_HTML = str("../../../Program Data/Images/ImagesFB/"+ hash_str + ".png")
-        if(not os.path.exists(img_path)):
-           shutil.copy("./Program Data/temp_img.png", img_path)
-        #Get rid of temporary image
-        os.remove("./Program Data/temp_img.png")
+        if("URL signature mismatch" in driver.page_source):
+            IMG_PATH_HTML = ''
+        else:
+            driver.save_screenshot("./Program Data/temp_img.png")
+            img_hash = hashlib.md5(Image.open("./Program Data/temp_img.png").tobytes())
+            hash_str = img_hash.hexdigest()
+            img_path = "./Program Data/Images/ImagesFB/" + hash_str + ".png"
+            IMG_PATH_HTML = str("../../../Program Data/Images/ImagesFB/"+ hash_str + ".png")
+            if(not os.path.exists(img_path)):
+                shutil.copy("./Program Data/temp_img.png", img_path)
+            #Get rid of temporary image
+            os.remove("./Program Data/temp_img.png")
          
     else:
-        IMG_PATH_HTML = 'MULTIPLE IMAGES OR VIDEO'
-    if(img_hash == '71d215bf7423fb2ce380c0864da58040'):
-        #screenshot of 'URL Signature Mismatch' screen
-        IMG_PATH_HTML = ''
-    
+        IMG_PATH_HTML = 'MULTIPLE IMAGES OR VIDEO'    
     TYPE = "Image"
     if(TYPE == "Image"):
         post_links = flagged_post.find_all("a", {"class":"x1i10hfl x1qjc9v5 xjbqb8w xjqpnuy xa49m3k xqeqjp1 x2hbi6w x13fuv20 xu3j5b3 x1q0q8m5 x26u7qi x972fbf xcfux6l x1qhh985 xm0m39n x9f619 x1ypdohk xdl72j9 x2lah0s xe8uvvx xdj266r x11i5rnm xat24cr x1mh8g0r x2lwn1j xeuugli xexx8yu x4uap5 x18d9i69 xkhd6sd x1n2onr6 x16tdsg8 x1hl2dhg xggy1nq x1ja2u2z x1t137rt x1o1ewxj x3x9cwd x1e5q0jg x13rtm0m x1q0g3np x87ps6o x1lku1pv x1a2a7pz x1lliihq x1pdlv7q"})
@@ -251,18 +317,19 @@ def format_found_post(flagged_post, driver):
             POST_LINK = post_links_str[(href_index + 7):href_end]
             print("AUTHOR: {}\nLOCATION: {}\nTIMESTAMP: {}\nCAPTION: {}\nLINK: {}\nACCOUNT_LINK: {}\nMEDIA_LINK: {}\n".format(AUTHOR, LOCATION, TIMESTAMP, CAPTION, POST_LINK, ACCOUNT_LINK, IMG_PATH_HTML))
             html_str += "<td>" + AUTHOR + "</td><td>" + LOCATION + "</td><td>" + CAPTION + "</td><td><a href=" + POST_LINK + ">link</a><td><a href=" + ACCOUNT_LINK + ">link</a><td><img style='max-width:200px;' src='" + IMG_PATH_HTML + "'></td></tr>"
-            HTML_CODE.append(html_str)
+            if(mode == "KEYWORDS"):
+                HTML_CODE_KEYWORDS.append(html_str)
+            if(mode == "FLAGGED_USERS"):
+                HTML_CODE_FLAGGED_USERS.append(html_str)
         else:
              POST_LINK = "MULTIPLE IMAGES OR VIDEO"
              print("AUTHOR: {}\nLOCATION: {}\nTIMESTAMP: {}\nCAPTION: {}\nLINK: {}\nACCOUNT_LINK: {}\nMEDIA_LINK: {}\n".format(AUTHOR, LOCATION, TIMESTAMP, CAPTION, POST_LINK, ACCOUNT_LINK, IMG_PATH_HTML))
              html_str += "<td>" + AUTHOR + "</td><td>" + LOCATION + "</td><td>" + CAPTION + "</td><td>" + '' + "</td><td><a href=" + ACCOUNT_LINK + ">link</a><td>" + POST_LINK + "</td></tr>"
-             HTML_CODE.append(html_str)
+             if(mode == "KEYWORDS"):
+                HTML_CODE_KEYWORDS.append(html_str)
+             if(mode == "FLAGGED_USERS"):
+                HTML_CODE_FLAGGED_USERS.append(html_str)
 
-    #print("AUTHOR: {}\nLOCATION: {}\nTIMESTAMP: {}\nCAPTION: {}\nLINK: {}\nACCOUNT_LINK: {}\nMEDIA_LINK: {}\n".format(AUTHOR, LOCATION, TIMESTAMP, CAPTION, POST_LINK, ACCOUNT_LINK, IMG_PATH_HTML))
-    #html_str += "<td>" + AUTHOR + "</td><td>" + LOCATION + "</td><td>" + CAPTION + "</td><td><a href=" + POST_LINK + ">link</a><td><a href=" + ACCOUNT_LINK + ">link</a><td><img style='max-width:200px;' src='" + IMG_PATH_HTML + "'></td></tr>"
-    #HTML_CODE.append(html_str)
- 
- 
 
 
 #Takes in a time string and returns a datetime object (example: '1d' -> datetime for yesterday)
@@ -293,20 +360,39 @@ def convert_timestamp_text(text):
 
 
 #Iterate over array of lines of html code, write to scan output file
-def write_html_to_file():
-    output_file = open(OUTPUT_DIR + "/" + SCAN_NAME + ".html", 'w+', encoding="utf-8")
+def write_html_to_file(mode):
+    
     #Fill in the table header and footer of the html document
-    global HTML_CODE 
-    #Clear out duplicate entries
-    HTML_CODE = set(HTML_CODE)
-    HTML_CODE = list(HTML_CODE)
-    HTML_CODE.insert(0, "<html><head><link rel='stylesheet' href='../../../styles.css'></head><body><table>\n")
-    HTML_CODE.insert(1, "<h1 style='text-align:center;'>" + SCAN_NAME + "</h1>")
-    HTML_CODE.insert(2, "<tr><th>Post Author</th><th>Location</th><th>Caption</th><th>Post Link</th><th>Account Link</th><th>Media</th></tr>")
-    HTML_CODE.append("</table></body></html>\n")
-    for line in HTML_CODE:
-        output_file.write(line)
-    output_file.close()
+    if(mode == "KEYWORDS"):
+        output_file = open(OUTPUT_DIR + "/" + SCAN_NAME_KEYWORDS + ".html", 'w+', encoding="utf-8")
+        global HTML_CODE_KEYWORDS
+    
+        #Clear out duplicate entries
+        HTML_CODE_KEYWORDS = set(HTML_CODE_KEYWORDS)
+        HTML_CODE_KEYWORDS = list(HTML_CODE_KEYWORDS)
+        HTML_CODE_KEYWORDS.insert(0, "<html><head><link rel='stylesheet' href='../../../styles.css'></head><body><table>\n")
+        HTML_CODE_KEYWORDS.insert(1, "<h1 style='text-align:center;'>" + SCAN_NAME_KEYWORDS + "</h1>")
+        HTML_CODE_KEYWORDS.insert(2, "<tr><th>Post Author</th><th>Location</th><th>Caption</th><th>Post Link</th><th>Account Link</th><th>Media</th></tr>")
+        HTML_CODE_KEYWORDS.append("</table></body></html>\n")
+        for line in HTML_CODE_KEYWORDS:
+            output_file.write(line)
+        output_file.close()
+
+    if(mode == "FLAGGED_USERS"):
+        output_file = open(OUTPUT_DIR + "/" + SCAN_NAME_FLAGGED + ".html", 'w+', encoding="utf-8")
+        global HTML_CODE_FLAGGED_USERS
+    
+        #Clear out duplicate entries
+        HTML_CODE_FLAGGED_USERS = set(HTML_CODE_FLAGGED_USERS)
+        HTML_CODE_FLAGGED_USERS = list(HTML_CODE_FLAGGED_USERS)
+        HTML_CODE_FLAGGED_USERS.insert(0, "<html><head><link rel='stylesheet' href='../../../styles.css'></head><body><table>\n")
+        HTML_CODE_FLAGGED_USERS.insert(1, "<h1 style='text-align:center;'>" + SCAN_NAME_FLAGGED + "</h1>")
+        HTML_CODE_FLAGGED_USERS.insert(2, "<tr><th>Post Author</th><th>Location</th><th>Caption</th><th>Post Link</th><th>Account Link</th><th>Media</th></tr>")
+        HTML_CODE_FLAGGED_USERS.append("</table></body></html>\n")
+        for line in HTML_CODE_FLAGGED_USERS:
+            output_file.write(line)
+        output_file.close()
+
 
 
 def main():
@@ -316,15 +402,17 @@ def main():
     get_output_dir()
     get_flagged_users()
     COUNTER = 1
-    global SCAN_NAME 
+    global SCAN_NAME_KEYWORDS
+    global SCAN_NAME_FLAGGED 
     currTime = datetime.datetime.now()
     date_and_time_formatted = MONTH_RESOLUTION_TABLE[currTime.month] + " "+str(currTime.day) +" "+ str(currTime.year) + " @ " + str(currTime.hour) + "." + str(currTime.minute) + "." + str(currTime.second) 
-    SCAN_NAME = "FB SCAN REPORT " + date_and_time_formatted
+    SCAN_NAME_KEYWORDS = "FB KEYWORDS REPORT " + date_and_time_formatted
+    SCAN_NAME_FLAGGED = "FB FLAGGED USERS REPORT " + date_and_time_formatted
     clear_log = open("./Program Data/Logs/FB_SCRAPE_LOGS/log.txt", "w", encoding="utf-8")
     clear_log.close()
     chrome_options = Options()
     #--headless makes the window not pop up
-    chrome_options.add_argument("--headless")
+    #chrome_options.add_argument("--headless")
     driver = selenium.webdriver.Chrome("./chromedriver", options=chrome_options)
     driver.get("https://facebook.com")
     for c in COOKIE:
@@ -338,11 +426,20 @@ def main():
         time.sleep(delay)
         scrape_location(driver, place, COUNTER)
         COUNTER += 1
+    
+    COUNTER = 1
+    for user in FLAGGED_USERS:
+        delay = random.randint(200, 3000)
+        delay /= 1000
+        print("delay is {}".format(delay))
+        time.sleep(delay)
+        scrape_flagged_user(driver, user, COUNTER)
+        COUNTER += 1
+    
+    
+    write_html_to_file("KEYWORDS")
+    write_html_to_file("FLAGGED_USERS")
 
-    
-   
-    
-    write_html_to_file()
     #Clear log file, write final summary
     log_file = open("./Program Data/Logs/FB_SCRAPE_LOGS/log.txt", "w")
     log_file.write("TOTAL FLAGGED POSTS: {}\nSCAN COMPLETE".format(TOTAL_POSTS))
