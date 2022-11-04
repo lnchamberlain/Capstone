@@ -29,7 +29,9 @@
 #ifndef DWMWA_USE_IMMERSIVE_DARK_MODE
 #define DWMWA_USE_IMMERSIVE_DARK_MODE 20
 #endif
-#define DWMWA_BORDER_COLOR DWORD(35)
+#define DWMWA_BORDER_COLOR DWORD(34)
+#define DWMWA_CAPTION_COLOR DWORD(35)
+#define DWMWA_TEXT_COLOR DWORD(36)
 #define MAX_LOADSTRING 100
 #define EXPORT_FB 1
 #define EXPORT_IG 2
@@ -110,7 +112,7 @@ bool TW_AUTH_FINISHED = false;
 bool FB_AUTH_SUCCESS, IG_AUTH_SUCCESS, TW_AUTH_SUCCESS;
 std::fstream SAVED_CONFIG_FILE;
 std::string shellOperation;
-HBITMAP img;
+HBITMAP backgroundImg, redButtonImg, greenButtonImg, toolbarImg;
 
 
 
@@ -226,10 +228,14 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    HWND hWnd = CreateWindowW(szWindowClass, L"UnderCover Recovery", WS_OVERLAPPEDWINDOW,
       200, 100, 1200, 850, nullptr, nullptr, hInstance, nullptr);
    //Main Window Coordinates (0,0) upper left, (1200, 800) lower right
-   BOOL USE_DARK_MODE = true;
-   BOOL SET_IMMERSIVE_DARK_MODE_SUCCESS = SUCCEEDED(DwmSetWindowAttribute(hWnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &USE_DARK_MODE, sizeof(USE_DARK_MODE)));
+   //BOOL USE_DARK_MODE = true;
+   //BOOL SET_IMMERSIVE_DARK_MODE_SUCCESS = SUCCEEDED(DwmSetWindowAttribute(hWnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &USE_DARK_MODE, sizeof(USE_DARK_MODE)));
    COLORREF DARK_COLOR = 0x00505050;
-   BOOL SET_CAPTION_COLOR = SUCCEEDED(DwmSetWindowAttribute(hWnd, DWMWA_BORDER_COLOR,&DARK_COLOR, sizeof(DARK_COLOR)));
+  
+   BOOL SET_CAPTION_COLOR = SUCCEEDED(DwmSetWindowAttribute(hWnd, DWMWA_CAPTION_COLOR,&DARK_COLOR, sizeof(DARK_COLOR)));
+   COLORREF GREEN = 0xFF0000;
+   //BOOL SET_TEXT_COLOR = SUCCEEDED(DwmSetWindowAttribute(hWnd, DWMWA_TEXT_COLOR, &GREEN, sizeof(GREEN)));
+   BOOL SET_BORDER_COLOR = SUCCEEDED(DwmSetWindowAttribute(hWnd, DWMWA_BORDER_COLOR, &DARK_COLOR, sizeof(DARK_COLOR)));
    // Store in global variable
    MainWindow = hWnd;
 
@@ -269,6 +275,10 @@ void createConfigurationWindow(WNDCLASSEXW& config_cl, HINSTANCE& hInst_config, 
     //Create window after registering class
     HWND confighWnd = CreateWindowW((LPCWSTR)configClassName, L"Configuration", WS_OVERLAPPEDWINDOW, 300, 200, 500, 400, parent, NULL, hInst_config, NULL);
     ShowWindow(confighWnd, nCmdShow);
+    COLORREF DARK_COLOR = 0x00505050;
+    BOOL SET_CAPTION_COLOR = SUCCEEDED(DwmSetWindowAttribute(confighWnd, DWMWA_CAPTION_COLOR, &DARK_COLOR, sizeof(DARK_COLOR)));
+    //COLORREF GREEN = 0xFF0000;
+    //BOOL SET_TEXT_COLOR = SUCCEEDED(DwmSetWindowAttribute(confighWnd, DWMWA_TEXT_COLOR, &GREEN, sizeof(GREEN)));
 
 }
 
@@ -296,6 +306,8 @@ void createFacebookLoginWindow(WNDCLASSEXW& fb_cl, HINSTANCE& hInst_fb, int nCmd
     //Create window after registering class
     HWND fbLoginhWnd = CreateWindowW((LPCWSTR)FBLoginClassName, L"Facebook", WS_OVERLAPPEDWINDOW, 400, 200, 400, 300, parent, NULL, hInst_fb, NULL);
     ShowWindow(fbLoginhWnd, nCmdShow);
+    COLORREF DARK_COLOR = 0x00505050;
+    BOOL SET_CAPTION_COLOR = SUCCEEDED(DwmSetWindowAttribute(fbLoginhWnd, DWMWA_CAPTION_COLOR, &DARK_COLOR, sizeof(DARK_COLOR)));
 
 }
 
@@ -324,6 +336,8 @@ void createInstagramLoginWindow(WNDCLASSEXW& ig_cl, HINSTANCE& hInst_ig, int nCm
     //Create window after registering class
     HWND igLoginhWnd = CreateWindowW((LPCWSTR)IGLoginClassName, L"Instagram", WS_OVERLAPPEDWINDOW, 400, 200, 400, 300, parent, NULL, hInst_ig, NULL);
     ShowWindow(igLoginhWnd, nCmdShow);
+    COLORREF DARK_COLOR = 0x00505050;
+    BOOL SET_CAPTION_COLOR = SUCCEEDED(DwmSetWindowAttribute(igLoginhWnd, DWMWA_CAPTION_COLOR, &DARK_COLOR, sizeof(DARK_COLOR)));
 
 }
 
@@ -351,6 +365,8 @@ void createTwitterLoginWindow(WNDCLASSEXW& tw_cl, HINSTANCE& hInst_tw, int nCmdS
     //Create window after registering class
     HWND twLoginhWnd = CreateWindowW((LPCWSTR)TWLoginClassName, L"Twitter", WS_OVERLAPPEDWINDOW, 400, 200, 400, 300, parent, NULL, hInst_tw, NULL);
     ShowWindow(twLoginhWnd, nCmdShow);
+    COLORREF DARK_COLOR = 0x00505050;
+    BOOL SET_CAPTION_COLOR = SUCCEEDED(DwmSetWindowAttribute(twLoginhWnd, DWMWA_CAPTION_COLOR, &DARK_COLOR, sizeof(DARK_COLOR)));
 
 }
 
@@ -358,7 +374,11 @@ void createTwitterLoginWindow(WNDCLASSEXW& tw_cl, HINSTANCE& hInst_tw, int nCmdS
 void loadImages()
 {
     
-    img = (HBITMAP)LoadImageW(NULL, L".\\GUI_IMAGES\\red.bmp", IMAGE_BITMAP, 300, 500, LR_LOADFROMFILE);
+    backgroundImg = (HBITMAP)LoadImageW(NULL, L".\\GUI_IMAGES\\nodes_bw.bmp", IMAGE_BITMAP, 1300, 900, LR_LOADFROMFILE);
+    //toolbarImg = (HBITMAP)LoadImageW(NULL, L".\\GUI_IMAGES\\gradient_blue.bmp", IMAGE_BITMAP, 1200, 30, LR_LOADFROMFILE);
+    //redButtonImg = (HBITMAP)LoadImageW(NULL, L".\\GUI_IMAGES\\red_button.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+    //greenButtonImg = (HBITMAP)LoadImageW(NULL, L".\\GUI_IMAGES\\green_button.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+
 
 
 }
@@ -555,10 +575,21 @@ LRESULT CALLBACK WndProcConfig(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
     wchar_t hOut[100], mOut[100], sOut[100];
     wchar_t checkDefault[] = L"Default";
     wchar_t indexItemOut[2];
+    static const int points_per_inch = 72;
+    int points, pixels_per_inch, pixels_height;
+    HFONT font;
+    HDC hDC;
     switch (message)
     {
     case WM_CREATE:
         AddConfigControls(hWnd);
+        points = 10;
+        hDC = GetDC(0);
+        pixels_per_inch = GetDeviceCaps(hDC, LOGPIXELSY);
+        pixels_height = -(points * pixels_per_inch / points_per_inch);
+        font = CreateFontA(pixels_height, 0, 0, 0, 500, false, false, false, DEFAULT_CHARSET, OUT_OUTLINE_PRECIS, CLIP_DEFAULT_PRECIS, PROOF_QUALITY, VARIABLE_PITCH | FF_SWISS, "Century Gothic");
+        SendMessage(hWnd, WM_SETFONT, (WPARAM)font, TRUE);
+        EnumChildWindows(hWnd, (WNDENUMPROC)SetFont, (LPARAM)font);
         break;
     case WM_COMMAND:
         switch (wmId)
@@ -645,10 +676,21 @@ LRESULT CALLBACK WndProcFBLogin(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
     char usernameSavedClearText[50], passwordSavedClearText[50];
     std::string line;
     std::fstream readOutputLog;
+    static const int points_per_inch = 72;
+    int points, pixels_per_inch, pixels_height;
+    HFONT font;
+    HDC hDC;
     switch (message)
     {
     case WM_CREATE:
         AddFBLoginControls(hWnd);
+        points = 10;
+        hDC = GetDC(0);
+        pixels_per_inch = GetDeviceCaps(hDC, LOGPIXELSY);
+        pixels_height = -(points * pixels_per_inch / points_per_inch);
+        font = CreateFontA(pixels_height, 0, 0, 0, 500, false, false, false, DEFAULT_CHARSET, OUT_OUTLINE_PRECIS, CLIP_DEFAULT_PRECIS, PROOF_QUALITY, VARIABLE_PITCH | FF_SWISS, "Century Gothic");
+        SendMessage(hWnd, WM_SETFONT, (WPARAM)font, TRUE);
+        EnumChildWindows(hWnd, (WNDENUMPROC)SetFont, (LPARAM)font);
         break;
     case WM_COMMAND:
         switch (wmId)
@@ -779,10 +821,21 @@ LRESULT CALLBACK WndProcIGLogin(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
     char usernameSavedClearText[50], passwordSavedClearText[50];
     std::string line;
     std::fstream readOutputLog;
+    static const int points_per_inch = 72;
+    int points, pixels_per_inch, pixels_height;
+    HFONT font;
+    HDC hDC;
     switch (message)
     {
     case WM_CREATE:
         AddIGLoginControls(hWnd);
+        points = 10;
+        hDC = GetDC(0);
+        pixels_per_inch = GetDeviceCaps(hDC, LOGPIXELSY);
+        pixels_height = -(points * pixels_per_inch / points_per_inch);
+        font = CreateFontA(pixels_height, 0, 0, 0, 500, false, false, false, DEFAULT_CHARSET, OUT_OUTLINE_PRECIS, CLIP_DEFAULT_PRECIS, PROOF_QUALITY, VARIABLE_PITCH | FF_SWISS, "Century Gothic");
+        SendMessage(hWnd, WM_SETFONT, (WPARAM)font, TRUE);
+        EnumChildWindows(hWnd, (WNDENUMPROC)SetFont, (LPARAM)font);
         break;
     case WM_COMMAND:
         switch (wmId)
@@ -913,10 +966,21 @@ LRESULT CALLBACK WndProcTWLogin(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
     char usernameSavedClearText[50], passwordSavedClearText[50];
     std::string line;
     std::fstream readOutputLog;
+    static const int points_per_inch = 72;
+    int points, pixels_per_inch, pixels_height;
+    HFONT font;
+    HDC hDC;
     switch (message)
     {
     case WM_CREATE:
         AddTWLoginControls(hWnd);
+        points = 10;
+        hDC = GetDC(0);
+        pixels_per_inch = GetDeviceCaps(hDC, LOGPIXELSY);
+        pixels_height = -(points * pixels_per_inch / points_per_inch);
+        font = CreateFontA(pixels_height, 0, 0, 0, 500, false, false, false, DEFAULT_CHARSET, OUT_OUTLINE_PRECIS, CLIP_DEFAULT_PRECIS, PROOF_QUALITY, VARIABLE_PITCH | FF_SWISS, "Century Gothic");
+        SendMessage(hWnd, WM_SETFONT, (WPARAM)font, TRUE);
+        EnumChildWindows(hWnd, (WNDENUMPROC)SetFont, (LPARAM)font);
         break;
     case WM_COMMAND:
         switch (wmId)
@@ -1061,11 +1125,21 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 void AddMenu(HWND hWnd)
 {
     HMENU menuMain = CreateMenu();
+
     
     // Submenus for Main
+    //MENUINFO mnuInfo = { 0 };
+    //mnuInfo.cbSize = sizeof(mnuInfo);
+    //mnuInfo.fMask = MIM_BACKGROUND | MIM_APPLYTOSUBMENUS;
+    //mnuInfo.hbrBack = CreateSolidBrush(RGB(1000, 1000, 1000));
+    //HMENU hmenu = GetMenu(hWnd);
     HMENU menuMainSubFile = CreateMenu();
     HMENU menuMainSubHelp = CreateMenu();
-    SetWindowTextW(MainWindow, L"Testing Testing");
+    //SetMenuInfo(menuMainSubFile, &mnuInfo);
+    //SetMenuInfo(menuMainSubHelp, &mnuInfo);
+    //SetMenuInfo(menuMain, &mnuInfo);
+
+    //SetWindowTextW(MainWindow, L"Testing Testing");
    
 
     // Populate drop-down menus
@@ -1083,6 +1157,8 @@ void AddMenu(HWND hWnd)
 //Adds features to the main window
 void AddControls(HWND hWnd)
 {
+    HWND backgroundTile = CreateWindowW(L"Static", NULL, WS_VISIBLE | WS_CHILD | SS_BITMAP, 0, 0, 1200, 800, hWnd, NULL, NULL, NULL);
+    SendMessageW(backgroundTile, STM_SETIMAGE, IMAGE_BITMAP, (LPARAM)backgroundImg);
 
     //Create boxes to fill with Timer values, store h,m, and s in global variables for re-painting on WM_TIMER
     HWND timeTillNextScanBox = CreateWindowW(L"Static", L"Time Until Next Scan:", WS_VISIBLE | WS_CHILD | SS_RIGHT, 406, 50, 140, 20, hWnd, NULL, NULL, NULL);
@@ -1104,7 +1180,7 @@ void AddControls(HWND hWnd)
 
     //Main three blocks
     facebookSection = CreateWindowW(L"Static", L"Facebook", WS_VISIBLE | WS_CHILD | WS_BORDER, 100, 130, 300, 500, hWnd, NULL, NULL, NULL);
-    instagramSection = CreateWindowW(L"Static", L"Instagram", WS_VISIBLE | WS_CHILD | WS_BORDER | SS_BITMAP, 450, 130, 300, 500, hWnd, NULL, NULL, NULL);
+    instagramSection = CreateWindowW(L"Static", L"Instagram", WS_VISIBLE | WS_CHILD | WS_BORDER, 450, 130, 300, 500, hWnd, NULL, NULL, NULL);
     twitterSection = CreateWindowW(L"Static", L"Twitter", WS_VISIBLE | WS_CHILD | WS_BORDER, 800, 130, 300, 500, hWnd, NULL, NULL, NULL, NULL);
 
     
@@ -1129,7 +1205,7 @@ void AddControls(HWND hWnd)
     HWND twitterExportButton = CreateWindowW(L"Button", L"Export Full Scan Results", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON | BS_MULTILINE, 990, 560, 100, 60, hWnd, (HMENU)EXPORT_TW, NULL, NULL);
 
     HWND launchButton = CreateWindowW(L"Button", L"LAUCH SCAN", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON| BS_CENTER, 550, 655, 100, 60, hWnd, (HMENU)LAUNCH, NULL, NULL);
-    SendMessageW(instagramSection, STM_SETIMAGE, IMAGE_BITMAP, (LPARAM)img);
+    
 }
 
 //Add elements to the configuration window
@@ -1258,7 +1334,6 @@ int openFileExplorer(int FLAG)
             caught = ShellExecuteA(NULL, "open", ".\\Program Data\\FoundPosts\\FoundPostsFB", NULL, NULL, SW_SHOWDEFAULT);
             if (caught < (HINSTANCE)32) //Per windows documentation, error messages will be less than 32
             {
-                //SetWindowTextW(MainWindow, (LPCWSTR)caught);
                 return 0;
             }
         }
