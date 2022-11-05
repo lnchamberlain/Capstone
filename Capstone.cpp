@@ -112,7 +112,7 @@ bool TW_AUTH_FINISHED = false;
 bool FB_AUTH_SUCCESS, IG_AUTH_SUCCESS, TW_AUTH_SUCCESS;
 std::fstream SAVED_CONFIG_FILE;
 std::string shellOperation;
-HBITMAP backgroundImg, redButtonImg, greenButtonImg, toolbarImg, logoImg, scanningButtonImg;
+HBITMAP backgroundImg, redButtonImg, greenButtonImg, toolbarImg, logoImg, scanningButtonImg, fbSectionImg, igSectionImg, twSectionImg;
 
 
 
@@ -379,6 +379,9 @@ void loadImages()
     redButtonImg = (HBITMAP)LoadImageW(NULL, L".\\GUI_IMAGES\\red_button.bmp", IMAGE_BITMAP, 100, 60, LR_LOADFROMFILE);
     greenButtonImg = (HBITMAP)LoadImageW(NULL, L".\\GUI_IMAGES\\green_button.bmp", IMAGE_BITMAP, 100, 60, LR_LOADFROMFILE);
     scanningButtonImg = (HBITMAP)LoadImageW(NULL, L".\\GUI_IMAGES\\running_button.bmp", IMAGE_BITMAP, 100,60,LR_LOADFROMFILE);
+    fbSectionImg = (HBITMAP)LoadImageW(NULL, L".\\GUI_IMAGES\\facebook_section_img.bmp", IMAGE_BITMAP, 300, 500, LR_LOADFROMFILE);
+    igSectionImg = (HBITMAP)LoadImageW(NULL, L".\\GUI_IMAGES\\instagram_section_img.bmp", IMAGE_BITMAP, 300, 500, LR_LOADFROMFILE);
+    twSectionImg = (HBITMAP)LoadImageW(NULL, L".\\GUI_IMAGES\\twitter_section_img.bmp", IMAGE_BITMAP, 300, 500, LR_LOADFROMFILE);
 
 
 
@@ -1183,10 +1186,14 @@ void AddControls(HWND hWnd)
 
 
     //Main three blocks
-    facebookSection = CreateWindowW(L"Static", L"Facebook", WS_VISIBLE | WS_CHILD | WS_BORDER, 100, 130, 300, 500, hWnd, NULL, NULL, NULL);
-    instagramSection = CreateWindowW(L"Static", L"Instagram", WS_VISIBLE | WS_CHILD | WS_BORDER, 450, 130, 300, 500, hWnd, NULL, NULL, NULL);
-    twitterSection = CreateWindowW(L"Static", L"Twitter", WS_VISIBLE | WS_CHILD | WS_BORDER, 800, 130, 300, 500, hWnd, NULL, NULL, NULL, NULL);
+    facebookSection = CreateWindowW(L"Static", L"Facebook", WS_VISIBLE | WS_CHILD | WS_BORDER | SS_BITMAP, 100, 130, 300, 500, hWnd, NULL, NULL, NULL);
+    instagramSection = CreateWindowW(L"Static", L"Instagram", WS_VISIBLE | WS_CHILD | WS_BORDER | SS_BITMAP, 450, 130, 300, 500, hWnd, NULL, NULL, NULL);
+    twitterSection = CreateWindowW(L"Static", L"Twitter", WS_VISIBLE | WS_CHILD | WS_BORDER | SS_BITMAP, 800, 130, 300, 500, hWnd, NULL, NULL, NULL, NULL);
+    SendMessageW(facebookSection, STM_SETIMAGE, IMAGE_BITMAP, (LPARAM)fbSectionImg);
+    SendMessageW(instagramSection, STM_SETIMAGE, IMAGE_BITMAP, (LPARAM)igSectionImg);
+    SendMessageW(twitterSection, STM_SETIMAGE, IMAGE_BITMAP, (LPARAM)twSectionImg);
 
+    
     
 
     //Populate login buttons
