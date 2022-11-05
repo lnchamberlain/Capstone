@@ -112,7 +112,7 @@ bool TW_AUTH_FINISHED = false;
 bool FB_AUTH_SUCCESS, IG_AUTH_SUCCESS, TW_AUTH_SUCCESS;
 std::fstream SAVED_CONFIG_FILE;
 std::string shellOperation;
-HBITMAP backgroundImg, redButtonImg, greenButtonImg, toolbarImg;
+HBITMAP backgroundImg, redButtonImg, greenButtonImg, toolbarImg, logoImg;
 
 
 
@@ -375,6 +375,7 @@ void loadImages()
 {
     
     backgroundImg = (HBITMAP)LoadImageW(NULL, L".\\GUI_IMAGES\\nodes_bw.bmp", IMAGE_BITMAP, 1300, 900, LR_LOADFROMFILE);
+    logoImg = (HBITMAP)LoadImageW(NULL, L".\\GUI_IMAGES\\logo.bmp", IMAGE_BITMAP, 125, 125, LR_LOADFROMFILE);
     //redButtonImg = (HBITMAP)LoadImageW(NULL, L".\\GUI_IMAGES\\red_button.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
     //greenButtonImg = (HBITMAP)LoadImageW(NULL, L".\\GUI_IMAGES\\green_button.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
     //scanningButtonImg = (HBITMAP)LoadImageW(NULL, L".\\GUI_IMAGES\\scanning_button.bmp", IMAGE_BITMAP, 0,0,LR_LOADFROMFILE);
@@ -1159,6 +1160,8 @@ void AddControls(HWND hWnd)
 {
     HWND backgroundTile = CreateWindowW(L"Static", NULL, WS_VISIBLE | WS_CHILD | SS_BITMAP, 0, 0, 1200, 800, hWnd, NULL, NULL, NULL);
     SendMessageW(backgroundTile, STM_SETIMAGE, IMAGE_BITMAP, (LPARAM)backgroundImg);
+    HWND logo = CreateWindowW(L"Static", NULL, WS_VISIBLE | WS_CHILD | SS_BITMAP, 1035,650, 100, 100, hWnd, NULL, NULL, NULL);
+    SendMessageW(logo, STM_SETIMAGE, IMAGE_BITMAP, (LPARAM)logoImg);
 
     //Create boxes to fill with Timer values, store h,m, and s in global variables for re-painting on WM_TIMER
     HWND timeTillNextScanBox = CreateWindowW(L"Static", L"Time Until Next Scan:", WS_VISIBLE | WS_CHILD | SS_RIGHT, 406, 50, 140, 20, hWnd, NULL, NULL, NULL);
