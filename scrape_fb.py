@@ -412,7 +412,7 @@ def main():
     clear_log.close()
     chrome_options = Options()
     #--headless makes the window not pop up
-    #chrome_options.add_argument("--headless")
+    chrome_options.add_argument("--headless")
     driver = selenium.webdriver.Chrome("./chromedriver", options=chrome_options)
     driver.get("https://facebook.com")
     for c in COOKIE:

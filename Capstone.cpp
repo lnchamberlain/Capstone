@@ -86,7 +86,7 @@ WCHAR hoursCaptured[100], minutesCaptured[20], secondsCaptured[20], regionCaptur
 HWND H, M, S;
 HWND HOURS, MINUTES, SECONDS;
 HWND FBsubmit, IGsubmit, TWsubmit;
-HWND  facebookResultsSummary, instagramResultsSummary, twitterResultsSummary;
+HWND  facebookResultsSummary, instagramResultsSummary, twitterResultsSummary, launchButton;
 HWND checkboxFB, checkboxIG, checkboxTW;
 const WCHAR *configClassName = L"ConfigClassName";
 const WCHAR* FBLoginClassName = L"FacebookLoginClassName";
@@ -112,7 +112,7 @@ bool TW_AUTH_FINISHED = false;
 bool FB_AUTH_SUCCESS, IG_AUTH_SUCCESS, TW_AUTH_SUCCESS;
 std::fstream SAVED_CONFIG_FILE;
 std::string shellOperation;
-HBITMAP backgroundImg, redButtonImg, greenButtonImg, toolbarImg, logoImg;
+HBITMAP backgroundImg, redButtonImg, greenButtonImg, toolbarImg, logoImg, scanningButtonImg;
 
 
 
@@ -374,11 +374,11 @@ void createTwitterLoginWindow(WNDCLASSEXW& tw_cl, HINSTANCE& hInst_tw, int nCmdS
 void loadImages()
 {
     
-    backgroundImg = (HBITMAP)LoadImageW(NULL, L".\\GUI_IMAGES\\nodes_bw.bmp", IMAGE_BITMAP, 1300, 900, LR_LOADFROMFILE);
+    backgroundImg = (HBITMAP)LoadImageW(NULL, L".\\GUI_IMAGES\\gradient_blue.bmp", IMAGE_BITMAP, 1300, 900, LR_LOADFROMFILE);
     logoImg = (HBITMAP)LoadImageW(NULL, L".\\GUI_IMAGES\\logo.bmp", IMAGE_BITMAP, 125, 125, LR_LOADFROMFILE);
-    //redButtonImg = (HBITMAP)LoadImageW(NULL, L".\\GUI_IMAGES\\red_button.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
-    //greenButtonImg = (HBITMAP)LoadImageW(NULL, L".\\GUI_IMAGES\\green_button.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
-    //scanningButtonImg = (HBITMAP)LoadImageW(NULL, L".\\GUI_IMAGES\\scanning_button.bmp", IMAGE_BITMAP, 0,0,LR_LOADFROMFILE);
+    redButtonImg = (HBITMAP)LoadImageW(NULL, L".\\GUI_IMAGES\\red_button.bmp", IMAGE_BITMAP, 100, 60, LR_LOADFROMFILE);
+    greenButtonImg = (HBITMAP)LoadImageW(NULL, L".\\GUI_IMAGES\\green_button.bmp", IMAGE_BITMAP, 100, 60, LR_LOADFROMFILE);
+    scanningButtonImg = (HBITMAP)LoadImageW(NULL, L".\\GUI_IMAGES\\running_button.bmp", IMAGE_BITMAP, 100,60,LR_LOADFROMFILE);
 
 
 
@@ -516,6 +516,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             {
                 InitializeTimer();
                 COUNT = 0;
+                SendMessageW(launchButton, BM_SETIMAGE, IMAGE_BITMAP, (LPARAM)scanningButtonImg);
                 lauchScanners(FB_LOGGED_IN, IG_LOGGED_IN, TW_LOGGED_IN);
                 beginListeningforScrapeResults(FB_LOGGED_IN, IG_LOGGED_IN, TW_LOGGED_IN);
             }
@@ -655,6 +656,9 @@ LRESULT CALLBACK WndProcConfig(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
             //IN FUTURE, CHECK VALUE INTEGRITY BEFORE SETTING CONFIG_SET TO TRUE
             CONFIG_SET = true;
             DestroyWindow(hWnd);
+            if (CONFIG_SET && MIN_ONE_SITE_LOGGED_IN) {
+                SendMessageW(launchButton, BM_SETIMAGE, IMAGE_BITMAP, (LPARAM)greenButtonImg);
+            }
             break;
             
         case WM_DESTROY:
@@ -799,6 +803,9 @@ LRESULT CALLBACK WndProcFBLogin(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
                     }
                     readOutputLog.close();
                 }
+            }
+            if (CONFIG_SET && MIN_ONE_SITE_LOGGED_IN) {
+                SendMessageW(launchButton, BM_SETIMAGE, IMAGE_BITMAP, (LPARAM)greenButtonImg);
             }
             break;
         }
@@ -945,6 +952,9 @@ LRESULT CALLBACK WndProcIGLogin(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
                     readOutputLog.close();
                 }
             }
+            if (CONFIG_SET && MIN_ONE_SITE_LOGGED_IN) {
+                SendMessageW(launchButton, BM_SETIMAGE, IMAGE_BITMAP, (LPARAM)greenButtonImg);
+            }
             break;
         }
         }
@@ -1090,6 +1100,9 @@ LRESULT CALLBACK WndProcTWLogin(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
                     readOutputLog.close();
                 }
             }
+            if (CONFIG_SET && MIN_ONE_SITE_LOGGED_IN) {
+                SendMessageW(launchButton, BM_SETIMAGE, IMAGE_BITMAP, (LPARAM)greenButtonImg);
+            }
             break;
         }
         }
@@ -1127,20 +1140,8 @@ void AddMenu(HWND hWnd)
 {
     HMENU menuMain = CreateMenu();
 
-    
-    // Submenus for Main
-    //MENUINFO mnuInfo = { 0 };
-    //mnuInfo.cbSize = sizeof(mnuInfo);
-    //mnuInfo.fMask = MIM_BACKGROUND | MIM_APPLYTOSUBMENUS;
-    //mnuInfo.hbrBack = CreateSolidBrush(RGB(1000, 1000, 1000));
-    //HMENU hmenu = GetMenu(hWnd);
     HMENU menuMainSubFile = CreateMenu();
     HMENU menuMainSubHelp = CreateMenu();
-    //SetMenuInfo(menuMainSubFile, &mnuInfo);
-    //SetMenuInfo(menuMainSubHelp, &mnuInfo);
-    //SetMenuInfo(menuMain, &mnuInfo);
-
-    //SetWindowTextW(MainWindow, L"Testing Testing");
    
 
     // Populate drop-down menus
@@ -1207,8 +1208,8 @@ void AddControls(HWND hWnd)
     HWND instagramExportButton = CreateWindowW(L"Button", L"Export Full Scan Results", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON | BS_MULTILINE, 640, 560, 100, 60, hWnd, (HMENU)EXPORT_IG, NULL, NULL);
     HWND twitterExportButton = CreateWindowW(L"Button", L"Export Full Scan Results", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON | BS_MULTILINE, 990, 560, 100, 60, hWnd, (HMENU)EXPORT_TW, NULL, NULL);
 
-    HWND launchButton = CreateWindowW(L"Button", L"LAUCH SCAN", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON| BS_CENTER, 550, 655, 100, 60, hWnd, (HMENU)LAUNCH, NULL, NULL);
-    
+    launchButton = CreateWindowW(L"Button", L"LAUNCH SCAN", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON |BS_CENTER |BS_BITMAP, 550, 655, 100, 60, hWnd, (HMENU)LAUNCH, NULL, NULL);
+    SendMessageW(launchButton, BM_SETIMAGE, IMAGE_BITMAP, (LPARAM)redButtonImg);
 }
 
 //Add elements to the configuration window
