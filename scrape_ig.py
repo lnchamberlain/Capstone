@@ -143,11 +143,13 @@ def get_flagged_users():
 
 
 
- #Requests data from location url, formats the return, searches captions and comments for keywords, adds posts to flagged posts
+ #Requests data from location url, formats the return, searches captions for keywords and flagged post authors, sends to format_flagged_post if flagged
+ #Print statements are for debugging purposes, information to be printed to the GUI is written to the temp file that then is written into a log the GUI reads from
 def scrape_location(COUNTER, NUM_LOCATIONS, session, location):
-    #open temporary file to write to
+    #write to temp file rather than the log file to limit the number of writes happening to log.txt as this is is where the GUI reads, avoid race conditions
     temp_file = open("./Program Data/Logs/IG_SCRAPE_LOGS/temp.txt", "w", encoding="utf-8")
     ALL_POSTS = []
+    #Posts are broken down into 'media' sub dictionaries
     MEDIA_ARRAYS =[]
     print("\n*****************************************************************\n")
     print("Scraping Location {}...".format(location))
@@ -273,7 +275,7 @@ def scrape_location(COUNTER, NUM_LOCATIONS, session, location):
 
 #Requests the full info for a flagged post
 def format_found_post(flagged_post):
-    #GRAB THE VALUES WE WANT FROM THE FLAGGED POST, add to array of html code
+    #GRAB THE VALUES WE WANT FROM THE FLAGGED POST, add to array of html strings
     global HTML_CODE
     lat = flagged_post.get("lat")
     lng = flagged_post.get("lng")
@@ -290,7 +292,7 @@ def format_found_post(flagged_post):
     link = "https://www.instagram.com/p/" + flagged_post.get("code")
     try:
         img_url = flagged_post["image_versions2"]["candidates"][0]["url"] 
-        #Retrieve image and store temporarily, compute hash and store in images
+        #Retrieve image and store temporarily, compute hash and store in images folder
         urlretrieve(img_url, "./Program Data/temp_img.jpg")
         img_hash = hashlib.md5(Image.open("./Program Data/temp_img.jpg").tobytes())
         hash_str = img_hash.hexdigest()
@@ -327,9 +329,6 @@ def write_html_to_file():
     for line in HTML_CODE:
         output_file.write(line)
     output_file.close()
-
-
-
 
 
 def main():
