@@ -374,14 +374,14 @@ void createTwitterLoginWindow(WNDCLASSEXW& tw_cl, HINSTANCE& hInst_tw, int nCmdS
 void loadImages()
 {
     
-    backgroundImg = (HBITMAP)LoadImageW(NULL, L".\\GUI_IMAGES\\gradient_blue.bmp", IMAGE_BITMAP, 1300, 900, LR_LOADFROMFILE);
+    backgroundImg = (HBITMAP)LoadImageW(NULL, L".\\GUI_IMAGES\\nodes.bmp", IMAGE_BITMAP, 1300, 900, LR_LOADFROMFILE);
     logoImg = (HBITMAP)LoadImageW(NULL, L".\\GUI_IMAGES\\logo.bmp", IMAGE_BITMAP, 125, 125, LR_LOADFROMFILE);
     redButtonImg = (HBITMAP)LoadImageW(NULL, L".\\GUI_IMAGES\\red_button.bmp", IMAGE_BITMAP, 100, 60, LR_LOADFROMFILE);
     greenButtonImg = (HBITMAP)LoadImageW(NULL, L".\\GUI_IMAGES\\green_button.bmp", IMAGE_BITMAP, 100, 60, LR_LOADFROMFILE);
     scanningButtonImg = (HBITMAP)LoadImageW(NULL, L".\\GUI_IMAGES\\running_button.bmp", IMAGE_BITMAP, 100,60,LR_LOADFROMFILE);
-    fbSectionImg = (HBITMAP)LoadImageW(NULL, L".\\GUI_IMAGES\\facebook_section_img.bmp", IMAGE_BITMAP, 300, 500, LR_LOADFROMFILE);
-    igSectionImg = (HBITMAP)LoadImageW(NULL, L".\\GUI_IMAGES\\instagram_section_img.bmp", IMAGE_BITMAP, 300, 500, LR_LOADFROMFILE);
-    twSectionImg = (HBITMAP)LoadImageW(NULL, L".\\GUI_IMAGES\\twitter_section_img.bmp", IMAGE_BITMAP, 300, 500, LR_LOADFROMFILE);
+    fbSectionImg = (HBITMAP)LoadImageW(NULL, L".\\GUI_IMAGES\\facebook_section_img_silver.bmp", IMAGE_BITMAP, 300, 500, LR_LOADFROMFILE);
+    igSectionImg = (HBITMAP)LoadImageW(NULL, L".\\GUI_IMAGES\\instagram_section_img_silver.bmp", IMAGE_BITMAP, 300, 500, LR_LOADFROMFILE);
+    twSectionImg = (HBITMAP)LoadImageW(NULL, L".\\GUI_IMAGES\\twitter_section_img_silver.bmp", IMAGE_BITMAP, 300, 500, LR_LOADFROMFILE);
 
 
 
