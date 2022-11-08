@@ -134,7 +134,7 @@ def get_output_dir():
         OUTPUT_DIR = dir
 
 
-#Populates global list from flagged users list
+#Populates global list from flagged users list.
 def get_flagged_users():
     flagged_users_file = open("./Program Data/FlaggedUsers/IGFlaggedUsers/ig_flagged_users.txt", "r+")
     global FLAGGED_USERS
@@ -145,6 +145,8 @@ def get_flagged_users():
 
  #Requests data from location url, formats the return, searches captions for keywords and flagged post authors, sends to format_flagged_post if flagged
  #Print statements are for debugging purposes, information to be printed to the GUI is written to the temp file that then is written into a log the GUI reads from
+ # Note that in most cases, what is printed to the terminal matches what is printed to the GUI, so print statements are often followed by a temp file write of the
+ # same or similiar data
 def scrape_location(COUNTER, NUM_LOCATIONS, session, location):
     #write to temp file rather than the log file to limit the number of writes happening to log.txt as this is is where the GUI reads, avoid race conditions
     temp_file = open("./Program Data/Logs/IG_SCRAPE_LOGS/temp.txt", "w", encoding="utf-8")
@@ -156,7 +158,9 @@ def scrape_location(COUNTER, NUM_LOCATIONS, session, location):
     temp_file.write(location + "\n")
     print("Location {}/{}".format(COUNTER, NUM_LOCATIONS))
     temp_file.write("Location {}/{}\n".format(COUNTER, NUM_LOCATIONS))
+    #Request JSON data at the address by appending the parameters /?__a=1
     response = session.get(LOCATION_URLS[location] + "/?__a=1")
+    #Skip location if error encountered
     if(response.status_code != 200):
         print("Error")
         print(response.status_code)
@@ -170,6 +174,7 @@ def scrape_location(COUNTER, NUM_LOCATIONS, session, location):
             MEDIA_ARRAYS.append(sections[i]["layout_content"]["medias"])
         except KeyError:
             continue
+    #Posts are delineated through the 'media' key
     for array in MEDIA_ARRAYS:
         for post in array:
             ALL_POSTS.append(post["media"])
@@ -269,13 +274,14 @@ def scrape_location(COUNTER, NUM_LOCATIONS, session, location):
         #Get rid of temporary image
     os.remove("./Program Data/Logs/IG_SCRAPE_LOGS/temp.txt")
     print("\n*****************************************************************\n")
+  
    
 
 
 
-#Requests the full info for a flagged post
+#Accepts a dictionary for a flagged post and parses it for the relevant data. Performs image downloads and hashes. Writes relevant and formatted data into an html string that is append into the 
+# global HTML strings array. 
 def format_found_post(flagged_post):
-    #GRAB THE VALUES WE WANT FROM THE FLAGGED POST, add to array of html strings
     global HTML_CODE
     lat = flagged_post.get("lat")
     lng = flagged_post.get("lng")
@@ -289,8 +295,10 @@ def format_found_post(flagged_post):
     timestamp_epoch = flagged_post.get("taken_at")
     timestamp = datetime.datetime.utcfromtimestamp(timestamp_epoch)
     profile_link = "https://instagram.com/" + username 
+    #Example link value: post link: https://www.instagram.com/p/CktyJ2yv7fg/, the 'code' value would be 'CktyJ2yv7fg'. The link variable is the rebuilt url
     link = "https://www.instagram.com/p/" + flagged_post.get("code")
     try:
+        #Image candiates denote different resolutions, grab highest at index 0
         img_url = flagged_post["image_versions2"]["candidates"][0]["url"] 
         #Retrieve image and store temporarily, compute hash and store in images folder
         urlretrieve(img_url, "./Program Data/temp_img.jpg")
@@ -307,6 +315,7 @@ def format_found_post(flagged_post):
         img_path_html = ""
     #Compile into HTML string
     print("Writing HTML String")
+    #If multiple images or video, print a message saying as much. Else if image was downloaded successfully, write path to image in src so the image will be rendered in the user's browser when viewing the final report. 
     if(img_path_html == ""):
         html_str += "<td>" + timestamp.strftime("%m/%d/%Y %H:%M:%S") + "</td><td>" + lat_lng + "</td><td>" + username + "</td><td>" + full_name + "</td><td><a href=" + profile_link + ">link</a></td><td>" + caption + "</td><td><a href=" + link + ">link</a></td><td>Multiple Images or Video</td></tr>"
     else:
@@ -322,6 +331,7 @@ def write_html_to_file():
     #Clear out duplicate entries
     HTML_CODE = set(HTML_CODE)
     HTML_CODE = list(HTML_CODE)
+    #Insert header and footer values
     HTML_CODE.insert(0, "<html><body><table><head><link rel='stylesheet' href='../../../styles.css'></head>\n")
     HTML_CODE.insert(1, "<h1 style='text-align:center;'>" + SCAN_NAME + "</h1>")
     HTML_CODE.insert(2, "<tr><th>Date/Time</th><th>Lat/Long</th><th>Username</th><th>Full Name</th><th>Profile</th><th>Caption/Comment</th><th>Post</th><th>Media</th></tr>")
@@ -332,6 +342,7 @@ def write_html_to_file():
 
 
 def main():
+    #Load input variables
     get_urls()
     get_keywords()
     session = get_cookie()
