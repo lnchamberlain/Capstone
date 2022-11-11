@@ -43,6 +43,7 @@ BEFORE_FLAG = False
 BEFORE_LIST = []
 AFTER_FLAG = False
 AFTER_LIST = []
+OK = 200
 
 
 #Fills global variable with urls from the last column of the .csv file
@@ -68,21 +69,31 @@ def get_keywords():
     global AND_FLAG
     global BEFORE_FLAG
     global AFTER_FLAG
-    keywords_file = open("./Program Data/Wordlists/keywords.txt", "r+")
-    #First 7 lines of keyword file are user instructions, skip to grab terms
-    lines = keywords_file.readlines()[7:]
-    keywords_list = lines[0].split(",")
+    try:
+        keywords_file = open("./Program Data/Wordlists/keywords.txt", "r+",encoding="utf-8")
+    except:
+        print("Error openning keywords file")
+        sys.exit()
+    lines = keywords_file.readlines()
+    keywords_start_index = 0
+    #Skip instructions lines (start with //)
+    for i in range(len(lines)):
+        if(lines[i][0:2] != "//"):
+            keywords_start_index = i
+    lines = lines[keywords_start_index:]
+    keywords_list = str(lines[0]).split(",")
     for word in keywords_list:
-        word=word.strip()
+        word = word.strip()
+
         #If logical AND used, add to array of lists 
         if '+' in word:
             AND_FLAG = True
             terms = word.split("+")
             global AND_LIST
             AND_LIST.append(terms)
-            continue
+
         #If after date filter used, add to array of tuples in the form (term, epoch_time_UTC)
-        if 'AFTER' in word:
+        elif 'AFTER' in word:
             AFTER_FLAG = True
             term_and_date = word.split("AFTER")
             term = term_and_date[0]
@@ -92,10 +103,9 @@ def get_keywords():
             epoch_time = datetime_obj.timestamp()
             global AFTER_LIST 
             AFTER_LIST.append((term, epoch_time))
-            continue
+
         #If before date filter used, add to array of tuples in the form (term, epoch_time_UTC)
-        print(word)
-        if'BEFORE' in word:
+        elif'BEFORE' in word:
             BEFORE_FLAG = True
             term_and_date = word.split("BEFORE")
             term = term_and_date[0]
@@ -105,40 +115,54 @@ def get_keywords():
             epoch_time = datetime_obj.timestamp()
             global BEFORE_LIST 
             BEFORE_LIST.append((term, epoch_time))
-            continue
-    #Add all non-special terms to KEYWORDS list
-        KEYWORDS.append(word)
-
 
     
+        else:
+        #Add all non-special terms to KEYWORDS list
+            KEYWORDS.append(word)
 
+    keywords_file.close()
+ 
 #Reads cookie value from pickle file, sets session cookies then returns session
 #   Cookie value is written to pickle file from the authenticator program, users can't move on to 
 #   the scraper until that value is set
 def get_cookie():
     session = requests.Session()
-    cookies = pickle.load(open("./Program Data/Logs/IG_AUTH_LOGS/ig_cookies.pkl", "rb"))
+    cookies_file = None
+    try:
+        cookies_file = open("./Program Data/Logs/IG_AUTH_LOGS/ig_cookies.pkl", "rb")
+    except:
+        print("Error opening cookie file")
+        sys.exit()
+    cookies = pickle.load(cookies_file)
     c = cookies[0]
     session.cookies.set(c['name'], c['value'])
+    cookies_file.close()
     return session
 
 
 
 #Establishes if users are using a custom output directory, and if not set the global variable OUTPUT_DIR to the default output
 def get_output_dir():
-    dir = sys.argv[2]
+    output_dir = sys.argv[2]
     global OUTPUT_DIR
-    if(dir == "DEFAULT"):
+    if(output_dir == "DEFAULT"):
         OUTPUT_DIR = "./Program Data/FoundPosts/FoundPostsIG"
     else:
-        OUTPUT_DIR = dir
+        OUTPUT_DIR = output_dir
 
 
 #Populates global list from flagged users list.
 def get_flagged_users():
+    try:
+        flagged_users_file = open("./Program Data/Logs/IG_AUTH_LOGS/ig_cookies.pkl", "rb")
+    except:
+        print("Error opening flagged users file file.")
+        sys.exit()
     flagged_users_file = open("./Program Data/FlaggedUsers/IGFlaggedUsers/ig_flagged_users.txt", "r+")
     global FLAGGED_USERS
     FLAGGED_USERS = flagged_users_file.read().split(",")
+    flagged_users_file.close()
 
 
 
@@ -161,7 +185,7 @@ def scrape_location(COUNTER, NUM_LOCATIONS, session, location):
     #Request JSON data at the address by appending the parameters /?__a=1
     response = session.get(LOCATION_URLS[location] + "/?__a=1")
     #Skip location if error encountered
-    if(response.status_code != 200):
+    if(response.status_code != OK):
         print("Error")
         print(response.status_code)
         return
@@ -198,8 +222,8 @@ def scrape_location(COUNTER, NUM_LOCATIONS, session, location):
         for word in KEYWORDS:
             search_words = [(" " + word + " "), (" " + word + "."), (" " + word + "!"), (" " + word + "?"), ("#" + word + " ")]
             for author in FLAGGED_USERS:
-                for word in search_words:
-                    if (word in caption) or (user == author): 
+                for w in search_words:
+                    if (w in caption) or (user == author): 
                         FLAGGED_POSTS.append(post)
                         format_found_post(post)
                         flagged +=1
@@ -222,8 +246,7 @@ def scrape_location(COUNTER, NUM_LOCATIONS, session, location):
                     FLAGGED_POSTS.append(post)
                     format_found_post(post)
                     flagged +=1
-     
-     
+       
         #If using BEFORE operator, caption must contain term and be posted before the time stamp
         if(BEFORE_FLAG):
             post_epoch = post.get("taken_at")
@@ -261,9 +284,7 @@ def scrape_location(COUNTER, NUM_LOCATIONS, session, location):
                         FLAGGED_POSTS.append(post)
                         format_found_post(post)
                         flagged +=1
-          
-                        
-
+                              
     global FOUND_FLAGGED 
     FOUND_FLAGGED += flagged
     print("Found {} flagged posts at this location\nTotal Flagged Posts: {}".format(flagged, len(FLAGGED_POSTS)))
