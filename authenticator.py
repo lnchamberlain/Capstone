@@ -24,6 +24,8 @@ def encrypt_and_store(auth, mode):
     for char in auth.password:
         enc_password += chr(ord(char) + 10)
     
+    print(auth.username)
+    print(enc_username)
     #open the file in read mode
     f = open("./Program Data/Configuration/user_config.txt", 'r+', encoding="utf-8")
     data = f.read().split("\n")
@@ -81,10 +83,10 @@ class FB_AUTH:
         time.sleep(1)
         submit_form.click()
         print("Submitted")
-        time.sleep(5)
+        time.sleep(7)
         log_file = open("./Program Data/Logs/FB_AUTH_LOGS/log.txt", "w")
         #Title will change to Facebook if logged in
-        if(driver.title == "Facebook"):
+        if("log in" not in driver.title and "Log into" not in driver.title):
             self.cookie = driver.get_cookies()
             if self.cookie is not None:
                 print("Log in success")
@@ -97,6 +99,7 @@ class FB_AUTH:
                 return "Success"
         else:
             print("Log in fail")
+            print("writing to log file")
             log_file.write("FAIL")
             log_file.close()
             driver.quit()
@@ -158,6 +161,7 @@ class IG_AUTH:
                 return "Success"
         else:
             print("Log in fail")
+            log_file.write("FAIL")
             log_file.write("FAIL")
             log_file.close()
             driver.quit()

@@ -681,7 +681,7 @@ LRESULT CALLBACK WndProcFBLogin(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
     int wmId = LOWORD(wParam);
     std::string usernameSaved_enc, passwordSaved_enc, usernameClearText, passwordClearText;
     char c;
-    char usernameSavedClearText[50], passwordSavedClearText[50];
+    char usernameSavedClearText[100], passwordSavedClearText[100];
     std::string line;
     std::fstream readOutputLog;
     static const int points_per_inch = 72;
@@ -754,7 +754,7 @@ LRESULT CALLBACK WndProcFBLogin(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
                 shellOperation.append(" ");
 
                 //Lauch program
-                WinExec((LPCSTR)shellOperation.c_str(), SW_HIDE);
+                WinExec((LPCSTR)shellOperation.c_str(), SW_SHOW);
                 SetWindowTextW(FBsubmit, L"Authenticating...");
             }
             //NOTE: if user puts stuff in the login but also checks used saved, will override and use saved info
@@ -773,15 +773,16 @@ LRESULT CALLBACK WndProcFBLogin(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
                 shellOperation.append(" ");
 
                 //Lauch program
-                WinExec((LPCSTR)shellOperation.c_str(), SW_HIDE);
+                WinExec((LPCSTR)shellOperation.c_str(), SW_SHOW);
                 SetWindowTextW(FBsubmit, L"Authenticating...");
             }
 
+            FB_AUTH_SUCCESS = false;
             //Wait three seconds then see if the logs show a success or a fail
             while (!FB_AUTH_FINISHED)
             {
                 Sleep(3000);
-                readOutputLog.open(".\\Program Data\\Logs\\IG_AUTH_LOGS\\log.txt", std::ios::in);
+                readOutputLog.open(".\\Program Data\\Logs\\FB_AUTH_LOGS\\log.txt", std::ios::in);
                 //Read in all lines, check for SUCCESS or FAIL
                 if (readOutputLog.is_open())
                 {
