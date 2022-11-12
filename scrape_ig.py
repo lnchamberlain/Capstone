@@ -53,10 +53,11 @@ def get_urls():
     region_file = REGION_RESOLUTION_TABLE[int(sys.argv[1])]
     with open(region_file, newline='', encoding="utf-8") as csvfile:
         csv_data = csv.reader(csvfile, delimiter=',')
+        #Skip header
+        next(csv_data)
         for row in csv_data:
             LOCATION_URLS[row[1]] = row[-1]
-    #First pair of values are header values
-    LOCATION_URLS.pop("Location Name", None)
+
 
 
 
@@ -116,7 +117,6 @@ def get_keywords():
             global BEFORE_LIST 
             BEFORE_LIST.append((term, epoch_time))
 
-    
         else:
         #Add all non-special terms to KEYWORDS list
             KEYWORDS.append(word)
@@ -174,13 +174,13 @@ def get_flagged_users():
 def scrape_location(COUNTER, NUM_LOCATIONS, session, location):
     #write to temp file rather than the log file to limit the number of writes happening to log.txt as this is is where the GUI reads, avoid race conditions
     temp_file = open("./Program Data/Logs/IG_SCRAPE_LOGS/temp.txt", "w", encoding="utf-8")
-    ALL_POSTS = []
+    all_posts = []
     #Posts are broken down into 'media' sub dictionaries
-    MEDIA_ARRAYS =[]
+    media_arrays =[]
     print("\n*****************************************************************\n")
-    print("Scraping Location {}...".format(location))
+    print(f"Scraping Location {location}...")
     temp_file.write(location + "\n")
-    print("Location {}/{}".format(COUNTER, NUM_LOCATIONS))
+    print(f"Location {COUNTER}/{NUM_LOCATIONS}")
     temp_file.write("Location {}/{}\n".format(COUNTER, NUM_LOCATIONS))
     #Request JSON data at the address by appending the parameters /?__a=1
     response = session.get(LOCATION_URLS[location] + "/?__a=1")
@@ -189,29 +189,29 @@ def scrape_location(COUNTER, NUM_LOCATIONS, session, location):
         print("Error")
         print(response.status_code)
         return
-    print("Response Status is {}".format(response))
+    print(f"Response Status is {response}")
     temp_file.write("Response Status is {}\n".format(response.status_code))
     response_dict = json.loads(response.content)
     sections = response_dict["native_location_data"]["recent"]["sections"]
-    for i in range(len(sections)):
+    for section in sections:
         try:
-            MEDIA_ARRAYS.append(sections[i]["layout_content"]["medias"])
+           media_arrays.append(section["layout_content"]["medias"])
         except KeyError:
             continue
-    #Posts are delineated through the 'media' key
-    for array in MEDIA_ARRAYS:
+
+    for array in media_arrays:
         for post in array:
-            ALL_POSTS.append(post["media"])
+            all_posts.append(post["media"])
     
-    print("Number of found posts: {}\n".format(len(ALL_POSTS)))
-    temp_file.write("Scraped Posts: {}\n".format(len(ALL_POSTS)))
+    print(f"Number of found posts: {all_posts}\n")
+    temp_file.write("Scraped Posts: {}\n".format(len(all_posts)))
     global TOTAL_POSTS
     global FLAGGED_POSTS
-    TOTAL_POSTS += len(ALL_POSTS)
-    print("Total posts searched: {}".format(TOTAL_POSTS))
+    TOTAL_POSTS += len(all_posts)
+    print(f"Total posts searched: {TOTAL_POSTS}")
     temp_file.write(("Total Posts: {}\n".format(TOTAL_POSTS)))
     flagged = 0
-    for post in ALL_POSTS:
+    for post in all_posts:
         if(post["caption"] is not None):
             caption = post["caption"]["text"]
         else:
@@ -220,7 +220,7 @@ def scrape_location(COUNTER, NUM_LOCATIONS, session, location):
 
         #Check if post contains KEYWORDS or was authored by a FLAGGED USER
         for word in KEYWORDS:
-            search_words = [(" " + word + " "), (" " + word + "."), (" " + word + "!"), (" " + word + "?"), ("#" + word + " ")]
+            search_words = get_variations(term)
             for author in FLAGGED_USERS:
                 for w in search_words:
                     if (w in caption) or (user == author): 
@@ -234,7 +234,7 @@ def scrape_location(COUNTER, NUM_LOCATIONS, session, location):
                 flagged = False
                 match = []
                 for word in group:
-                    variations = [(" " + word + " "), (" " + word + "."), (" " + word + "!"), (" " + word + "?"), ("#" + word + " "), (word + " ")]
+                    variations = get_variations(word)
                     for var in variations:
                         if var in caption:
                             match.append(True)
@@ -249,17 +249,18 @@ def scrape_location(COUNTER, NUM_LOCATIONS, session, location):
        
         #If using BEFORE operator, caption must contain term and be posted before the time stamp
         if(BEFORE_FLAG):
+            no_timestamp = 0
             post_epoch = post.get("taken_at")
-            if post_epoch is not None:
-                post_epoch = int(post_epoch)
-            else:
+            if post_epoch is None:
                 #Can't compare posts that don't have a timestamp
-                continue
+                no_timestamp += 1
+                continue           
+            post_epoch = int(post_epoch)
             for term_and_date in BEFORE_LIST:
                 term = term_and_date[0]
                 epoch_time = term_and_date[1]
                 term = term.strip()
-                search_words = [(" " + term + " "), (" " + term + "."), (" " + term + "!"), (" " + term + "?"), ("#" + term + " ")]
+                search_words = get_variations(term)
                 for word in search_words:
                     if((word in caption) and (int(epoch_time) > post_epoch)):
                         FLAGGED_POSTS.append(post)
@@ -268,17 +269,18 @@ def scrape_location(COUNTER, NUM_LOCATIONS, session, location):
 
         #If using AFTER operator, caption must contain term and be posted after the time stamp
         if(AFTER_FLAG):
+            no_timestamp = 0
             post_epoch = post.get("taken_at")
-            if post_epoch is not None:
-                post_epoch = int(post_epoch)
-            else:
+            if post_epoch is None:
                 #Can't compare posts that don't have a timestamp
-                continue
+                no_timestamp += 1
+                continue           
+            post_epoch = int(post_epoch)
             for term_and_date in AFTER_LIST:
                 term = term_and_date[0]
                 epoch_time = term_and_date[1]
                 term = term.strip()
-                search_words = [(" " + term + " "), (" " + term + "."), (" " + term + "!"), (" " + term + "?"), ("#" + term + " ")]
+                search_words = get_variations(term)
                 for word in search_words:
                     if((word in caption) and (int(epoch_time) < post_epoch)):
                         FLAGGED_POSTS.append(post)
@@ -287,7 +289,9 @@ def scrape_location(COUNTER, NUM_LOCATIONS, session, location):
                               
     global FOUND_FLAGGED 
     FOUND_FLAGGED += flagged
-    print("Found {} flagged posts at this location\nTotal Flagged Posts: {}".format(flagged, len(FLAGGED_POSTS)))
+    if(BEFORE_FLAG or AFTER_FLAG):
+        print(f"Couldn't compare to {no_timestamp} posts due to lack of timestamps.")
+    print(f"Found {flagged} flagged posts at this location\nTotal Flagged Posts: {FLAGGED_POSTS}")
     temp_file.write("Flagged Posts: {}\nTotal Flagged Posts: {}\n".format(flagged, len(FLAGGED_POSTS)))
     #copy temp file into log file
     temp_file.close()
@@ -297,7 +301,8 @@ def scrape_location(COUNTER, NUM_LOCATIONS, session, location):
     print("\n*****************************************************************\n")
   
    
-
+def get_variations(term):
+    return [(" " + term + " "), (" " + term + "."), (" " + term + "!"), (" " + term + "?"), ("#" + term + " ")]
 
 
 #Accepts a dictionary for a flagged post and parses it for the relevant data. Performs image downloads and hashes. Writes relevant and formatted data into an html string that is append into the 
@@ -341,7 +346,8 @@ def format_found_post(flagged_post):
         html_str += "<td>" + timestamp.strftime("%m/%d/%Y %H:%M:%S") + "</td><td>" + lat_lng + "</td><td>" + username + "</td><td>" + full_name + "</td><td><a href=" + profile_link + ">link</a></td><td>" + caption + "</td><td><a href=" + link + ">link</a></td><td>Multiple Images or Video</td></tr>"
     else:
         html_str += "<td>" + timestamp.strftime("%m/%d/%Y %H:%M:%S") + "</td><td>" + lat_lng + "</td><td>" + username + "</td><td>" + full_name + "</td><td><a href=" + profile_link + ">link</a></td><td>" + caption + "</td><td><a href=" + link + ">link</a></td><td><img style='max-width:200px;' src='" + img_path_html + "'></td></tr>"
-    HTML_CODE.append(html_str)
+    if(html_str not in HTML_CODE):
+        HTML_CODE.append(html_str)
     
 
 #Iterate over array of lines of html code, write to scan output file
@@ -349,9 +355,6 @@ def write_html_to_file():
     output_file = open(OUTPUT_DIR + "/" + SCAN_NAME + ".html", 'w+', encoding="utf-8")
     #Fill in the table header and footer of the html document
     global HTML_CODE 
-    #Clear out duplicate entries
-    HTML_CODE = set(HTML_CODE)
-    HTML_CODE = list(HTML_CODE)
     #Insert header and footer values
     HTML_CODE.insert(0, "<html><body><table><head><link rel='stylesheet' href='../../../styles.css'></head>\n")
     HTML_CODE.insert(1, "<h1 style='text-align:center;'>" + SCAN_NAME + "</h1>")
@@ -378,6 +381,7 @@ def main():
     clear_log.close()
     COUNTER = 1
     NUM_LOCATIONS = len(LOCATION_URLS)
+    
     #Each location in LOCATION_URLS is scraped and checked for keywords and logical conditions, flaggged post information is written into an array of HTML strings
     for place in LOCATION_URLS:
         #Random Latency to avoid being flagged as a bot
