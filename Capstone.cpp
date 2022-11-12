@@ -86,7 +86,7 @@ WCHAR hoursCaptured[100], minutesCaptured[20], secondsCaptured[20], regionCaptur
 HWND H, M, S;
 HWND HOURS, MINUTES, SECONDS;
 HWND FBsubmit, IGsubmit, TWsubmit;
-HWND  facebookResultsSummary, instagramResultsSummary, twitterResultsSummary, launchButton;
+HWND  facebookResultsSummary, instagramResultsSummary, twitterResultsSummary, launchButton, facebookLoginButton, instagramLoginButton, twitterLoginButton;
 HWND checkboxFB, checkboxIG, checkboxTW;
 const WCHAR *configClassName = L"ConfigClassName";
 const WCHAR* FBLoginClassName = L"FacebookLoginClassName";
@@ -113,7 +113,7 @@ bool FB_AUTH_SUCCESS, IG_AUTH_SUCCESS, TW_AUTH_SUCCESS;
 std::fstream SAVED_CONFIG_FILE;
 std::string shellOperation;
 HBITMAP backgroundImg, redButtonImg, greenButtonImg, toolbarImg, logoImg, scanningButtonImg, fbSectionImg, igSectionImg, twSectionImg;
-
+HBITMAP notLoggedInButton, loggedInButton, runningButton;
 
 
 // Forward declarations of functions included in this code module:
@@ -382,8 +382,9 @@ void loadImages()
     fbSectionImg = (HBITMAP)LoadImageW(NULL, L".\\GUI_IMAGES\\facebook_section_img_silver.bmp", IMAGE_BITMAP, 300, 500, LR_LOADFROMFILE);
     igSectionImg = (HBITMAP)LoadImageW(NULL, L".\\GUI_IMAGES\\instagram_section_img_silver.bmp", IMAGE_BITMAP, 300, 500, LR_LOADFROMFILE);
     twSectionImg = (HBITMAP)LoadImageW(NULL, L".\\GUI_IMAGES\\twitter_section_img_silver.bmp", IMAGE_BITMAP, 300, 500, LR_LOADFROMFILE);
-
-
+    notLoggedInButton = (HBITMAP)LoadImageW(NULL, L".\\GUI_IMAGES\\not_logged_in_button.bmp", IMAGE_BITMAP, 55, 30, LR_LOADFROMFILE);
+    loggedInButton = (HBITMAP)LoadImageW(NULL, L".\\GUI_IMAGES\\logged_in_button.bmp", IMAGE_BITMAP, 55, 30, LR_LOADFROMFILE);
+    runningButton = (HBITMAP)LoadImageW(NULL, L".\\GUI_IMAGES\\running_button_logins.bmp", IMAGE_BITMAP,55, 30, LR_LOADFROMFILE);
 
 }
 //Helper function to enumerate over child windows and set the font to 'font'
@@ -520,6 +521,15 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 InitializeTimer();
                 COUNT = 0;
                 SendMessageW(launchButton, BM_SETIMAGE, IMAGE_BITMAP, (LPARAM)scanningButtonImg);
+                if (FB_LOGGED_IN) {
+                    SendMessageW(facebookLoginButton, BM_SETIMAGE, IMAGE_BITMAP, (LPARAM)runningButton);
+                }
+                if (IG_LOGGED_IN) {
+                    SendMessageW(instagramLoginButton, BM_SETIMAGE, IMAGE_BITMAP, (LPARAM)runningButton);
+                }
+                if (TW_LOGGED_IN) {
+                    SendMessageW(twitterLoginButton, BM_SETIMAGE, IMAGE_BITMAP, (LPARAM)runningButton);
+                }
                 lauchScanners(FB_LOGGED_IN, IG_LOGGED_IN, TW_LOGGED_IN);
                 beginListeningforScrapeResults(FB_LOGGED_IN, IG_LOGGED_IN, TW_LOGGED_IN);
             }
@@ -754,7 +764,7 @@ LRESULT CALLBACK WndProcFBLogin(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
                 shellOperation.append(" ");
 
                 //Lauch program
-                WinExec((LPCSTR)shellOperation.c_str(), SW_SHOW);
+                WinExec((LPCSTR)shellOperation.c_str(), SW_HIDE);
                 SetWindowTextW(FBsubmit, L"Authenticating...");
             }
             //NOTE: if user puts stuff in the login but also checks used saved, will override and use saved info
@@ -773,7 +783,7 @@ LRESULT CALLBACK WndProcFBLogin(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
                 shellOperation.append(" ");
 
                 //Lauch program
-                WinExec((LPCSTR)shellOperation.c_str(), SW_SHOW);
+                WinExec((LPCSTR)shellOperation.c_str(), SW_HIDE);
                 SetWindowTextW(FBsubmit, L"Authenticating...");
             }
 
@@ -801,6 +811,7 @@ LRESULT CALLBACK WndProcFBLogin(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 
                     if (FB_AUTH_SUCCESS)
                     {
+                        SendMessageW(facebookLoginButton, BM_SETIMAGE, IMAGE_BITMAP, (LPARAM)loggedInButton);
                         MIN_ONE_SITE_LOGGED_IN = true;
                         FB_LOGGED_IN = true;
                         DestroyWindow(hWnd);
@@ -949,6 +960,7 @@ LRESULT CALLBACK WndProcIGLogin(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 
                     if (IG_AUTH_SUCCESS)
                     {
+                        SendMessageW(instagramLoginButton, BM_SETIMAGE, IMAGE_BITMAP, (LPARAM)loggedInButton);
                         MIN_ONE_SITE_LOGGED_IN = true;
                         IG_LOGGED_IN = true;
                         DestroyWindow(hWnd);
@@ -1097,6 +1109,7 @@ LRESULT CALLBACK WndProcTWLogin(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 
                     if (TW_AUTH_SUCCESS)
                     {
+                        SendMessageW(twitterLoginButton, BM_SETIMAGE, IMAGE_BITMAP, (LPARAM)loggedInButton);
                         MIN_ONE_SITE_LOGGED_IN = true;
                         TW_LOGGED_IN = true;
                         DestroyWindow(hWnd);
@@ -1198,9 +1211,13 @@ void AddControls(HWND hWnd)
     
 
     //Populate login buttons
-    HWND facebookLoginButton = CreateWindowW(L"Button", L"LOGIN", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON, 225, 205, 55, 30, hWnd, (HMENU)FACEBOOK_LOGIN, NULL, NULL);
-    HWND instagramLoginButton = CreateWindowW(L"Button", L"LOGIN", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON, 575, 205, 55, 30, hWnd, (HMENU)INSTAGRAM_LOGIN, NULL, NULL);
-    HWND twitterLoginButton = CreateWindowW(L"Button", L"LOGIN", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON, 925, 205, 55, 30, hWnd, (HMENU)TWITTER_LOGIN, NULL, NULL);
+    facebookLoginButton = CreateWindowW(L"Button", L"LOGIN", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON |BS_BITMAP, 225, 205, 55, 30, hWnd, (HMENU)FACEBOOK_LOGIN, NULL, NULL);
+    instagramLoginButton = CreateWindowW(L"Button", L"LOGIN", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON |BS_BITMAP, 575, 205, 55, 30, hWnd, (HMENU)INSTAGRAM_LOGIN, NULL, NULL);
+    twitterLoginButton = CreateWindowW(L"Button", L"LOGIN", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON |BS_BITMAP, 925, 205, 55, 30, hWnd, (HMENU)TWITTER_LOGIN, NULL, NULL);
+    SendMessageW(facebookLoginButton, BM_SETIMAGE, IMAGE_BITMAP, (LPARAM)notLoggedInButton);
+    SendMessageW(instagramLoginButton, BM_SETIMAGE, IMAGE_BITMAP, (LPARAM)notLoggedInButton);
+    SendMessageW(twitterLoginButton, BM_SETIMAGE, IMAGE_BITMAP, (LPARAM)notLoggedInButton);
+
 
     facebookResultsSummary = CreateWindowW(L"Edit", L"Scan Summary:", WS_VISIBLE | WS_CHILD | WS_BORDER | ES_MULTILINE, 150, 250, 200, 250, hWnd, NULL, NULL, NULL);
     instagramResultsSummary = CreateWindowW(L"Edit", L"Scan Summary:", WS_VISIBLE | WS_CHILD | WS_BORDER | ES_MULTILINE, 500, 250, 200, 250, hWnd, NULL, NULL, NULL);
