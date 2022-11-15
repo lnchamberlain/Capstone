@@ -86,12 +86,12 @@ def get_cookie():
 
 #Establishes the output directory
 def get_output_dir():
-    dir = sys.argv[2]
+    output_dir = sys.argv[2]
     global OUTPUT_DIR
-    if(dir == "DEFAULT"):
+    if(output_dir == "DEFAULT"):
         OUTPUT_DIR = "./Program Data/FoundPosts/FoundPostsFB"
     else:
-        OUTPUT_DIR = dir
+        OUTPUT_DIR = output_dir
 
 #Populates global list from flagged users list
 def get_flagged_users():
