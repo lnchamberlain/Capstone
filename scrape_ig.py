@@ -46,8 +46,9 @@ AFTER_LIST = []
 OK = 200
 
 
-#Fills global variable with urls from the last column of the .csv file
+
 def get_urls():
+    ''' Fills global variable with urls from the last column of the .csv file '''
     global LOCATION_URLS
     #Resolve region number into relative path
     region_file = REGION_RESOLUTION_TABLE[int(sys.argv[1])]
@@ -61,11 +62,11 @@ def get_urls():
 
 
 
-#Fills global variable with value from wordlist. Offers logical operator AND and date limiting functionality through the following:
-#   To AND keywords together, users may put in keyword file "wordone+wordtwo"
-#   To look for words only after a certain date, users may put in keyword file "word AFTER MM/DD/YYYY"
-#   To look for words only before a certain date, users may put in keyword file "word BEFORE MM/DD/YYYY" 
 def get_keywords():
+    ''' Fills global variable with value from wordlist. Offers logical operator AND and date limiting functionality through the following:
+    To AND keywords together, users may put in keyword file "wordone+wordtwo"
+    To look for words only after a certain date, users may put in keyword file "word AFTER MM/DD/YYYY"
+     To look for words only before a certain date, users may put in keyword file "word BEFORE MM/DD/YYYY" '''   
     global KEYWORDS
     global AND_FLAG
     global BEFORE_FLAG
@@ -100,10 +101,14 @@ def get_keywords():
             term = term_and_date[0]
             date = term_and_date[1].split("/")
             #datetime takes arguments (year, month, day, hour, minute), timestamp converts to seconds since epoch
-            datetime_obj = datetime.datetime(int(date[2]), int(date[0]), int(date[1]), 0, 0)
-            epoch_time = datetime_obj.timestamp()
-            global AFTER_LIST 
-            AFTER_LIST.append((term, epoch_time))
+            if((date[2] < 2025 and date[2] > 1970) and (date[1] > 0 and date[1] < 13) and (date[0] > 0 and date[0] < 32)):
+
+                datetime_obj = datetime.datetime(int(date[2]), int(date[0]), int(date[1]), 0, 0)
+                epoch_time = datetime_obj.timestamp()
+                global AFTER_LIST 
+                AFTER_LIST.append((term, epoch_time))
+            else:
+                KEYWORDS.append(term)
 
         #If before date filter used, add to array of tuples in the form (term, epoch_time_UTC)
         elif'BEFORE' in word:
@@ -112,21 +117,24 @@ def get_keywords():
             term = term_and_date[0]
             date = term_and_date[1].split("/")
             #datetime takes arguments (year, month, day, hour, minute), timestamp converts to seconds since epoch
-            datetime_obj = datetime.datetime(int(date[2]), int(date[0]), int(date[1]), 0, 0)
-            epoch_time = datetime_obj.timestamp()
-            global BEFORE_LIST 
-            BEFORE_LIST.append((term, epoch_time))
+            if((date[2] < 2025 and date[2] > 1970) and (date[1] > 0 and date[1] < 13) and (date[0] > 0 and date[0] < 32)):
+                datetime_obj = datetime.datetime(int(date[2]), int(date[0]), int(date[1]), 0, 0)
+                epoch_time = datetime_obj.timestamp()
+                global BEFORE_LIST 
+                BEFORE_LIST.append((term, epoch_time))
+            else:
+                KEYWORDS.append(term)
 
         else:
         #Add all non-special terms to KEYWORDS list
             KEYWORDS.append(word)
-
     keywords_file.close()
  
-#Reads cookie value from pickle file, sets session cookies then returns session
-#   Cookie value is written to pickle file from the authenticator program, users can't move on to 
-#   the scraper until that value is set
+
 def get_cookie():
+    '''Reads cookie value from pickle file, sets session cookies then returns session
+    Cookie value is written to pickle file from the authenticator program, users can't move on to 
+    the scraper until that value is set'''
     session = requests.Session()
     cookies_file = None
     try:
@@ -142,8 +150,9 @@ def get_cookie():
 
 
 
-#Establishes if users are using a custom output directory, and if not set the global variable OUTPUT_DIR to the default output
+
 def get_output_dir():
+    '''Establishes if users are using a custom output directory, and if not set the global variable OUTPUT_DIR to the default output'''
     output_dir = sys.argv[2]
     global OUTPUT_DIR
     if(output_dir == "DEFAULT"):
@@ -152,8 +161,9 @@ def get_output_dir():
         OUTPUT_DIR = output_dir
 
 
-#Populates global list from flagged users list.
+
 def get_flagged_users():
+    '''Populates global list from flagged users list.'''
     try:
         flagged_users_file = open("./Program Data/Logs/IG_AUTH_LOGS/ig_cookies.pkl", "rb")
     except:
@@ -167,12 +177,13 @@ def get_flagged_users():
 
 
 
- #Requests data from location url, formats the return, searches captions for keywords and flagged post authors, sends to format_flagged_post if flagged
- #Print statements are for debugging purposes, information to be printed to the GUI is written to the temp file that then is written into a log the GUI reads from
- # Note that in most cases, what is printed to the terminal matches what is printed to the GUI, so print statements are often followed by a temp file write of the
- # same or similiar data
+ 
 def scrape_location(COUNTER, NUM_LOCATIONS, session, location):
-    #write to temp file rather than the log file to limit the number of writes happening to log.txt as this is is where the GUI reads, avoid race conditions
+    '''Requests data from location url, formats the return, searches captions for keywords and flagged post authors, sends to format_flagged_post if flagged
+        Print statements are for debugging purposes, information to be printed to the GUI is written to the temp file that then is written into a log the GUI reads from
+        Note that in most cases, what is printed to the terminal matches what is printed to the GUI, so print statements are often followed by a temp file write of the
+        same or similiar data
+        write to temp file rather than the log file to limit the number of writes happening to log.txt as this is is where the GUI reads, avoid race conditions'''
     temp_file = open("./Program Data/Logs/IG_SCRAPE_LOGS/temp.txt", "w", encoding="utf-8")
     all_posts = []
     #Posts are broken down into 'media' sub dictionaries
@@ -302,12 +313,14 @@ def scrape_location(COUNTER, NUM_LOCATIONS, session, location):
   
    
 def get_variations(term):
+    '''To avoid false positives, returns a list of specific words a post must have to be considered a match'''
     return [(" " + term + " "), (" " + term + "."), (" " + term + "!"), (" " + term + "?"), ("#" + term + " ")]
 
 
-#Accepts a dictionary for a flagged post and parses it for the relevant data. Performs image downloads and hashes. Writes relevant and formatted data into an html string that is append into the 
-# global HTML strings array. 
+ 
 def format_found_post(flagged_post):
+    '''Accepts a dictionary for a flagged post and parses it for the relevant data. Performs image downloads and hashes. Writes relevant and formatted data into an html string that is append into the 
+        global HTML strings array.'''
     global HTML_CODE
     lat = flagged_post.get("lat")
     lng = flagged_post.get("lng")
@@ -349,9 +362,9 @@ def format_found_post(flagged_post):
     if(html_str not in HTML_CODE):
         HTML_CODE.append(html_str)
     
-
-#Iterate over array of lines of html code, write to scan output file
+        
 def write_html_to_file():
+    '''Iterate over array of lines of html code, write to scan output file'''
     output_file = open(OUTPUT_DIR + "/" + SCAN_NAME + ".html", 'w+', encoding="utf-8")
     #Fill in the table header and footer of the html document
     global HTML_CODE 
@@ -366,7 +379,6 @@ def write_html_to_file():
 
 
 def main():
-    #Load input variables
     get_urls()
     get_keywords()
     session = get_cookie()
