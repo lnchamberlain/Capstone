@@ -651,6 +651,12 @@ LRESULT CALLBACK WndProcConfig(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
             hoursVal = _wtoi(hoursCaptured);
             minutesVal = _wtoi(minutesCaptured);
             secondsVal = _wtoi(secondsCaptured);
+            if ((hoursVal > 99 or hoursVal < 0) or (minutesVal > 60 or minutesVal < 0) or (secondsVal > 60 or secondsVal < 0) or (hoursVal == 0 and minutesVal == 0 and secondsVal == 0)) {
+                MessageBox(NULL, L"Enter valid time interval: \n0-99 Hours 0-60 Minutes and 0-60 Seconds", L"Input Error", MB_ICONERROR);
+                hoursVal = 0;
+                minutesVal = 0;
+                secondsVal = 0;
+            }
 
             COUNT = ((hoursVal * 3600) + (minutesVal * 60) + secondsVal);
             RESET_COUNT = COUNT;
@@ -667,8 +673,12 @@ LRESULT CALLBACK WndProcConfig(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
             }
 
             //IN FUTURE, CHECK VALUE INTEGRITY BEFORE SETTING CONFIG_SET TO TRUE
-            CONFIG_SET = true;
-            DestroyWindow(hWnd);
+            //CONFIG_SET = true;
+            if (COUNT > 0) {
+                DestroyWindow(hWnd);
+                CONFIG_SET = true;
+            }
+            //DestroyWindow(hWnd);
             if (CONFIG_SET && MIN_ONE_SITE_LOGGED_IN) {
                 SendMessageW(launchButton, BM_SETIMAGE, IMAGE_BITMAP, (LPARAM)greenButtonImg);
             }
