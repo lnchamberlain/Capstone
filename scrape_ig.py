@@ -44,6 +44,7 @@ BEFORE_LIST = []
 AFTER_FLAG = False
 AFTER_LIST = []
 OK = 200
+NOT_DEFAULT_DIR = False
 
 
 
@@ -155,9 +156,11 @@ def get_output_dir():
     '''Establishes if users are using a custom output directory, and if not set the global variable OUTPUT_DIR to the default output'''
     output_dir = sys.argv[2]
     global OUTPUT_DIR
+    global NOT_DEFAULT_DIR
     if(output_dir == "DEFAULT"):
         OUTPUT_DIR = "./Program Data/FoundPosts/FoundPostsIG"
     else:
+        NOT_DEFAULT_DIR = True
         OUTPUT_DIR = output_dir
 
 
@@ -346,6 +349,12 @@ def format_found_post(flagged_post):
         img_path = "./Program Data/Images/ImagesIG/" + hash_str + ".jpg"
         img_path_html = str("../../../Program Data/Images/ImagesIG/"+ hash_str + ".jpg")
         #Save if novel image
+        if(NOT_DEFAULT_DIR):
+            path = OUTPUT_DIR + "/Images/"
+            if(not os.path.exists(path)):
+                os.makedirs(path)
+            img_path = path + hash_str + ".jpg"
+            img_path_html = path+ hash_str + ".jpg"
         if(not os.path.exists(img_path)):
             shutil.copy("./Program Data/temp_img.jpg", img_path)
         #Get rid of temporary image

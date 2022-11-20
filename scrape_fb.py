@@ -48,6 +48,7 @@ HTML_CODE_KEYWORDS = []
 HTML_CODE_FLAGGED_USERS = []
 SCAN_NAME = ''
 NUM_LOCATIONS = 0
+NOT_DEFAULT_DIR = False
 
 
 #Fills global variable with urls from the last column of the .csv file
@@ -88,9 +89,11 @@ def get_cookie():
 def get_output_dir():
     output_dir = sys.argv[2]
     global OUTPUT_DIR
+    global NOT_DEFAULT_DIR 
     if(output_dir == "DEFAULT"):
         OUTPUT_DIR = "./Program Data/FoundPosts/FoundPostsFB"
     else:
+        NOT_DEFAULT_DIR = True
         OUTPUT_DIR = output_dir
 
 #Populates global list from flagged users list
@@ -300,6 +303,12 @@ def format_found_post(flagged_post, driver, mode):
             hash_str = img_hash.hexdigest()
             img_path = "./Program Data/Images/ImagesFB/" + hash_str + ".png"
             IMG_PATH_HTML = str("../../../Program Data/Images/ImagesFB/"+ hash_str + ".png")
+            if(NOT_DEFAULT_DIR):
+                path = OUTPUT_DIR + "/Images/"
+                if(not os.path.exists(path)):
+                    os.makedirs(path)
+                img_path = path + hash_str + ".png"
+                IMG_PATH_HTML = path + hash_str + ".png"
             if(not os.path.exists(img_path)):
                 shutil.copy("./Program Data/temp_img.png", img_path)
             #Get rid of temporary image
