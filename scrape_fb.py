@@ -76,13 +76,12 @@ def get_keywords():
     for elem in KEYWORDS:
         if("BEFORE" in elem) or ("AFTER" in elem) or ("+" in elem):
             KEYWORDS.remove(elem)
-    print(KEYWORDS)
-    time.sleep(20)
+ 
     
 
 #Grabs cookie value from AUTH logs, rebuilds dictionary and sets global variable
 def get_cookie():
-    ig_auth_log_file = open("./Program Data/Logs/FB_AUTH_LOGS/log.txt")
+    fb_auth_log_file = open("./Program Data/Logs/FB_AUTH_LOGS/log.txt")
     global COOKIE
     cookies = pickle.load(open("./Program Data/Logs/FB_AUTH_LOGS/fb_cookies.pkl", "rb"))
     COOKIE = cookies
@@ -125,7 +124,7 @@ def scrape_location(driver, location, counter):
     for word in KEYWORDS:
         url_base = LOCATION_URLS[location].split("word")
         #add keyword to crafted url
-        url = url_base[0] + word[1:-1] + url_base[1]
+        url = url_base[0] + word + url_base[1]
         driver.get(url)
         time.sleep(0.2)
         if("We didn't find any results" in driver.page_source):
@@ -158,7 +157,12 @@ def scrape_location(driver, location, counter):
             prev_height = curr_height
     temp_file.write("Scrolled {} times\n".format(SCROLL_COUNT))
     s = BeautifulSoup(driver.page_source, 'html.parser')
-    l.append(s.find_all("div", {"class": "x1ja2u2z xh8yej3 x1n2onr6 x1yztbdb"}))
+   # DELETE_THIS = open("./FB_AUTOPSY.html", "w", encoding="utf-8")
+    #ELETE_THIS.write(s.prettify())
+    #DELETE_THIS.close()
+    
+    l.append(s.find_all("div", {"class": "x1yztbdb x1n2onr6 xh8yej3 x1ja2u2z"})) #NEW: x1yztbdb x1n2onr6 xh8yej3 x1ja2u2z OLD: x1ja2u2z xh8yej3 x1n2onr6 x1yztbdb
+    print("L has {} posts ".format(len(l)))
     for segment in l:
         for post in segment:
             posts.append(post)
@@ -228,7 +232,7 @@ def scrape_flagged_user(driver, username, counter):
 
     temp_file.write("Scrolled {} times\n".format(SCROLL_COUNT))
     s = BeautifulSoup(driver.page_source, 'html.parser')
-    l.append(s.find_all("div", {"class": "x1ja2u2z xh8yej3 x1n2onr6 x1yztbdb"}))
+    l.append(s.find_all("div", {"class": "x1yztbdb x1n2onr6 xh8yej3 x1ja2u2z"}))
     for segment in l:
         for post in segment:
             posts.append(post)
