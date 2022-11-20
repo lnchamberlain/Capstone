@@ -5,4 +5,4 @@
 // To set time limit: before, after in MM/DD/YYYY ----  Example: To find posts that mention cats posted after January 1, 1999, use term "cats after 01/01/1999", to find posts that mention cats before January 1, 1999, use term "cats before 01/01/1999"
 //
 //****************************************************************************************************************************************************************************************************************************************************************************************
-alsdfkjadsljfljalf, word+word+word, one BEFORE 01/15/2002, three, four AFTER 01/20/1999
+cat

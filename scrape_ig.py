@@ -162,6 +162,7 @@ def get_output_dir():
     else:
         NOT_DEFAULT_DIR = True
         OUTPUT_DIR = output_dir
+        shutil.copy("./styles.css", output_dir + "/styles.css")
 
 
 
@@ -203,7 +204,7 @@ def scrape_location(COUNTER, NUM_LOCATIONS, session, location):
         print("Error")
         print(response.status_code)
         return
-    print(f"Response Status is {response}")
+    print(f"Response Status is {response.status_code}")
     temp_file.write("Response Status is {}\n".format(response.status_code))
     response_dict = json.loads(response.content)
     sections = response_dict["native_location_data"]["recent"]["sections"]
@@ -217,7 +218,7 @@ def scrape_location(COUNTER, NUM_LOCATIONS, session, location):
         for post in array:
             all_posts.append(post["media"])
     
-    print(f"Number of found posts: {all_posts}\n")
+    print(f"Number of found posts: {len(all_posts)}\n")
     temp_file.write("Scraped Posts: {}\n".format(len(all_posts)))
     global TOTAL_POSTS
     global FLAGGED_POSTS
@@ -234,7 +235,7 @@ def scrape_location(COUNTER, NUM_LOCATIONS, session, location):
 
         #Check if post contains KEYWORDS or was authored by a FLAGGED USER
         for word in KEYWORDS:
-            search_words = get_variations(term)
+            search_words = get_variations(word)
             for author in FLAGGED_USERS:
                 for w in search_words:
                     if (w in caption) or (user == author): 
@@ -305,7 +306,7 @@ def scrape_location(COUNTER, NUM_LOCATIONS, session, location):
     FOUND_FLAGGED += flagged
     if(BEFORE_FLAG or AFTER_FLAG):
         print(f"Couldn't compare to {no_timestamp} posts due to lack of timestamps.")
-    print(f"Found {flagged} flagged posts at this location\nTotal Flagged Posts: {FLAGGED_POSTS}")
+    print(f"Found {flagged} flagged posts at this location\nTotal Flagged Posts: {len(FLAGGED_POSTS)}")
     temp_file.write("Flagged Posts: {}\nTotal Flagged Posts: {}\n".format(flagged, len(FLAGGED_POSTS)))
     #copy temp file into log file
     temp_file.close()
@@ -378,7 +379,10 @@ def write_html_to_file():
     #Fill in the table header and footer of the html document
     global HTML_CODE 
     #Insert header and footer values
-    HTML_CODE.insert(0, "<html><body><table><head><link rel='stylesheet' href='../../../styles.css'></head>\n")
+    if(NOT_DEFAULT_DIR):
+        HTML_CODE.insert(0, "<html><body><table><head><link rel='stylesheet' href='./styles.css'></head>\n")
+    else:
+        HTML_CODE.insert(0, "<html><body><table><head><link rel='stylesheet' href='../../../styles.css'></head>\n")
     HTML_CODE.insert(1, "<h1 style='text-align:center;'>" + SCAN_NAME + "</h1>")
     HTML_CODE.insert(2, "<tr><th>Date/Time</th><th>Lat/Long</th><th>Username</th><th>Full Name</th><th>Profile</th><th>Caption/Comment</th><th>Post</th><th>Media</th></tr>")
     HTML_CODE.append("</table></body></html>\n")
