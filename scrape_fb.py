@@ -76,6 +76,8 @@ def get_keywords():
     for elem in KEYWORDS:
         if("BEFORE" in elem) or ("AFTER" in elem) or ("+" in elem):
             KEYWORDS.remove(elem)
+    print(KEYWORDS)
+    time.sleep(20)
     
 
 #Grabs cookie value from AUTH logs, rebuilds dictionary and sets global variable
@@ -95,6 +97,7 @@ def get_output_dir():
     else:
         NOT_DEFAULT_DIR = True
         OUTPUT_DIR = output_dir
+        shutil.copy("./styles.css", output_dir + "/styles.css")
 
 #Populates global list from flagged users list
 def get_flagged_users():
@@ -304,7 +307,7 @@ def format_found_post(flagged_post, driver, mode):
             img_path = "./Program Data/Images/ImagesFB/" + hash_str + ".png"
             IMG_PATH_HTML = str("../../../Program Data/Images/ImagesFB/"+ hash_str + ".png")
             if(NOT_DEFAULT_DIR):
-                path = OUTPUT_DIR + "/Images/"
+                path = OUTPUT_DIR + "/ImagesFB/"
                 if(not os.path.exists(path)):
                     os.makedirs(path)
                 img_path = path + hash_str + ".png"
@@ -379,6 +382,10 @@ def write_html_to_file(mode):
         #Clear out duplicate entries
         HTML_CODE_KEYWORDS = set(HTML_CODE_KEYWORDS)
         HTML_CODE_KEYWORDS = list(HTML_CODE_KEYWORDS)
+        if(NOT_DEFAULT_DIR):
+            HTML_CODE_KEYWORDS.insert(0, "<html><body><table><head><link rel='stylesheet' href='./styles.css'></head>\n")
+        else:
+            HTML_CODE_KEYWORDS.insert(0, "<html><body><table><head><link rel='stylesheet' href='../../../styles.css'></head>\n")
         HTML_CODE_KEYWORDS.insert(0, "<html><head><link rel='stylesheet' href='../../../styles.css'></head><body><table>\n")
         HTML_CODE_KEYWORDS.insert(1, "<h1 style='text-align:center;'>" + SCAN_NAME_KEYWORDS + "</h1>")
         HTML_CODE_KEYWORDS.insert(2, "<tr><th>Post Author</th><th>Location</th><th>Caption</th><th>Post Link</th><th>Account Link</th><th>Media</th></tr>")
@@ -421,7 +428,7 @@ def main():
     clear_log.close()
     chrome_options = Options()
     #--headless makes the window not pop up
-    chrome_options.add_argument("--headless")
+    #chrome_options.add_argument("--headless")
     driver = selenium.webdriver.Chrome("./chromedriver", options=chrome_options)
     driver.get("https://facebook.com")
     for c in COOKIE:

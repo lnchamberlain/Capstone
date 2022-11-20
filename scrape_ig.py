@@ -351,7 +351,7 @@ def format_found_post(flagged_post):
         img_path_html = str("../../../Program Data/Images/ImagesIG/"+ hash_str + ".jpg")
         #Save if novel image
         if(NOT_DEFAULT_DIR):
-            path = OUTPUT_DIR + "/Images/"
+            path = OUTPUT_DIR + "/ImagesIG/"
             if(not os.path.exists(path)):
                 os.makedirs(path)
             img_path = path + hash_str + ".jpg"
