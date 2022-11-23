@@ -735,7 +735,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             if (CONFIG_SET && MIN_ONE_SITE_LOGGED_IN) 
             {
                 InitializeTimer();
-                COUNT = 0;
+                //COUNT = 0;
                 SendMessageW(launchButton, BM_SETIMAGE, IMAGE_BITMAP, (LPARAM)scanningButtonImg);
                 if (FB_LOGGED_IN) {
                     SendMessageW(facebookLoginButton, BM_SETIMAGE, IMAGE_BITMAP, (LPARAM)runningButton);
