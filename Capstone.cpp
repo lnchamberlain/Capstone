@@ -225,7 +225,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 {
    hInst = hInstance; // Store instance handle global variable
 
-   HWND hWnd = CreateWindowW(szWindowClass, L"UnderCover Recovery", WS_OVERLAPPEDWINDOW,
+   HWND hWnd = CreateWindowW(szWindowClass, L"UnderCover Recovery", WS_OVERLAPPED | WS_MINIMIZEBOX | WS_SYSMENU,
       200, 100, 1200, 850, nullptr, nullptr, hInstance, nullptr);
    //Main Window Coordinates (0,0) upper left, (1200, 800) lower right
    //BOOL USE_DARK_MODE = true;
