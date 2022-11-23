@@ -109,11 +109,12 @@ bool PREV_SCAN_COMPLETE = true;
 bool IG_AUTH_FINISHED = false;
 bool FB_AUTH_FINISHED = false;
 bool TW_AUTH_FINISHED = false;
+bool FIRST_SCAN = true;
 bool FB_AUTH_SUCCESS, IG_AUTH_SUCCESS, TW_AUTH_SUCCESS;
 std::fstream SAVED_CONFIG_FILE;
 std::string shellOperation;
 HBITMAP backgroundImg, redButtonImg, greenButtonImg, toolbarImg, logoImg, scanningButtonImg, fbSectionImg, igSectionImg, twSectionImg;
-HBITMAP notLoggedInButton, loggedInButton, runningButton;
+HBITMAP notLoggedInButton, loggedInButton, runningButton, reAuthButton;
 
 
 // Forward declarations of functions included in this code module:
@@ -385,7 +386,7 @@ void loadImages()
     notLoggedInButton = (HBITMAP)LoadImageW(NULL, L".\\GUI_IMAGES\\not_logged_in_button.bmp", IMAGE_BITMAP, 55, 30, LR_LOADFROMFILE);
     loggedInButton = (HBITMAP)LoadImageW(NULL, L".\\GUI_IMAGES\\logged_in_button.bmp", IMAGE_BITMAP, 55, 30, LR_LOADFROMFILE);
     runningButton = (HBITMAP)LoadImageW(NULL, L".\\GUI_IMAGES\\running_button_logins.bmp", IMAGE_BITMAP,55, 30, LR_LOADFROMFILE);
-
+    reAuthButton = (HBITMAP)LoadImageW(NULL, L".\\GUI_IMAGES\\reauth_button.bmp", IMAGE_BITMAP, 100, 60, LR_LOADFROMFILE);
 }
 //Helper function to enumerate over child windows and set the font to 'font'
 bool CALLBACK SetFont(HWND child, LPARAM font) {
@@ -401,6 +402,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     int points, pixels_per_inch, pixels_height;
     HFONT font;
     HDC hDC;
+    std::fstream readOutputLog;
+    int i, savedUsernameLen, savedPasswordLen, char_val;
+    char usernameSavedClearText[100], passwordSavedClearText[100];
+    std::string usernameSaved_enc, passwordSaved_enc, usernameClearText, passwordClearText, line;
+    std::ofstream ofs;
     switch (message)
     {
     case WM_CREATE:
@@ -434,17 +440,227 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             COUNT--;
         }
         if (COUNT <= 0) 
-        {
+        {     
             ScanCount++;
             //Update Scan Count
             _itow_s(ScanCount, limitOut, 10);
             SetWindowTextW(scanCountDisplay, limitOut);
-            if ((ScanLimitInt != NULL) && (ScanCount >= ScanLimitInt)) {
-                STOP_SCANNING = true;
+            if (!FIRST_SCAN) {
+
+                
+
+                if (IG_LOGGED_IN) {
+                    SendMessageW(launchButton, BM_SETIMAGE, IMAGE_BITMAP, (LPARAM)redButtonImg);
+                    Sleep(5000);
+                    shellOperation = "";
+                    shellOperation.append("python3 authenticator.py IG ");
+                    SAVED_CONFIG_FILE.open(".\\Program Data\\Configuration\\user_config.txt", std::ios::in);
+                    //Read in all lines, fill in string array of elements
+                    if (SAVED_CONFIG_FILE.is_open())
+                    {
+                        for (i = 0; i < 9; i++)
+                        {
+                            std::getline(SAVED_CONFIG_FILE, line);
+                            SAVED_CONFIG_ELEMENTS[i] = line;
+                        }
+                    }
+                    //Decrpyt the usernames and passwords (-10 to each character value)
+                    usernameSaved_enc = SAVED_CONFIG_ELEMENTS[4];
+                    passwordSaved_enc = SAVED_CONFIG_ELEMENTS[5];
+                    savedUsernameLen = strlen(usernameSaved_enc.c_str());
+                    savedPasswordLen = strlen(passwordSaved_enc.c_str());
+                    for (i = 0; i < savedUsernameLen; i++) {
+                        char_val = int(usernameSaved_enc[i]) - 10;
+                        usernameSavedClearText[i] = (char)char_val;
+                    }
+                    usernameSavedClearText[i] = '\0';
+                    for (i = 0; i < savedPasswordLen; i++) {
+                        char_val = int(passwordSaved_enc[i]) - 10;
+                        passwordSavedClearText[i] = (char)char_val;
+                    }
+                    passwordSavedClearText[i] = '\0';
+                    //Use saved credentials to post login request
+                    usernameClearText = usernameSavedClearText;
+                    passwordClearText = passwordSavedClearText;
+                    shellOperation.append(usernameClearText);
+                    shellOperation.append(" ");
+                    shellOperation.append(passwordClearText);
+                    shellOperation.append(" ");
+                    //Lauch program
+                    WinExec((LPCSTR)shellOperation.c_str(), SW_SHOW);
+                    IG_AUTH_SUCCESS = false;
+                    //Wait three seconds then see if the logs show a success or a fail
+                    //Clear old success log
+                    ofs.open(".\\Program Data\\Logs\\IG_AUTH_LOGS\\log.txt", std::ofstream::out | std::ofstream::trunc);
+                    ofs.close();
+                    while (!IG_AUTH_FINISHED)
+                    {
+                        Sleep(3000);
+                        readOutputLog.open(".\\Program Data\\Logs\\IG_AUTH_LOGS\\log.txt", std::ios::in);
+                        //Read in all lines, check for SUCCESS or FAIL
+                        if (readOutputLog.is_open())
+                        {
+                            while (std::getline(readOutputLog, line))
+                            {
+                                if (strcmp(line.c_str(), "SUCCESS") == 0) {
+                                    IG_AUTH_SUCCESS = true;
+                                    IG_AUTH_FINISHED = true;
+                                }
+                                if (strcmp(line.c_str(), "FAIL") == 0) {
+                                    MessageBox(hWnd, L"Login Attempt Failed", L"Error on Login", MB_ICONERROR);
+                                    IG_AUTH_FINISHED = true;
+                                }
+                            }
+
+                            if (IG_AUTH_SUCCESS) {
+                                continue;
+                            }
+                        }
+                    }
+                }
+                if (FB_LOGGED_IN) {
+                    SendMessageW(launchButton, BM_SETIMAGE, IMAGE_BITMAP, (LPARAM)reAuthButton);
+                    shellOperation = "";
+                    shellOperation.append("python3 authenticator.py FB ");
+                    SAVED_CONFIG_FILE.open(".\\Program Data\\Configuration\\user_config.txt", std::ios::in);
+                    //Read in all lines, fill in string array of elements
+                    if (SAVED_CONFIG_FILE.is_open())
+                    {
+                        for (i = 0; i < 9; i++)
+                        {
+                            std::getline(SAVED_CONFIG_FILE, line);
+                            SAVED_CONFIG_ELEMENTS[i] = line;
+                        }
+                    }
+                    //Decrpyt the usernames and passwords (-10 to each character value)
+                    usernameSaved_enc = SAVED_CONFIG_ELEMENTS[1];
+                    passwordSaved_enc = SAVED_CONFIG_ELEMENTS[2];
+                    savedUsernameLen = strlen(usernameSaved_enc.c_str());
+                    savedPasswordLen = strlen(passwordSaved_enc.c_str());
+                    for (i = 0; i < savedUsernameLen; i++) {
+                        char_val = int(usernameSaved_enc[i]) - 10;
+                        usernameSavedClearText[i] = (char)char_val;
+                    }
+                    usernameSavedClearText[i] = '\0';
+                    for (i = 0; i < savedPasswordLen; i++) {
+                        char_val = int(passwordSaved_enc[i]) - 10;
+                        passwordSavedClearText[i] = (char)char_val;
+                    }
+                    passwordSavedClearText[i] = '\0';
+                    //Use saved credentials to post login request
+                    usernameClearText = usernameSavedClearText;
+                    passwordClearText = passwordSavedClearText;
+                    shellOperation.append(usernameClearText);
+                    shellOperation.append(" ");
+                    shellOperation.append(passwordClearText);
+                    shellOperation.append(" ");
+                    //Lauch program
+                    WinExec((LPCSTR)shellOperation.c_str(), SW_SHOW);
+                    FB_AUTH_SUCCESS = false;
+                    //Wait three seconds then see if the logs show a success or a fail
+                    ofs.open(".\\Program Data\\Logs\\FB_AUTH_LOGS\\log.txt", std::ofstream::out | std::ofstream::trunc);
+                    ofs.close();
+                    while (!FB_AUTH_FINISHED)
+                    {
+                        Sleep(3000);
+                        readOutputLog.open(".\\Program Data\\Logs\\FB_AUTH_LOGS\\log.txt", std::ios::in);
+                        //Read in all lines, check for SUCCESS or FAIL
+                        if (readOutputLog.is_open())
+                        {
+                            while (std::getline(readOutputLog, line))
+                            {
+                                if (strcmp(line.c_str(), "SUCCESS") == 0) {
+                                    FB_AUTH_SUCCESS = true;
+                                    FB_AUTH_FINISHED = true;
+                                }
+                                if (strcmp(line.c_str(), "FAIL") == 0) {
+                                    MessageBox(hWnd, L"Login Attempt Failed", L"Error on Login", MB_ICONERROR);
+                                    FB_AUTH_FINISHED = true;
+                                }
+                            }
+
+                            if (FB_AUTH_SUCCESS) {
+                                continue;
+                            }
+                        }
+                    }
+                }
+                if (TW_LOGGED_IN) {
+                    SendMessageW(launchButton, BM_SETIMAGE, IMAGE_BITMAP, (LPARAM)reAuthButton);
+                    shellOperation = "";
+                    shellOperation.append("python3 authenticator.py TW ");
+                    SAVED_CONFIG_FILE.open(".\\Program Data\\Configuration\\user_config.txt", std::ios::in);
+                    //Read in all lines, fill in string array of elements
+                    if (SAVED_CONFIG_FILE.is_open())
+                    {
+                        for (i = 0; i < 9; i++)
+                        {
+                            std::getline(SAVED_CONFIG_FILE, line);
+                            SAVED_CONFIG_ELEMENTS[i] = line;
+                        }
+                    }
+                    //Decrpyt the usernames and passwords (-10 to each character value)
+                    usernameSaved_enc = SAVED_CONFIG_ELEMENTS[7];
+                    passwordSaved_enc = SAVED_CONFIG_ELEMENTS[8];
+                    savedUsernameLen = strlen(usernameSaved_enc.c_str());
+                    savedPasswordLen = strlen(passwordSaved_enc.c_str());
+                    for (i = 0; i < savedUsernameLen; i++) {
+                        char_val = int(usernameSaved_enc[i]) - 10;
+                        usernameSavedClearText[i] = (char)char_val;
+                    }
+                    usernameSavedClearText[i] = '\0';
+                    for (i = 0; i < savedPasswordLen; i++) {
+                        char_val = int(passwordSaved_enc[i]) - 10;
+                        passwordSavedClearText[i] = (char)char_val;
+                    }
+                    passwordSavedClearText[i] = '\0';
+                    //Use saved credentials to post login request
+                    usernameClearText = usernameSavedClearText;
+                    passwordClearText = passwordSavedClearText;
+                    shellOperation.append(usernameClearText);
+                    shellOperation.append(" ");
+                    shellOperation.append(passwordClearText);
+                    shellOperation.append(" ");
+                    //Lauch program
+                    WinExec((LPCSTR)shellOperation.c_str(), SW_HIDE);
+                    TW_AUTH_SUCCESS = false;
+                    //Wait three seconds then see if the logs show a success or a fail
+                    ofs.open(".\\Program Data\\Logs\\TW_AUTH_LOGS\\log.txt", std::ofstream::out | std::ofstream::trunc);
+                    ofs.close();
+                    while (!TW_AUTH_FINISHED)
+                    {
+                        Sleep(3000);
+                        readOutputLog.open(".\\Program Data\\Logs\\TW_AUTH_LOGS\\log.txt", std::ios::in);
+                        //Read in all lines, check for SUCCESS or FAIL
+                        if (readOutputLog.is_open())
+                        {
+                            while (std::getline(readOutputLog, line))
+                            {
+                                if (strcmp(line.c_str(), "SUCCESS") == 0) {
+                                    TW_AUTH_SUCCESS = true;
+                                    TW_AUTH_FINISHED = true;
+                                }
+                                if (strcmp(line.c_str(), "FAIL") == 0) {
+                                    MessageBox(hWnd, L"Login Attempt Failed", L"Error on Login", MB_ICONERROR);
+                                    TW_AUTH_FINISHED = true;
+                                }
+                            }
+
+                            if (TW_AUTH_SUCCESS) {
+                                continue;
+                            }
+                        }
+                    }
+                }
             }
-            COUNT = RESET_COUNT;
+     
+             SendMessageW(launchButton, BM_SETIMAGE, IMAGE_BITMAP, (LPARAM)scanningButtonImg);
+             lauchScanners(FB_LOGGED_IN, IG_LOGGED_IN, TW_LOGGED_IN);
+             beginListeningforScrapeResults(FB_LOGGED_IN, IG_LOGGED_IN, TW_LOGGED_IN);
+             COUNT = RESET_COUNT;
+            
         }
-        break;
+       
     case WM_COMMAND:
     {
         int wmId = LOWORD(wParam);
@@ -532,6 +748,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 }
                 lauchScanners(FB_LOGGED_IN, IG_LOGGED_IN, TW_LOGGED_IN);
                 beginListeningforScrapeResults(FB_LOGGED_IN, IG_LOGGED_IN, TW_LOGGED_IN);
+                FIRST_SCAN = false;
             }
             else
             {
@@ -727,6 +944,7 @@ LRESULT CALLBACK WndProcFBLogin(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
         {
             FB_AUTH_SUCCESS = false;
             FB_AUTH_FINISHED = false;
+            FB_LOGGED_IN = false;
             shellOperation = "";
             shellOperation.append("python3 authenticator.py FB ");
             //Grab values from the username and password fields, store in global variables
@@ -875,8 +1093,9 @@ LRESULT CALLBACK WndProcIGLogin(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
         {
         case INSTAGRAM_LOGIN_SUBMIT:
         {
-            FB_AUTH_SUCCESS = false;
-            FB_AUTH_FINISHED = false;
+            IG_AUTH_SUCCESS = false;
+            IG_AUTH_FINISHED = false;
+            IG_LOGGED_IN = false;
             shellOperation = "";
             shellOperation.append("python3 authenticator.py IG ");
             //Grab values from the username and password fields, store in global variables
@@ -1026,6 +1245,7 @@ LRESULT CALLBACK WndProcTWLogin(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
         {
             TW_AUTH_SUCCESS = false;
             TW_AUTH_FINISHED = false;
+            TW_LOGGED_IN = false;
             shellOperation = "";
             shellOperation.append("python3 authenticator.py TW ");
             //Grab values from the username and password fields, store in global variables
@@ -1477,7 +1697,7 @@ void lauchScanners(bool fbSet, bool igSet, bool twSet)
         {
             shellOperation.append(outputDirShell);
         }        
-        WinExec((LPCSTR)shellOperation.c_str(), SW_SHOW);
+        WinExec((LPCSTR)shellOperation.c_str(), SW_HIDE);
         SetWindowTextW(facebookResultsSummary, L"Scanning....");
     }
     if (igSet)
@@ -1498,7 +1718,7 @@ void lauchScanners(bool fbSet, bool igSet, bool twSet)
         std::wstring widestr = std::wstring(shellOperation.begin(), shellOperation.end());
         const wchar_t* widecstr = widestr.c_str();
 
-        WinExec((LPCSTR)shellOperation.c_str(), SW_SHOW);
+        WinExec((LPCSTR)shellOperation.c_str(), SW_HIDE);
         SetWindowTextW(instagramResultsSummary, L"IG SET....");
     }
     if (twSet)
