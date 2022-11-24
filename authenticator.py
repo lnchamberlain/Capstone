@@ -96,7 +96,7 @@ class FB_AUTH:
                 driver.quit()
                 encrypt_and_store(self, "FB")
                 print("DONE")
-                return "Success"
+                return True
         else:
             print("Log in fail")
             print("writing to log file")
@@ -104,7 +104,7 @@ class FB_AUTH:
             log_file.close()
             driver.quit()
             print("DONE")
-            return "Fail"
+            return False
         
    
   
@@ -158,7 +158,7 @@ class IG_AUTH:
                 driver.quit()
                 encrypt_and_store(self, "IG")
                 print("DONE")
-                return "Success"
+                return True
         else:
             print("Log in fail")
             log_file.write("FAIL")
@@ -166,7 +166,7 @@ class IG_AUTH:
             log_file.close()
             driver.quit()
             print("DONE")
-            return "Fail"
+            return False
     
 
     #OLD METHOD: requests no longer sending back csrf?? switched to using selenium

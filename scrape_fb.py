@@ -31,6 +31,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.chrome.options import Options
+import authenticator
 
 
 
@@ -104,6 +105,24 @@ def get_flagged_users():
     global FLAGGED_USERS
     FLAGGED_USERS = flagged_users_file.read().split(",")
 
+
+
+def reauth():
+    '''For when a 401 error is hit, use authenticator program to get new cookie, returns True on success'''
+    config_file = open("./Program Data/Configuration/user_config.txt").read()
+    l = config_file.split("\n")
+    config_file.close()
+    email_enc = l[1]
+    pass_enc = l[2]
+    email = ''
+    password = ''
+    for c in email_enc:
+        email += chr(ord(c) - 10)
+    for c in pass_enc:
+        password += chr(ord(c) - 10)
+    auth = authenticator.FB_AUTH(email, password)
+    return auth.attempt_login()
+
  #Requests data from location url, formats the return, searches captions and comments for keywords, adds posts to flagged posts
 def scrape_location(driver, location, counter):
     #open temporary file to write to
@@ -132,6 +151,13 @@ def scrape_location(driver, location, counter):
                 print("TOTAL FOUND POSTS: {}\n".format(TOTAL_POSTS))
                 print("\n*****************************************************************\n") 
                 return
+        if("log in" in driver.title):
+            temp_file.write("Permissions Error\nAttempting reauthenticating...\n")
+            success = reauth()
+            if(success):
+                temp_file.write("Successfully reauthenticated\n")
+            else:
+                temp_file.write("Reauth Fail\n")
         try:
             WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, 'x9f619 x1n2onr6 x1ja2u2z xdt5ytf x193iq5w xeuugli x1r8uery x1iyjqo2 xs83m0k x78zum5 x1t2pt76')))
         except TimeoutException:

@@ -21,6 +21,7 @@ from PIL import Image
 import shutil
 import os
 import pickle
+import authenticator
 
 
 
@@ -180,6 +181,23 @@ def get_flagged_users():
 
 
 
+def reauth():
+    '''For when a 401 error is hit, use authenticator program to get new cookie, returns True on success'''
+    config_file = open("./Program Data/Configuration/user_config.txt").read()
+    l = config_file.split("\n")
+    config_file.close()
+    user_enc = l[4]
+    pass_enc = l[5]
+    username = ''
+    password = ''
+    for c in user_enc:
+        username += chr(ord(c) - 10)
+    for c in pass_enc:
+        password += chr(ord(c) - 10)
+    auth = authenticator.IG_AUTH(username, password)
+    return auth.attempt_login_selenium()
+
+    
 
  
 def scrape_location(COUNTER, NUM_LOCATIONS, session, location):
@@ -203,6 +221,13 @@ def scrape_location(COUNTER, NUM_LOCATIONS, session, location):
     if(response.status_code != OK):
         print("Error")
         print(response.status_code)
+        if(response.status_code == 401):
+            temp_file.write("Permissions Error\nAttempting reauthenticating...\n")
+            success = reauth()
+            if(success):
+                temp_file.write("Successfully reauthenticated\n")
+            else:
+                temp_file.write("Reauth Fail\n")
         return
     print(f"Response Status is {response.status_code}")
     temp_file.write("Response Status is {}\n".format(response.status_code))
