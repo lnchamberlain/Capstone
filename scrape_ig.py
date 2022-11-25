@@ -217,6 +217,7 @@ def scrape_location(COUNTER, NUM_LOCATIONS, session, location):
     temp_file.write("Location {}/{}\n".format(COUNTER, NUM_LOCATIONS))
     #Request JSON data at the address by appending the parameters /?__a=1
     response = session.get(LOCATION_URLS[location] + "/?__a=1")
+    print(response.content)
     #Skip location if error encountered
     if(response.status_code != OK):
         print("Error")

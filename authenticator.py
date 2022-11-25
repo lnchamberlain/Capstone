@@ -120,10 +120,16 @@ class IG_AUTH:
     def attempt_login_selenium(self):
         clear_log_file = open("./Program Data/Logs/IG_AUTH_LOGS/log.txt", "w")
         clear_log_file.close()
+        with open("UserAgents.txt", "r") as file: #Filename works, full path better??
+            line = random.randint(1, 72) #remove hardcoded line value
+            userAgent = file.readlines()[line] 
+            userAgent = userAgent.replace("\n","")
         chrome_options = Options()
         #--headless makes the window not pop up
         #chrome_options.add_argument("--headless")
+        chrome_options.add_argument("user-agent="+userAgent)
         driver = selenium.webdriver.Chrome("./chromedriver", options=chrome_options)
+        print(f"Using user agent: {userAgent}")
         driver.get("https://instagram.com")
         print("IG opened")
         time.sleep(1)
