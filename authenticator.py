@@ -115,15 +115,14 @@ class IG_AUTH:
        self.password = password
        self.cookie = ""
 
-
-    #REFERENCE CODE: https://github.com/softcoder24/insta_share/blob/master/insta_share/instagram.py
+       
 
     def attempt_login_selenium(self):
         clear_log_file = open("./Program Data/Logs/IG_AUTH_LOGS/log.txt", "w")
         clear_log_file.close()
         chrome_options = Options()
         #--headless makes the window not pop up
-        chrome_options.add_argument("--headless")
+        #chrome_options.add_argument("--headless")
         driver = selenium.webdriver.Chrome("./chromedriver", options=chrome_options)
         driver.get("https://instagram.com")
         print("IG opened")
@@ -145,7 +144,7 @@ class IG_AUTH:
         time.sleep(7)
         log_file = open("./Program Data/Logs/IG_AUTH_LOGS/log.txt", "w")
         #check if page changed
-        if(driver.page_source != src):
+        if("incorrect" not in driver.page_source):
             print("advanced")
             self.cookie = driver.get_cookies()
             print(self.cookie)
