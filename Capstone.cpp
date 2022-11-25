@@ -1509,7 +1509,7 @@ void lauchScanners(bool fbSet, bool igSet, bool twSet)
         std::wstring widestr = std::wstring(shellOperation.begin(), shellOperation.end());
         const wchar_t* widecstr = widestr.c_str();
 
-        WinExec((LPCSTR)shellOperation.c_str(), SW_HIDE);
+        WinExec((LPCSTR)shellOperation.c_str(), SW_SHOW);
         SetWindowTextW(instagramResultsSummary, L"IG SET....");
     }
     if (twSet)

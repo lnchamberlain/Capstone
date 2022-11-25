@@ -24,8 +24,7 @@ def encrypt_and_store(auth, mode):
     for char in auth.password:
         enc_password += chr(ord(char) + 10)
     
-    print(auth.username)
-    print(enc_username)
+    
     #open the file in read mode
     f = open("./Program Data/Configuration/user_config.txt", 'r+', encoding="utf-8")
     data = f.read().split("\n")

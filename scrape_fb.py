@@ -109,8 +109,8 @@ def get_flagged_users():
 
 def reauth():
     '''For when a 401 error is hit, use authenticator program to get new cookie, returns True on success'''
-    config_file = open("./Program Data/Configuration/user_config.txt").read()
-    l = config_file.split("\n")
+    config_file = open("./Program Data/Configuration/user_config.txt")
+    l = config_file.read().split("\n")
     config_file.close()
     email_enc = l[1]
     pass_enc = l[2]
@@ -152,12 +152,14 @@ def scrape_location(driver, location, counter):
                 print("\n*****************************************************************\n") 
                 return
         if("log in" in driver.title):
-            temp_file.write("Permissions Error\nAttempting reauthenticating...\n")
-            success = reauth()
-            if(success):
-                temp_file.write("Successfully reauthenticated\n")
-            else:
-                temp_file.write("Reauth Fail\n")
+             f = open("./Program Data/Logs/FB_SCRAPE_LOGS/log.txt", "w")
+             f.write("Permissions Error\nAttempting reauthenticating...\n")
+             success = reauth()
+             if(success):
+                f.write("Successfully reauthenticated\n")
+             else:
+                f.write("Reauth Fail\n")
+             f.close()
         try:
             WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, 'x9f619 x1n2onr6 x1ja2u2z xdt5ytf x193iq5w xeuugli x1r8uery x1iyjqo2 xs83m0k x78zum5 x1t2pt76')))
         except TimeoutException:

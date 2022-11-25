@@ -183,8 +183,8 @@ def get_flagged_users():
 
 def reauth():
     '''For when a 401 error is hit, use authenticator program to get new cookie, returns True on success'''
-    config_file = open("./Program Data/Configuration/user_config.txt").read()
-    l = config_file.split("\n")
+    config_file = open("./Program Data/Configuration/user_config.txt")
+    l = config_file.read().split("\n")
     config_file.close()
     user_enc = l[4]
     pass_enc = l[5]
@@ -222,12 +222,14 @@ def scrape_location(COUNTER, NUM_LOCATIONS, session, location):
         print("Error")
         print(response.status_code)
         if(response.status_code == 401):
-            temp_file.write("Permissions Error\nAttempting reauthenticating...\n")
+            f = open("./Program Data/Logs/IG_SCRAPE_LOGS/log.txt", "w")
+            f.write("Permissions Error\nAttempting reauthenticating...\n")
             success = reauth()
             if(success):
-                temp_file.write("Successfully reauthenticated\n")
+                f.write("Successfully reauthenticated\n")
             else:
-                temp_file.write("Reauth Fail\n")
+                f.write("Reauth Fail\n")
+            f.close()
         return
     print(f"Response Status is {response.status_code}")
     temp_file.write("Response Status is {}\n".format(response.status_code))
