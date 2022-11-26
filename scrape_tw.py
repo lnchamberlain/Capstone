@@ -2,8 +2,8 @@
 # import requests
 
 # payload = {
-#     'inUserName': 'thetyranttyler',
-#     'inUserPass': 'News!@on12Speed'
+#     'inUserName': 'ExampleUsername',
+#     'inUserPass': 'ExamplePassword'
 # }
 
 # with requests.Session() as s:
@@ -55,8 +55,8 @@ from selenium.webdriver.chrome.options import Options
 
 
 
-REGION_RESOLUTION_TABLE = {1:"./Program Data/Regions/ALASKA_FB.csv", 2:"./Program Data/Regions/ANCHORAGE_FB.csv", 3:"./Program Data/Regions/BETHEL_FB.csv", 4:"./Program Data/Regions/FAIRBANKS_FB.csv", 5:"./Program Data/Regions/JUNEAU_FB.csv", 6:"./Program Data/Regions/TESTING_FB.csv"}
-MONTH_RESOLUTION_TABLE = {1:"Jan", 2:"Feb", 3:"Mar", 4:"Apr", 5:"May", 6:"Jun", 7:"Jul", 8:"Aug", 9:"Sep", 10:"Oct", 11:"Nov", 12:"Dec"}
+#REGION_RESOLUTION_TABLE = {1:"./Program Data/Regions/ALASKA_FB.csv", 2:"./Program Data/Regions/ANCHORAGE_FB.csv", 3:"./Program Data/Regions/BETHEL_FB.csv", 4:"./Program Data/Regions/FAIRBANKS_FB.csv", 5:"./Program Data/Regions/JUNEAU_FB.csv", 6:"./Program Data/Regions/TESTING_FB.csv"}
+#MONTH_RESOLUTION_TABLE = {1:"Jan", 2:"Feb", 3:"Mar", 4:"Apr", 5:"May", 6:"Jun", 7:"Jul", 8:"Aug", 9:"Sep", 10:"Oct", 11:"Nov", 12:"Dec"}
 LOCATION_URLS = {}
 KEYWORDS = [] 
 COOKIE = {}
@@ -74,7 +74,8 @@ NUM_LOCATIONS = 0
 #Fills global variable with urls from the last column of the .csv file
 def get_urls():
     #Resolve region number into path
-    region_file = REGION_RESOLUTION_TABLE[int(sys.argv[1])]
+    #region_file = REGION_RESOLUTION_TABLE[int(sys.argv[1])]
+    region_file = alaska_locations_tw.csv
     with open(region_file, newline='', encoding="utf-8") as csvfile:
         csv_data = csv.reader(csvfile, delimiter=',')
         for row in csv_data:
@@ -92,17 +93,17 @@ def get_keywords():
     global KEYWORDS
     lines = keywords_file.readlines()[7:]
     KEYWORDS = lines[0].split(",")
-    #Advanced search only support for IG
-    for elem in KEYWORDS:
-        if("BEFORE" in elem) or ("AFTER" in elem) or ("+" in elem):
-            KEYWORDS.remove(elem)
+    # #Advanced search only support for IG
+    # for elem in KEYWORDS:
+    #     if("BEFORE" in elem) or ("AFTER" in elem) or ("+" in elem):
+    #         KEYWORDS.remove(elem)
     
 
 #Grabs cookie value from AUTH logs, rebuilds dictionary and sets global variable
 def get_cookie():
-    ig_auth_log_file = open("./Program Data/Logs/FB_AUTH_LOGS/log.txt")
+    #ig_auth_log_file = open("./Program Data/Logs/TW_AUTH_LOGS/log.txt")
     global COOKIE
-    cookies = pickle.load(open("./Program Data/Logs/FB_AUTH_LOGS/fb_cookies.pkl", "rb"))
+    cookies = pickle.load(open("./Program Data/Logs/TW_AUTH_LOGS/tw_cookies.pkl", "rb"))
     COOKIE = cookies
 
 #Establishes the output directory
@@ -110,20 +111,20 @@ def get_output_dir():
     output_dir = sys.argv[2]
     global OUTPUT_DIR
     if(output_dir == "DEFAULT"):
-        OUTPUT_DIR = "./Program Data/FoundPosts/FoundPostsFB"
+        OUTPUT_DIR = "./Program Data/FoundPosts/FoundPostsTW"
     else:
         OUTPUT_DIR = output_dir
 
 #Populates global list from flagged users list
 def get_flagged_users():
-    flagged_users_file = open("./Program Data/FlaggedUsers/FBFlaggedUsers/fb_flagged_users.txt", "r+")
+    flagged_users_file = open("./Program Data/FlaggedUsers/TWFlaggedUsers/tw_flagged_users.txt", "r+")
     global FLAGGED_USERS
     FLAGGED_USERS = flagged_users_file.read().split(",")
 
  #Requests data from location url, formats the return, searches captions and comments for keywords, adds posts to flagged posts
 def scrape_location(driver, location, counter):
     #open temporary file to write to
-    temp_file = open("./Program Data/Logs/FB_SCRAPE_LOGS/temp.txt", "w", encoding="utf-8")
+    temp_file = open("./Program Data/Logs/TW_SCRAPE_LOGS/temp.txt", "w", encoding="utf-8")
     temp_file.write(location + "\n")
     temp_file.write("Location {}/{}\n".format(counter, NUM_LOCATIONS))
     global TOTAL_POSTS
@@ -138,6 +139,9 @@ def scrape_location(driver, location, counter):
     posts = []
 
     for word in KEYWORDS:
+        #########################################################################################################
+        #Edit Url and Keyword splits to get keyword before near:Location url
+        #########################################################################################################
         url_base = LOCATION_URLS[location].split("word")
         #add keyword to crafted url
         url = url_base[0] + word[1:-1] + url_base[1]
@@ -148,6 +152,9 @@ def scrape_location(driver, location, counter):
                 print("TOTAL FOUND POSTS: {}\n".format(TOTAL_POSTS))
                 print("\n*****************************************************************\n") 
                 return
+        ##################################################################################################
+        #This is where we need to replace class name with twitter version, is found in inspect element
+        ##################################################################################################
         try:
             WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, 'x9f619 x1n2onr6 x1ja2u2z xdt5ytf x193iq5w xeuugli x1r8uery x1iyjqo2 xs83m0k x78zum5 x1t2pt76')))
         except TimeoutException:
@@ -173,6 +180,9 @@ def scrape_location(driver, location, counter):
             prev_height = curr_height
     temp_file.write("Scrolled {} times\n".format(SCROLL_COUNT))
     s = BeautifulSoup(driver.page_source, 'html.parser')
+    ####################################################################################################
+    #Edit Class value
+    #######################################################################################################
     l.append(s.find_all("div", {"class": "x1ja2u2z xh8yej3 x1n2onr6 x1yztbdb"}))
     for segment in l:
         for post in segment:
@@ -183,9 +193,9 @@ def scrape_location(driver, location, counter):
     print("TOTAL FOUND POSTS: {}\n".format(TOTAL_POSTS))
     temp_file.write(("Total Posts: {}\n".format(TOTAL_POSTS)))
     temp_file.close()
-    shutil.copy("./Program Data/Logs/FB_SCRAPE_LOGS/temp.txt", "./Program Data/Logs/FB_SCRAPE_LOGS/log.txt")
+    shutil.copy("./Program Data/Logs/TW_SCRAPE_LOGS/temp.txt", "./Program Data/Logs/TW_SCRAPE_LOGS/log.txt")
         #Get rid of temporary file
-    os.remove("./Program Data/Logs/FB_SCRAPE_LOGS/temp.txt")
+    os.remove("./Program Data/Logs/TW_SCRAPE_LOGS/temp.txt")
     #posts is an array of beautifulsoup objects, one per post 
     for post in posts:
        format_found_post(post, driver, "KEYWORDS")
@@ -199,7 +209,7 @@ def scrape_location(driver, location, counter):
      #Requests data from location url, formats the return, searches captions and comments for keywords, adds posts to flagged posts
 def scrape_flagged_user(driver, username, counter):
     #open temporary file to write to
-    temp_file = open("./Program Data/Logs/FB_SCRAPE_LOGS/temp.txt", "w", encoding="utf-8")
+    temp_file = open("./Program Data/Logs/TW_SCRAPE_LOGS/temp.txt", "w", encoding="utf-8")
     temp_file.write(username + "\n")
     temp_file.write("user {}/{}\n".format(counter, len(FLAGGED_USERS)))
     global TOTAL_POSTS
@@ -213,11 +223,14 @@ def scrape_flagged_user(driver, username, counter):
     print("Number {}/{}\n".format(counter, len(FLAGGED_USERS)))
     l = []
     posts = []
-    url = "https://www.facebook.com/" + username.strip()
+    url = "https://www.twitter.com/" + username.strip()
     print(url)
     time.sleep(1)
     driver.get(url)
     try:
+        ###############################################################################################################################
+        #Edit class name value
+        ##############################################################################################################################
             WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, 'x9f619 x1n2onr6 x1ja2u2z xdt5ytf x193iq5w xeuugli x1r8uery x1iyjqo2 xs83m0k x78zum5 x1t2pt76')))
     except TimeoutException:
             print("Advacing to scrolling")
@@ -243,6 +256,9 @@ def scrape_flagged_user(driver, username, counter):
 
     temp_file.write("Scrolled {} times\n".format(SCROLL_COUNT))
     s = BeautifulSoup(driver.page_source, 'html.parser')
+    ###########################################################################################################
+    #Edit Class name Value
+    #####################################################################################################################
     l.append(s.find_all("div", {"class": "x1ja2u2z xh8yej3 x1n2onr6 x1yztbdb"}))
     for segment in l:
         for post in segment:
@@ -253,9 +269,9 @@ def scrape_flagged_user(driver, username, counter):
     print("TOTAL FOUND POSTS: {}\n".format(TOTAL_POSTS))
     temp_file.write(("Total Posts: {}\n".format(TOTAL_POSTS)))
     temp_file.close()
-    shutil.copy("./Program Data/Logs/FB_SCRAPE_LOGS/temp.txt", "./Program Data/Logs/FB_SCRAPE_LOGS/log.txt")
+    shutil.copy("./Program Data/Logs/TW_SCRAPE_LOGS/temp.txt", "./Program Data/Logs/TW_SCRAPE_LOGS/log.txt")
         #Get rid of temporary file
-    os.remove("./Program Data/Logs/FB_SCRAPE_LOGS/temp.txt")
+    os.remove("./Program Data/Logs/TW_SCRAPE_LOGS/temp.txt")
     #posts is an array of beautifulsoup objects, one per post 
     for post in posts:
        format_found_post(post, driver, "FLAGGED_USERS")
@@ -279,6 +295,9 @@ def format_found_post(flagged_post, driver, mode):
     img_hash = ''
     html_str = ''
     TYPE = None
+    #############################################################################################################
+    #Edit Class name value
+    #####################################################################################################################
     links = flagged_post.find_all("a", {"class":"x1i10hfl xjbqb8w x6umtig x1b1mbwd xaqea5y xav7gou x9f619 x1ypdohk xt0psk2 xe8uvvx xdj266r x11i5rnm xat24cr x1mh8g0r xexx8yu x4uap5 x18d9i69 xkhd6sd x16tdsg8 x1hl2dhg xggy1nq x1a2a7pz xt0b8zv xzsf02u x1s688f"})
     if(len(links)>0):
         AUTHOR = links[0].get_text()
@@ -287,6 +306,9 @@ def format_found_post(flagged_post, driver, mode):
         href_end = account_tag.find("?", href_index)
         ACCOUNT_LINK = account_tag[(href_index + 7):href_end]
         LOCATION = links[-1].get_text()
+        ############################################################################################
+        #Edit Id value"
+        ############################################################################################
         times = flagged_post.find_all("span", {"id": "jsc_c_k9"})
     if(len(times) > 1):
         timestamp_text = times[0].get_text()
@@ -319,8 +341,8 @@ def format_found_post(flagged_post, driver, mode):
             driver.save_screenshot("./Program Data/temp_img.png")
             img_hash = hashlib.md5(Image.open("./Program Data/temp_img.png").tobytes())
             hash_str = img_hash.hexdigest()
-            img_path = "./Program Data/Images/ImagesFB/" + hash_str + ".png"
-            IMG_PATH_HTML = str("../../../Program Data/Images/ImagesFB/"+ hash_str + ".png")
+            img_path = "./Program Data/Images/ImagesTW/" + hash_str + ".png"
+            IMG_PATH_HTML = str("../../../Program Data/Images/ImagesTW/"+ hash_str + ".png")
             if(not os.path.exists(img_path)):
                 shutil.copy("./Program Data/temp_img.png", img_path)
             #Get rid of temporary image
@@ -427,15 +449,15 @@ def main():
     global SCAN_NAME_FLAGGED 
     currTime = datetime.datetime.now()
     date_and_time_formatted = MONTH_RESOLUTION_TABLE[currTime.month] + " "+str(currTime.day) +" "+ str(currTime.year) + " @ " + str(currTime.hour) + "." + str(currTime.minute) + "." + str(currTime.second) 
-    SCAN_NAME_KEYWORDS = "FB KEYWORDS REPORT " + date_and_time_formatted
-    SCAN_NAME_FLAGGED = "FB FLAGGED USERS REPORT " + date_and_time_formatted
-    clear_log = open("./Program Data/Logs/FB_SCRAPE_LOGS/log.txt", "w", encoding="utf-8")
+    SCAN_NAME_KEYWORDS = "TW KEYWORDS REPORT " + date_and_time_formatted
+    SCAN_NAME_FLAGGED = "TW FLAGGED USERS REPORT " + date_and_time_formatted
+    clear_log = open("./Program Data/Logs/TW_SCRAPE_LOGS/log.txt", "w", encoding="utf-8")
     clear_log.close()
     chrome_options = Options()
     #--headless makes the window not pop up
     chrome_options.add_argument("--headless")
     driver = selenium.webdriver.Chrome("./chromedriver", options=chrome_options)
-    driver.get("https://facebook.com")
+    driver.get("https://twitter.com")
     for c in COOKIE:
         driver.add_cookie(c)
     #GENERAL PROCESS: scrape each location url using crafted urls looking for keywords, write relevant information to html strings
@@ -462,7 +484,7 @@ def main():
     write_html_to_file("FLAGGED_USERS")
 
     #Clear log file, write final summary
-    log_file = open("./Program Data/Logs/FB_SCRAPE_LOGS/log.txt", "w")
+    log_file = open("./Program Data/Logs/TW_SCRAPE_LOGS/log.txt", "w")
     log_file.write("TOTAL FLAGGED POSTS: {}\nSCAN COMPLETE".format(TOTAL_POSTS))
     log_file.close()
 

@@ -235,6 +235,59 @@ class TW_AUTH:
        self.username = username
        self.password = password
        self.cookie = ""
+    
+    def attempt_login(self):
+        #opening the file in write mode clears the previous login attempt
+        clear_log_file = open("./Program Data/Logs/TW_AUTH_LOGS/log.txt", "w")
+        clear_log_file.close()
+        chrome_options = Options()
+        #--headless makes the window not pop up
+        chrome_options.add_argument("--headless")
+        driver = selenium.webdriver.Chrome("./chromedriver", options=chrome_options)
+        driver.get("https://twitter.com")
+        print("TW opened")
+        time.sleep(1)
+        print(driver.title)
+        #<input autocapitalize="sentences" autocomplete="on" autocorrect="on" disabled="" name="email" spellcheck="true" type="text" dir="auto" class="r-30o5oe r-1niwhzg r-17gur6a r-1yadl64 r-deolkf r-115tad6 r-poiln3 r-7cikom r-1ny4l3l r-t60dpp r-1dz5y72 r-fdjqy7 r-13qz1uu" value="ExampleEmail@gmail.com">
+        #Above is the div class for where the username, email, or phone # is entered in login
+        #Below is the input div for where the password if inputed
+        #<input autocapitalize="sentences" autocomplete="current-password" autocorrect="on" name="password" spellcheck="true" type="password" dir="auto" class="r-30o5oe r-1niwhzg r-17gur6a r-1yadl64 r-deolkf r-homxoj r-poiln3 r-7cikom r-1ny4l3l r-t60dpp r-1dz5y72 r-fdjqy7 r-13qz1uu" value="ExamplePassword">
+        email_form = driver.find_element(By.ID,'email')
+        password_form = driver.find_element(By.ID, 'pass')
+        #Fill forms
+        email_form.send_keys(self.username)
+        time.sleep(1)
+        print("Entered email")
+        password_form.send_keys(self.password)
+        time.sleep(1)
+        print("Entered Password")
+        submit_form = driver.find_element(By.NAME, "login")
+        time.sleep(1)
+        submit_form.click()
+        print("Submitted")
+        time.sleep(7)
+        log_file = open("./Program Data/Logs/TW_AUTH_LOGS/log.txt", "w")
+        #Title will change to Twitter if logged in
+        if("log in" not in driver.title and "Log into" not in driver.title):
+            self.cookie = driver.get_cookies()
+            if self.cookie is not None:
+                print("Log in success")
+                pickle.dump(self.cookie, open("./Program Data/Logs/TW_AUTH_LOGS/TW_cookies.pkl", "wb"))
+                log_file.write("SUCCESS")
+                log_file.close()
+                driver.quit()
+                encrypt_and_store(self, "TW")
+                print("DONE")
+                return True
+        else:
+            print("Log in fail")
+            print("writing to log file")
+            log_file.write("FAIL")
+            log_file.close()
+            driver.quit()
+            print("DONE")
+            return False
+   
    
 
 def attempt_fb_login(email, password):
@@ -256,6 +309,11 @@ def attempt_ig_login(username, password):
 
 def attempt_tw_login(username, password):
     auth = TW_AUTH(username, password)
+    attempt = auth.attempt_login()
+    if(attempt != "Success"):
+       return 0 
+    else:
+        return 1
 
 
 # Entry point, grab argv values and pass to proper function. 
