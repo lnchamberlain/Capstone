@@ -74,8 +74,9 @@ NUM_LOCATIONS = 0
 #Fills global variable with urls from the last column of the .csv file
 def get_urls():
     #Resolve region number into path
-    #region_file = REGION_RESOLUTION_TABLE[int(sys.argv[1])]
-    region_file = alaska_locations_tw.csv
+    #region_file = REGION_RESOLUTION_TABLE[int(sys.argv[1])] 
+    #No regions split for csv, all alaska, no need for first arguement yet
+    region_file = "./Program Data/Regions/ALASKA_TW.csv"
     with open(region_file, newline='', encoding="utf-8") as csvfile:
         csv_data = csv.reader(csvfile, delimiter=',')
         for row in csv_data:
@@ -156,6 +157,10 @@ def scrape_location(driver, location, counter):
         #This is where we need to replace class name with twitter version, is found in inspect element
         ##################################################################################################
         try:
+            #div class for individual tweet seems to be css-1dbjc4n r-18u37iz, 
+            #the actual text of the tweet has the id="id__8w4fxvzadh", and the class of 
+            #class="css-901oao r-vlxjld r-37j5jr r-a023e6 r-16dba41 r-rjixqe r-bcqeeo r-bnwqim r-qvutc0"
+            #Tweets with images have the image in id="id__0l24lj9vejal", and class="css-1dbjc4n r-1ssbvtb r-1s2bzr4"
             WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, 'x9f619 x1n2onr6 x1ja2u2z xdt5ytf x193iq5w xeuugli x1r8uery x1iyjqo2 xs83m0k x78zum5 x1t2pt76')))
         except TimeoutException:
             print("Advacing to scrolling")
