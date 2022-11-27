@@ -30,6 +30,7 @@
 # To use with test regions (much smaller): python3 scrape_tw.py 6 DEFAULT
 
 import datetime
+from email.errors import ObsoleteHeaderDefect
 from operator import iadd
 from re import I
 from urllib.request import urlretrieve
@@ -57,7 +58,7 @@ import sys
 
 
 #REGION_RESOLUTION_TABLE = {1:"./Program Data/Regions/ALASKA_FB.csv", 2:"./Program Data/Regions/ANCHORAGE_FB.csv", 3:"./Program Data/Regions/BETHEL_FB.csv", 4:"./Program Data/Regions/FAIRBANKS_FB.csv", 5:"./Program Data/Regions/JUNEAU_FB.csv", 6:"./Program Data/Regions/TESTING_FB.csv"}
-#MONTH_RESOLUTION_TABLE = {1:"Jan", 2:"Feb", 3:"Mar", 4:"Apr", 5:"May", 6:"Jun", 7:"Jul", 8:"Aug", 9:"Sep", 10:"Oct", 11:"Nov", 12:"Dec"}
+MONTH_RESOLUTION_TABLE = {1:"Jan", 2:"Feb", 3:"Mar", 4:"Apr", 5:"May", 6:"Jun", 7:"Jul", 8:"Aug", 9:"Sep", 10:"Oct", 11:"Nov", 12:"Dec"}
 LOCATION_URLS = {}
 KEYWORDS = [] 
 COOKIE = {}
@@ -82,11 +83,11 @@ def get_urls():
     with open(region_file, newline='', encoding="utf-8") as csvfile:
         csv_data = csv.reader(csvfile, delimiter=',')
         for row in csv_data:
-            LOCATION_URLS[row[1]] = row[-1]
+            LOCATION_URLS[row[0]] = row[1]
     #First pair of values are header values
     global NUM_LOCATIONS
     NUM_LOCATIONS = len(LOCATION_URLS)
-    LOCATION_URLS.pop("Location Name", None)
+
 
 
 
@@ -129,6 +130,7 @@ def get_flagged_users():
 
  #Requests data from location url, formats the return, searches captions and comments for keywords, adds posts to flagged posts
 def scrape_location(driver, location, counter):
+    SCROLL_LIMIT = 10
     #open temporary file to write to
     temp_file = open("./Program Data/Logs/TW_SCRAPE_LOGS/temp.txt", "w", encoding="utf-8")
     temp_file.write(location + "\n")
@@ -166,7 +168,7 @@ def scrape_location(driver, location, counter):
             #the actual text of the tweet has the id="id__8w4fxvzadh", and the class of 
             #class="css-901oao r-vlxjld r-37j5jr r-a023e6 r-16dba41 r-rjixqe r-bcqeeo r-bnwqim r-qvutc0"
             #Tweets with images have the image in id="id__0l24lj9vejal", and class="css-1dbjc4n r-1ssbvtb r-1s2bzr4"
-            WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, 'x9f619 x1n2onr6 x1ja2u2z xdt5ytf x193iq5w xeuugli x1r8uery x1iyjqo2 xs83m0k x78zum5 x1t2pt76')))
+            WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, 'x9f619.x1n2onr6.x1ja2u2z.xdt5ytf.x193iq5w.xeuugli.x1r8uery.x1iyjqo2.xs83m0k.x78zum5.x1t2pt76')))
         except TimeoutException:
             print("Advacing to scrolling")
         prev_height = driver.execute_script(GET_CURRENT_SCROLL_HEIGHT)
@@ -185,7 +187,7 @@ def scrape_location(driver, location, counter):
             SCROLL_PAUSE /= 1000
             time.sleep(SCROLL_PAUSE)
             curr_height = driver.execute_script(GET_CURRENT_SCROLL_HEIGHT)
-            if curr_height == prev_height:
+            if curr_height == prev_height or SCROLL_COUNT > SCROLL_LIMIT:
                 break 
             prev_height = curr_height
     temp_file.write("Scrolled {} times\n".format(SCROLL_COUNT))
@@ -388,7 +390,7 @@ def format_found_post(flagged_post, driver, mode):
                 HTML_CODE_FLAGGED_USERS.append(html_str)
 
 
-
+'''
 #Takes in a time string and returns a datetime object (example: '1d' -> datetime for yesterday)
 def convert_timestamp_text(text):
     if(len(text)>1):
@@ -412,7 +414,7 @@ def convert_timestamp_text(text):
         unit = 'no_formatting'
         final_time = text
     return final_time, unit
-
+'''
 
 
 
@@ -469,7 +471,7 @@ def main():
     clear_log.close()
     chrome_options = Options()
     #--headless makes the window not pop up
-    chrome_options.add_argument("--headless")
+    #chrome_options.add_argument("--headless")
     driver = selenium.webdriver.Chrome("./chromedriver", options=chrome_options)
     driver.get("https://twitter.com")
     for c in COOKIE:
