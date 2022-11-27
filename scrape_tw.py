@@ -52,6 +52,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.chrome.options import Options
+import sys
 
 
 
@@ -69,6 +70,7 @@ HTML_CODE_KEYWORDS = []
 HTML_CODE_FLAGGED_USERS = []
 SCAN_NAME = ''
 NUM_LOCATIONS = 0
+NOT_DEFAULT_DIR = False
 
 
 #Fills global variable with urls from the last column of the .csv file
@@ -111,10 +113,13 @@ def get_cookie():
 def get_output_dir():
     output_dir = sys.argv[2]
     global OUTPUT_DIR
+    global NOT_DEFAULT_DIR 
     if(output_dir == "DEFAULT"):
         OUTPUT_DIR = "./Program Data/FoundPosts/FoundPostsTW"
     else:
+        NOT_DEFAULT_DIR = True
         OUTPUT_DIR = output_dir
+        shutil.copy("./styles.css", output_dir + "/styles.css")
 
 #Populates global list from flagged users list
 def get_flagged_users():
@@ -145,7 +150,7 @@ def scrape_location(driver, location, counter):
         #########################################################################################################
         url_base = LOCATION_URLS[location].split("word")
         #add keyword to crafted url
-        url = url_base[0] + word[1:-1] + url_base[1]
+        url = url_base[0] + word + url_base[1]
         driver.get(url)
         time.sleep(0.2)
         if("We didn't find any results" in driver.page_source):
@@ -185,6 +190,10 @@ def scrape_location(driver, location, counter):
             prev_height = curr_height
     temp_file.write("Scrolled {} times\n".format(SCROLL_COUNT))
     s = BeautifulSoup(driver.page_source, 'html.parser')
+    f = open("TW_AUTOPSY_FILE.html", "w", encoding="utf-8")
+    f.write(s.prettify())
+    f.close()
+    sys.exit()
     ####################################################################################################
     #Edit Class value
     #######################################################################################################

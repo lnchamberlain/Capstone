@@ -14,6 +14,7 @@ import selenium
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
 import pickle
+from bs4 import BeautifulSoup
 
 #Simple encryption, adds 10 to each character value, writes it into the right place
 def encrypt_and_store(auth, mode):
@@ -244,13 +245,14 @@ class TW_AUTH:
     
     def attempt_login(self):
         #opening the file in write mode clears the previous login attempt
-        #clear_log_file = open("./Program Data/Logs/TW_AUTH_LOGS/log.txt", "w")
-        #clear_log_file.close()
+        clear_log_file = open("./Program Data/Logs/TW_AUTH_LOGS/log.txt", "w")
+        clear_log_file.close()
         chrome_options = Options()
         #--headless makes the window not pop up
         chrome_options.add_argument("--headless")
         driver = selenium.webdriver.Chrome("./chromedriver", options=chrome_options) #"./chromedriver"
-        driver.get("https://twitter.com")
+        #driver.get("https://twitter.com")
+        driver.get("https://twitter.com/i/flow/login")
         print("TW opened")
         time.sleep(1)
         print(driver.title)
@@ -258,31 +260,34 @@ class TW_AUTH:
         #Above is the div class for where the username, email, or phone # is entered in login
         #Below is the input div for where the password if inputed
         #<input autocapitalize="sentences" autocomplete="current-password" autocorrect="on" name="password" spellcheck="true" type="password" dir="auto" class="r-30o5oe r-1niwhzg r-17gur6a r-1yadl64 r-deolkf r-homxoj r-poiln3 r-7cikom r-1ny4l3l r-t60dpp r-1dz5y72 r-fdjqy7 r-13qz1uu" value="ExamplePassword">
-        email_form = driver.find_element(By.ID,'email')
-        password_form = driver.find_element(By.ID, 'password')
+        log_file = open("./Program Data/Logs/TW_AUTH_LOGS/log.txt", "w")
+        username = driver.find_element(By.NAME, "text")
         #Fill forms
-        email_form.send_keys(self.username)
+        username.send_keys(self.username)
+        time.sleep(5)
+        print("Username")
+        submit_form = driver.find_element(By.CLASS_NAME, "css-18t94o4.css-1dbjc4n.r-sdzlij.r-1phboty.r-rs99b7.r-ywje51.r-usiww2.r-2yi16.r-1qi8awa.r-1ny4l3l.r-ymttw5.r-o7ynqc.r-6416eg.r-lrvibr.r-13qz1uu")
         time.sleep(1)
-        print("Entered email")
-        password_form.send_keys(self.password)
-        time.sleep(1)
+        submit_form.click()
+        print("Advancing past username")
+        time.sleep(5)
+        password = driver.find_element(By.NAME, "password")
+        password.send_keys(self.password)
         print("Entered Password")
-        submit_form = driver.find_element(By.NAME, "login")
-        time.sleep(1)
+        submit_form = driver.find_element(By.CLASS_NAME, "css-18t94o4.css-1dbjc4n.r-sdzlij.r-1phboty.r-rs99b7.r-19yznuf.r-64el8z.r-1ny4l3l.r-1dye5f7.r-o7ynqc.r-6416eg.r-lrvibr")
         submit_form.click()
         print("Submitted")
         time.sleep(7)
-        #log_file = open("./Program Data/Logs/TW_AUTH_LOGS/log.txt", "w")
-        #Title will change to Twitter if logged in
-        if("log in" not in driver.title and "Log into" not in driver.title):
+
+        if("Home / Twitter" in driver.title):
             self.cookie = driver.get_cookies()
             if self.cookie is not None:
                 print("Log in success")
-                #pickle.dump(self.cookie, open("./Program Data/Logs/TW_AUTH_LOGS/TW_cookies.pkl", "wb"))
-                #log_file.write("SUCCESS")
-                #log_file.close()
+                pickle.dump(self.cookie, open("./Program Data/Logs/TW_AUTH_LOGS/TW_cookies.pkl", "wb"))
+                log_file.write("SUCCESS")
+                log_file.close()
                 driver.quit()
-                #encrypt_and_store(self, "TW")
+                encrypt_and_store(self, "TW")
                 print("DONE")
                 return True
         else:
