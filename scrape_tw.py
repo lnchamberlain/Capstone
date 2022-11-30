@@ -79,7 +79,7 @@ def get_urls():
     #Resolve region number into path
     #region_file = REGION_RESOLUTION_TABLE[int(sys.argv[1])] 
     #No regions split for csv, all alaska, no need for first arguement yet
-    region_file = "./Program Data/Regions/ALASKA_TW.csv"
+    region_file = "./Program Data/Regions/ALASKA_TW_TEST.csv"
     with open(region_file, newline='', encoding="utf-8") as csvfile:
         csv_data = csv.reader(csvfile, delimiter=',')
         for row in csv_data:
@@ -98,14 +98,13 @@ def get_keywords():
     lines = keywords_file.readlines()[7:]
     KEYWORDS = lines[0].split(",")
     # #Advanced search only support for IG
-    # for elem in KEYWORDS:
-    #     if("BEFORE" in elem) or ("AFTER" in elem) or ("+" in elem):
-    #         KEYWORDS.remove(elem)
+    for elem in KEYWORDS:
+         if("BEFORE" in elem) or ("AFTER" in elem) or ("+" in elem):
+             KEYWORDS.remove(elem)
     
 
 #Grabs cookie value from AUTH logs, rebuilds dictionary and sets global variable
 def get_cookie():
-    #ig_auth_log_file = open("./Program Data/Logs/TW_AUTH_LOGS/log.txt")
     global COOKIE
     cookies = pickle.load(open("./Program Data/Logs/TW_AUTH_LOGS/tw_cookies.pkl", "rb"))
     COOKIE = cookies
@@ -145,29 +144,21 @@ def scrape_location(driver, location, counter):
     print("Number {}/{}\n".format(counter, len(LOCATION_URLS)))
     l = []
     posts = []
-
+    global TOTAL_POSTS
     for word in KEYWORDS:
-        #########################################################################################################
-        #Edit Url and Keyword splits to get keyword before near:Location url
-        #########################################################################################################
         url_base = LOCATION_URLS[location].split("word")
         #add keyword to crafted url
         url = url_base[0] + word + url_base[1]
         driver.get(url)
-        time.sleep(0.2)
+        time.sleep(0.5)
         if("We didn't find any results" in driver.page_source):
+                temp_file.write("FOUND POSTS: 0\n")
+                temp_file.write("TOTAL POSTS: {}\n".format(TOTAL_POSTS))
                 print("FOUND POSTS: 0")
                 print("TOTAL FOUND POSTS: {}\n".format(TOTAL_POSTS))
                 print("\n*****************************************************************\n") 
                 return
-        ##################################################################################################
-        #This is where we need to replace class name with twitter version, is found in inspect element
-        ##################################################################################################
         try:
-            #div class for individual tweet seems to be css-1dbjc4n r-18u37iz, 
-            #the actual text of the tweet has the id="id__8w4fxvzadh", and the class of 
-            #class="css-901oao r-vlxjld r-37j5jr r-a023e6 r-16dba41 r-rjixqe r-bcqeeo r-bnwqim r-qvutc0"
-            #Tweets with images have the image in id="id__0l24lj9vejal", and class="css-1dbjc4n r-1ssbvtb r-1s2bzr4"
             WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, 'x9f619.x1n2onr6.x1ja2u2z.xdt5ytf.x193iq5w.xeuugli.x1r8uery.x1iyjqo2.xs83m0k.x78zum5.x1t2pt76')))
         except TimeoutException:
             print("Advacing to scrolling")
@@ -192,14 +183,10 @@ def scrape_location(driver, location, counter):
             prev_height = curr_height
     temp_file.write("Scrolled {} times\n".format(SCROLL_COUNT))
     s = BeautifulSoup(driver.page_source, 'html.parser')
-    f = open("TW_AUTOPSY_FILE.html", "w", encoding="utf-8")
-    f.write(s.prettify())
-    f.close()
-    sys.exit()
     ####################################################################################################
-    #Edit Class value
+    #Break up by tweets
     #######################################################################################################
-    l.append(s.find_all("div", {"class": "x1ja2u2z xh8yej3 x1n2onr6 x1yztbdb"}))
+    l.append(s.find_all("div", {"class": "css-1dbjc4n r-1iusvr4 r-16y2uox r-1777fci r-kzbkwu"}))
     for segment in l:
         for post in segment:
             posts.append(post)
@@ -239,20 +226,21 @@ def scrape_flagged_user(driver, username, counter):
     print("Number {}/{}\n".format(counter, len(FLAGGED_USERS)))
     l = []
     posts = []
+    global TOTAL_POSTS
     url = "https://www.twitter.com/" + username.strip()
     print(url)
     time.sleep(1)
     driver.get(url)
     try:
-        ###############################################################################################################################
-        #Edit class name value
+        ##############################################################################################################################
+        #Wait for page content to load
         ##############################################################################################################################
             WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, 'x9f619 x1n2onr6 x1ja2u2z xdt5ytf x193iq5w xeuugli x1r8uery x1iyjqo2 xs83m0k x78zum5 x1t2pt76')))
     except TimeoutException:
             print("Advacing to scrolling")
     prev_height = driver.execute_script(GET_CURRENT_SCROLL_HEIGHT)
     #No results case
-    if("This Page Isn't Available" in driver.page_source):
+    if("Try searching for another." in driver.page_source):
         print("FOUND POSTS: 0")
         print("TOTAL FOUND POSTS: {}\n".format(TOTAL_POSTS))
         print("\n*****************************************************************\n") 
@@ -272,10 +260,10 @@ def scrape_flagged_user(driver, username, counter):
 
     temp_file.write("Scrolled {} times\n".format(SCROLL_COUNT))
     s = BeautifulSoup(driver.page_source, 'html.parser')
-    ###########################################################################################################
-    #Edit Class name Value
-    #####################################################################################################################
-    l.append(s.find_all("div", {"class": "x1ja2u2z xh8yej3 x1n2onr6 x1yztbdb"}))
+    ####################################################################################################
+    #Break up by tweets
+    #######################################################################################################
+    l.append(s.find_all("div", {"class": "css-1dbjc4n r-1iusvr4 r-16y2uox r-1777fci r-kzbkwu"}))
     for segment in l:
         for post in segment:
             posts.append(post)
@@ -302,119 +290,92 @@ def format_found_post(flagged_post, driver, mode):
     #GRAB THE VALUES WE WANT FROM THE FLAGGED POST, add to array of html code
     global HTML_CODE
     AUTHOR = ''
-    LOCATION = ''
     TIMESTAMP = ''
     CAPTION = ''
     POST_LINK = ''
-    ACCOUNT_LINK = ''
+    AUTHOR_LINK = ''
     IMG_PATH_HTML = ''
     img_hash = ''
     html_str = ''
-    TYPE = None
     #############################################################################################################
-    #Edit Class name value
+    #Grab values of interest
     #####################################################################################################################
-    links = flagged_post.find_all("a", {"class":"x1i10hfl xjbqb8w x6umtig x1b1mbwd xaqea5y xav7gou x9f619 x1ypdohk xt0psk2 xe8uvvx xdj266r x11i5rnm xat24cr x1mh8g0r xexx8yu x4uap5 x18d9i69 xkhd6sd x16tdsg8 x1hl2dhg xggy1nq x1a2a7pz xt0b8zv xzsf02u x1s688f"})
-    if(len(links)>0):
-        AUTHOR = links[0].get_text()
-        account_tag = str(links[0])
-        href_index = account_tag.find(" href=")
-        href_end = account_tag.find("?", href_index)
-        ACCOUNT_LINK = account_tag[(href_index + 7):href_end]
-        LOCATION = links[-1].get_text()
-        ############################################################################################
-        #Edit Id value"
-        ############################################################################################
-        times = flagged_post.find_all("span", {"id": "jsc_c_k9"})
-    if(len(times) > 1):
-        timestamp_text = times[0].get_text()
+    l = flagged_post.find_all("span", {"class": "css-901oao css-16my406 css-1hf3ou5 r-poiln3 r-bcqeeo r-qvutc0"})
+    if len(l) > 0: 
+        AUTHOR = l[0].get_text()
     else:
-        timestamp_text = ''
-    timestamp_obj, unit = convert_timestamp_text(timestamp_text)
-    if(unit == 'h' or unit == 'm'):
-        TIMESTAMP = timestamp_obj.strftime("%m/%d/%Y %H:%M")
-    if(unit == 'no_formatting'):
-        TIMESTAMP = timestamp_obj
-    if(unit == 'd'):
-        TIMESTAMP = timestamp_obj.strftime("%m/%d/%Y")
-    captions = flagged_post.find_all("span", {"class":"x193iq5w xeuugli x13faqbe x1vvkbs x1xmvt09 x1lliihq x1s928wv xhkezso x1gmr53x x1cpjm7i x1fgarty x1943h6x xudqn12 x3x7a5m x6prxxf xvq8zen xo1l8bm xzsf02u x1yc453h"})
-    if(len(captions)>0):
-        CAPTION = captions[0].get_text()
-   #While we figure out how to split them, grab links for only posts with a single image
-    img_arr = flagged_post.find_all("img", {"class": "x1ey2m1c xds687c x5yr21d x10l6tqk x17qophe x13vifvy xh8yej3 xl1xv1r"})
-    if(len(img_arr)>0):
-        img_tag = str(img_arr[0])
-        src_index = img_tag.find(" src=")
-        src_end = img_tag.find('width=', src_index)    
-        img_url = img_tag[(src_index + 6):src_end -2]
-        img_url = img_url.replace("stp=dst-jpg_p843x403&amp;", "")
-        img_url = img_url.replace("amp;", "")
-        driver.get(img_url)
-        time.sleep(0.25)
-        if("URL signature mismatch" in driver.page_source):
-            IMG_PATH_HTML = ''
+        AUTHOR = ''
+       
+    for i in flagged_post.findAll('time'):
+        if(i.has_attr('datetime')):
+            TIMESTAMP = i['datetime']
+
         else:
-            driver.save_screenshot("./Program Data/temp_img.png")
-            img_hash = hashlib.md5(Image.open("./Program Data/temp_img.png").tobytes())
-            hash_str = img_hash.hexdigest()
-            img_path = "./Program Data/Images/ImagesTW/" + hash_str + ".png"
-            IMG_PATH_HTML = str("../../../Program Data/Images/ImagesTW/"+ hash_str + ".png")
-            if(not os.path.exists(img_path)):
+            TIMESTAMP = ''
+            POST_LINK = ''
+
+    l = flagged_post.find_all("div", {"class": "css-901oao css-1hf3ou5 r-14j79pv r-18u37iz r-37j5jr r-a023e6 r-16dba41 r-rjixqe r-bcqeeo r-qvutc0"})
+    if(len(l)>0):
+        AUTHOR_LINK = "https://twitter.com/"+ l[0].get_text()[1:]
+    else:
+        AUTHOR_LINK = ''
+
+    l = flagged_post.find_all("div", {"class": "css-901oao r-18jsvk2 r-37j5jr r-a023e6 r-16dba41 r-rjixqe r-bcqeeo r-bnwqim r-qvutc0"})
+    if(len(l)>0):
+        CAPTION = l[0].get_text()
+    else:
+        CAPTION = ''
+
+    l = flagged_post.find_all("a", {"class": "css-4rbku5 css-18t94o4 css-901oao r-14j79pv r-1loqt21 r-xoduu5 r-1q142lx r-1w6e6rj r-37j5jr r-a023e6 r-16dba41 r-9aw3ui r-rjixqe r-bcqeeo r-3s2u2q r-qvutc0"})
+    if(len(l)>0):
+        link_str = str(l[0])
+        href_index = link_str.find(" href=")
+        href_end = link_str.find("role", href_index)
+        POST_LINK = "https://twitter.com" + link_str[(href_index + 7):href_end - 2]
+
+    else:
+        POST_LINK = ''
+
+    img = flagged_post.find_all("img", {"alt": "Image"})
+    if(len(img)>0):
+       img_str = str(img[0])
+       href_index = link_str.find(" src=")
+       href_end = link_str.find("class", href_index)
+       img_url = img_str[(href_index + 59): href_end - 2]
+       img_url = img_url.replace("amp;", "")
+       driver.get(img_url)
+       time.sleep(0.25)
+       
+       #     IMG_PATH_HTML = ''
+       driver.save_screenshot("./Program Data/temp_img.png")
+       img_hash = hashlib.md5(Image.open("./Program Data/temp_img.png").tobytes())
+       hash_str = img_hash.hexdigest()
+       img_path = "./Program Data/Images/ImagesTW/" + hash_str + ".png"
+       IMG_PATH_HTML = str("../../../Program Data/Images/ImagesTW/"+ hash_str + ".png")
+       if(not os.path.exists(img_path)):
                 shutil.copy("./Program Data/temp_img.png", img_path)
             #Get rid of temporary image
-            os.remove("./Program Data/temp_img.png")
-         
-    else:
-        IMG_PATH_HTML = 'MULTIPLE IMAGES OR VIDEO'    
-    TYPE = "Image"
-    if(TYPE == "Image"):
-        post_links = flagged_post.find_all("a", {"class":"x1i10hfl x1qjc9v5 xjbqb8w xjqpnuy xa49m3k xqeqjp1 x2hbi6w x13fuv20 xu3j5b3 x1q0q8m5 x26u7qi x972fbf xcfux6l x1qhh985 xm0m39n x9f619 x1ypdohk xdl72j9 x2lah0s xe8uvvx xdj266r x11i5rnm xat24cr x1mh8g0r x2lwn1j xeuugli xexx8yu x4uap5 x18d9i69 xkhd6sd x1n2onr6 x16tdsg8 x1hl2dhg xggy1nq x1ja2u2z x1t137rt x1o1ewxj x3x9cwd x1e5q0jg x13rtm0m x1q0g3np x87ps6o x1lku1pv x1a2a7pz x1lliihq x1pdlv7q"})
-        if(len(post_links) > 0):
-            post_links_str = str(post_links[0])
-            href_index = post_links_str.find(" href=")
-            href_end = post_links_str.find("&", href_index)
-            POST_LINK = post_links_str[(href_index + 7):href_end]
-            print("AUTHOR: {}\nLOCATION: {}\nTIMESTAMP: {}\nCAPTION: {}\nLINK: {}\nACCOUNT_LINK: {}\nMEDIA_LINK: {}\n".format(AUTHOR, LOCATION, TIMESTAMP, CAPTION, POST_LINK, ACCOUNT_LINK, IMG_PATH_HTML))
-            html_str += "<td>" + AUTHOR + "</td><td>" + LOCATION + "</td><td>" + CAPTION + "</td><td><a href=" + POST_LINK + ">link</a><td><a href=" + ACCOUNT_LINK + ">link</a><td><img style='max-width:200px;' src='" + IMG_PATH_HTML + "'></td></tr>"
-            if(mode == "KEYWORDS"):
-                HTML_CODE_KEYWORDS.append(html_str)
-            if(mode == "FLAGGED_USERS"):
-                HTML_CODE_FLAGGED_USERS.append(html_str)
-        else:
-             POST_LINK = "MULTIPLE IMAGES OR VIDEO"
-             print("AUTHOR: {}\nLOCATION: {}\nTIMESTAMP: {}\nCAPTION: {}\nLINK: {}\nACCOUNT_LINK: {}\nMEDIA_LINK: {}\n".format(AUTHOR, LOCATION, TIMESTAMP, CAPTION, POST_LINK, ACCOUNT_LINK, IMG_PATH_HTML))
-             html_str += "<td>" + AUTHOR + "</td><td>" + LOCATION + "</td><td>" + CAPTION + "</td><td>" + '' + "</td><td><a href=" + ACCOUNT_LINK + ">link</a><td>" + POST_LINK + "</td></tr>"
-             if(mode == "KEYWORDS"):
-                HTML_CODE_KEYWORDS.append(html_str)
-             if(mode == "FLAGGED_USERS"):
-                HTML_CODE_FLAGGED_USERS.append(html_str)
+       os.remove("./Program Data/temp_img.png")
+      
+       #IMG_PATH_HTML = img_url
+       print(IMG_PATH_HTML)
+       print("AUTHOR: {}\nTIMESTAMP: {}\nCAPTION: {}\nLINK: {}\nACCOUNT_LINK: {}\nMEDIA_LINK: {}\n".format(AUTHOR, TIMESTAMP, CAPTION, POST_LINK, AUTHOR_LINK, IMG_PATH_HTML))
+       html_str += "<td>" + AUTHOR + "</td><td>" + TIMESTAMP + "</td><td>" + CAPTION + "</td><td><a href=" + POST_LINK + "> Tweet Link</a><td><a href=" + AUTHOR_LINK + ">Account Link</td><td><img style='max-width:200px;' src='" + IMG_PATH_HTML + "'></td></tr>"
+       if(mode == "KEYWORDS"):
+             HTML_CODE_KEYWORDS.append(html_str)
+       if(mode == "FLAGGED_USERS"):
+             HTML_CODE_FLAGGED_USERS.append(html_str)
 
-
-'''
-#Takes in a time string and returns a datetime object (example: '1d' -> datetime for yesterday)
-def convert_timestamp_text(text):
-    if(len(text)>1):
-        unit = text[-1]
     else:
-        return text, "no_formatting"
-    #Posts older than a few days will be listed as a date with a time or just a date, in that case return the given string
-    if(unit == 's'):
-        number = float(text[:-1])
-        final_time = datetime.datetime.now() - datetime.timedelta(seconds=number)
-    elif(unit == 'm'):
-        number = float(text[:-1])
-        final_time = datetime.datetime.now() - datetime.timedelta(minutes=number)
-    elif(unit == 'h'):
-        number = float(text[:-1])
-        final_time = datetime.datetime.now() - datetime.timedelta(hours=number)
-    elif(unit == 'd'):
-        number = float(text[:-1])
-        final_time = datetime.datetime.now() - datetime.timedelta(weeks=(number / 7))
-    else:
-        unit = 'no_formatting'
-        final_time = text
-    return final_time, unit
-'''
+       IMG_PATH_HTML = "No Image Media"
+       print("AUTHOR: {}\nTIMESTAMP: {}\nCAPTION: {}\nLINK: {}\nACCOUNT_LINK: {}\nMEDIA_LINK: {}\n".format(AUTHOR, TIMESTAMP, CAPTION, POST_LINK, AUTHOR_LINK, IMG_PATH_HTML))
+       html_str += "<td>" + AUTHOR + "</td><td>" + TIMESTAMP + "</td><td>" + CAPTION + "</td><td><a href=" + POST_LINK + ">Tweet Link</a><td><a href=" + AUTHOR_LINK + ">Account Link</td><td>No Image Media</td></tr>"
+       if(mode == "KEYWORDS"):
+             HTML_CODE_KEYWORDS.append(html_str)
+       if(mode == "FLAGGED_USERS"):
+             HTML_CODE_FLAGGED_USERS.append(html_str)
+        
+   
 
 
 
@@ -431,7 +392,7 @@ def write_html_to_file(mode):
         HTML_CODE_KEYWORDS = list(HTML_CODE_KEYWORDS)
         HTML_CODE_KEYWORDS.insert(0, "<html><head><link rel='stylesheet' href='../../../styles.css'></head><body><table>\n")
         HTML_CODE_KEYWORDS.insert(1, "<h1 style='text-align:center;'>" + SCAN_NAME_KEYWORDS + "</h1>")
-        HTML_CODE_KEYWORDS.insert(2, "<tr><th>Post Author</th><th>Location</th><th>Caption</th><th>Post Link</th><th>Account Link</th><th>Media</th></tr>")
+        HTML_CODE_KEYWORDS.insert(2, "<tr><th>Post Author</th><th>Timestamp</th><th>Caption</th><th>Post Link</th><th>Account Link</th><th>Media</th></tr>")
         HTML_CODE_KEYWORDS.append("</table></body></html>\n")
         for line in HTML_CODE_KEYWORDS:
             output_file.write(line)
@@ -446,7 +407,7 @@ def write_html_to_file(mode):
         HTML_CODE_FLAGGED_USERS = list(HTML_CODE_FLAGGED_USERS)
         HTML_CODE_FLAGGED_USERS.insert(0, "<html><head><link rel='stylesheet' href='../../../styles.css'></head><body><table>\n")
         HTML_CODE_FLAGGED_USERS.insert(1, "<h1 style='text-align:center;'>" + SCAN_NAME_FLAGGED + "</h1>")
-        HTML_CODE_FLAGGED_USERS.insert(2, "<tr><th>Post Author</th><th>Location</th><th>Caption</th><th>Post Link</th><th>Account Link</th><th>Media</th></tr>")
+        HTML_CODE_FLAGGED_USERS.insert(2, "<tr><th>Post Author</th><th>Timestamp</th><th>Caption</th><th>Post Link</th><th>Account Link</th><th>Media</th></tr>")
         HTML_CODE_FLAGGED_USERS.append("</table></body></html>\n")
         for line in HTML_CODE_FLAGGED_USERS:
             output_file.write(line)
@@ -471,7 +432,7 @@ def main():
     clear_log.close()
     chrome_options = Options()
     #--headless makes the window not pop up
-    #chrome_options.add_argument("--headless")
+    chrome_options.add_argument("--headless")
     driver = selenium.webdriver.Chrome("./chromedriver", options=chrome_options)
     driver.get("https://twitter.com")
     for c in COOKIE:
@@ -485,7 +446,7 @@ def main():
         time.sleep(delay)
         scrape_location(driver, place, COUNTER)
         COUNTER += 1
-    
+
     COUNTER = 1
     for user in FLAGGED_USERS:
         delay = random.randint(200, 3000)

@@ -1184,12 +1184,8 @@ void AddMenu(HWND hWnd)
 
     // Populate drop-down menus
     AppendMenu(menuMainSubFile, MF_STRING, IDM_EXIT, L"Exit");
-    AppendMenu(menuMainSubHelp, MF_STRING, FILE_HELP_SCAN, L"Scan Help");
-    AppendMenu(menuMainSubHelp, MF_STRING, FILE_HELP_LOGIN, L"Login Help");
-    AppendMenu(menuMainSubHelp, MF_STRING, FILE_HELP_WORDLIST, L"Wordlist Help");
     //Populate primary menu items
     AppendMenu(menuMain, MF_POPUP, (UINT_PTR)menuMainSubFile, L"File");
-    AppendMenu(menuMain, MF_POPUP, (UINT_PTR)menuMainSubHelp, L"Help");
     AppendMenu(menuMain, MF_STRING, FILE_MENU_ABOUT, L"About");
     SetMenu(hWnd, menuMain);
 }
@@ -1509,8 +1505,8 @@ void lauchScanners(bool fbSet, bool igSet, bool twSet)
         std::wstring widestr = std::wstring(shellOperation.begin(), shellOperation.end());
         const wchar_t* widecstr = widestr.c_str();
 
-        WinExec((LPCSTR)shellOperation.c_str(), SW_SHOW);
-        SetWindowTextW(instagramResultsSummary, L"IG SET....");
+        WinExec((LPCSTR)shellOperation.c_str(), SW_HIDE);
+        SetWindowTextW(instagramResultsSummary, L"Scanning....");
     }
     if (twSet)
     {
@@ -1634,7 +1630,8 @@ void readTWScrapeLog()
         {
             while (std::getline(readOutputLog, line))
             {
-                full_log_text.append("\n");
+                full_log_text.append("\r\n");
+                line += "\r\n";
                 full_log_text.append(line);
                 if (strcmp(line.c_str(), "SCAN COMPELTE") == 0) {
                     END_THREAD = true;

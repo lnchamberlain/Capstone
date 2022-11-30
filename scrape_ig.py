@@ -216,15 +216,16 @@ def scrape_location(COUNTER, NUM_LOCATIONS, session, location):
     print(f"Location {COUNTER}/{NUM_LOCATIONS}")
     temp_file.write("Location {}/{}\n".format(COUNTER, NUM_LOCATIONS))
     #Request JSON data at the address by appending the parameters /?__a=1
-    response = session.get(LOCATION_URLS[location] + "/?__a=1")
-    print(response.content)
+    response = session.get(LOCATION_URLS[location] + "?__a=1&__d=dis")
+    #print(response.json())
     #Skip location if error encountered
     if(response.status_code != OK):
         print("Error")
         print(response.status_code)
         if(response.status_code == 401):
             f = open("./Program Data/Logs/IG_SCRAPE_LOGS/log.txt", "w")
-            f.write("Permissions Error\nAttempting reauthenticating...\n")
+            f.write("Permissions Error\nWill Reauthenticate in 24hrs...\n")
+            time.sleep(86400)
             success = reauth()
             if(success):
                 f.write("Successfully reauthenticated\n")
@@ -234,6 +235,8 @@ def scrape_location(COUNTER, NUM_LOCATIONS, session, location):
         return
     print(f"Response Status is {response.status_code}")
     temp_file.write("Response Status is {}\n".format(response.status_code))
+    print(response.content)
+    #response_dict = response.json()
     response_dict = json.loads(response.content)
     sections = response_dict["native_location_data"]["recent"]["sections"]
     for section in sections:
