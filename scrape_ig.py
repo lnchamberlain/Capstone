@@ -225,6 +225,7 @@ def scrape_location(COUNTER, NUM_LOCATIONS, session, location):
         if(response.status_code == 401):
             f = open("./Program Data/Logs/IG_SCRAPE_LOGS/log.txt", "w")
             f.write("Permissions Error\nWill Reauthenticate in 24hrs...\n")
+            f.close()
             time.sleep(86400)
             success = reauth()
             if(success):
