@@ -206,7 +206,7 @@ def scrape_location(COUNTER, NUM_LOCATIONS, session, location):
         Note that in most cases, what is printed to the terminal matches what is printed to the GUI, so print statements are often followed by a temp file write of the
         same or similiar data
         write to temp file rather than the log file to limit the number of writes happening to log.txt as this is is where the GUI reads, avoid race conditions'''
-    temp_file = open("./Program Data/Logs/IG_SCRAPE_LOGS/temp.txt", "w", encoding="utf-8")
+    temp_file = open("./Program Data/Logs/IG_SCRAPE_LOGS/temp_1.txt", "w", encoding="utf-8")
     all_posts = []
     #Posts are broken down into 'media' sub dictionaries
     media_arrays =[]
@@ -226,13 +226,13 @@ def scrape_location(COUNTER, NUM_LOCATIONS, session, location):
             f = open("./Program Data/Logs/IG_SCRAPE_LOGS/log.txt", "w")
             f.write("Permissions Error\nWill Reauthenticate in 24hrs...\n")
             f.close()
-            time.sleep(86400)
-            success = reauth()
-            if(success):
-                f.write("Successfully reauthenticated\n")
-            else:
-                f.write("Reauth Fail\n")
-            f.close()
+            #time.sleep(86400)
+            #success = reauth()
+            #if(success):
+            #    f.write("Successfully reauthenticated\n")
+            #else:
+            #    f.write("Reauth Fail\n")
+            #f.close()
         return
     print(f"Response Status is {response.status_code}")
     temp_file.write("Response Status is {}\n".format(response.status_code))
@@ -342,9 +342,9 @@ def scrape_location(COUNTER, NUM_LOCATIONS, session, location):
     temp_file.write("Flagged Posts: {}\nTotal Flagged Posts: {}\n".format(flagged, len(FLAGGED_POSTS)))
     #copy temp file into log file
     temp_file.close()
-    shutil.copy("./Program Data/Logs/IG_SCRAPE_LOGS/temp.txt", "./Program Data/Logs/IG_SCRAPE_LOGS/log.txt")
+    shutil.copy("./Program Data/Logs/IG_SCRAPE_LOGS/temp_1.txt", "./Program Data/Logs/IG_SCRAPE_LOGS/log.txt")
         #Get rid of temporary image
-    os.remove("./Program Data/Logs/IG_SCRAPE_LOGS/temp.txt")
+    os.remove("./Program Data/Logs/IG_SCRAPE_LOGS/temp_1.txt")
     print("\n*****************************************************************\n")
   
    

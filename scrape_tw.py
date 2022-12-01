@@ -79,7 +79,7 @@ def get_urls():
     #Resolve region number into path
     #region_file = REGION_RESOLUTION_TABLE[int(sys.argv[1])] 
     #No regions split for csv, all alaska, no need for first arguement yet
-    region_file = "./Program Data/Regions/ALASKA_TW_TEST.csv"
+    region_file = "./Program Data/Regions/ALASKA_TW.csv"
     with open(region_file, newline='', encoding="utf-8") as csvfile:
         csv_data = csv.reader(csvfile, delimiter=',')
         for row in csv_data:
@@ -369,7 +369,7 @@ def format_found_post(flagged_post, driver, mode):
     else:
        IMG_PATH_HTML = "No Image Media"
        print("AUTHOR: {}\nTIMESTAMP: {}\nCAPTION: {}\nLINK: {}\nACCOUNT_LINK: {}\nMEDIA_LINK: {}\n".format(AUTHOR, TIMESTAMP, CAPTION, POST_LINK, AUTHOR_LINK, IMG_PATH_HTML))
-       html_str += "<td>" + AUTHOR + "</td><td>" + TIMESTAMP + "</td><td>" + CAPTION + "</td><td><a href=" + POST_LINK + ">Tweet Link</a><td><a href=" + AUTHOR_LINK + ">Account Link</td><td>No Image Media</td></tr>"
+       html_str += "<td>" + AUTHOR + "</td><td>" + TIMESTAMP + "</td><td>" + CAPTION + "</td><td><a href=" + POST_LINK + ">Tweet Link</a><td><a href=" + AUTHOR_LINK + ">Account Link</td><td></td></tr>"
        if(mode == "KEYWORDS"):
              HTML_CODE_KEYWORDS.append(html_str)
        if(mode == "FLAGGED_USERS"):
@@ -392,7 +392,7 @@ def write_html_to_file(mode):
         HTML_CODE_KEYWORDS = list(HTML_CODE_KEYWORDS)
         HTML_CODE_KEYWORDS.insert(0, "<html><head><link rel='stylesheet' href='../../../styles.css'></head><body><table>\n")
         HTML_CODE_KEYWORDS.insert(1, "<h1 style='text-align:center;'>" + SCAN_NAME_KEYWORDS + "</h1>")
-        HTML_CODE_KEYWORDS.insert(2, "<tr><th>Post Author</th><th>Timestamp</th><th>Caption</th><th>Post Link</th><th>Account Link</th><th>Media</th></tr>")
+        HTML_CODE_KEYWORDS.insert(2, "<tr><th>Post Author</th><th>Timestamp</th><th>Caption</th><th>Post Link</th><th>Account Link</th><th>Image</th></tr>")
         HTML_CODE_KEYWORDS.append("</table></body></html>\n")
         for line in HTML_CODE_KEYWORDS:
             output_file.write(line)
@@ -407,7 +407,7 @@ def write_html_to_file(mode):
         HTML_CODE_FLAGGED_USERS = list(HTML_CODE_FLAGGED_USERS)
         HTML_CODE_FLAGGED_USERS.insert(0, "<html><head><link rel='stylesheet' href='../../../styles.css'></head><body><table>\n")
         HTML_CODE_FLAGGED_USERS.insert(1, "<h1 style='text-align:center;'>" + SCAN_NAME_FLAGGED + "</h1>")
-        HTML_CODE_FLAGGED_USERS.insert(2, "<tr><th>Post Author</th><th>Timestamp</th><th>Caption</th><th>Post Link</th><th>Account Link</th><th>Media</th></tr>")
+        HTML_CODE_FLAGGED_USERS.insert(2, "<tr><th>Post Author</th><th>Timestamp</th><th>Caption</th><th>Post Link</th><th>Account Link</th><th>Image</th></tr>")
         HTML_CODE_FLAGGED_USERS.append("</table></body></html>\n")
         for line in HTML_CODE_FLAGGED_USERS:
             output_file.write(line)
