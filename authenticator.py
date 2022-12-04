@@ -127,7 +127,7 @@ class IG_AUTH:
         #    userAgent = userAgent.replace("\n","")
         chrome_options = Options()
         #--headless makes the window not pop up
-        chrome_options.add_argument("--headless")
+        #chrome_options.add_argument("--headless")
         
         driver = selenium.webdriver.Chrome("./chromedriver", options=chrome_options)
  

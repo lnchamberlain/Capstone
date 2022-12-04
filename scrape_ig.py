@@ -22,6 +22,12 @@ import shutil
 import os
 import pickle
 import authenticator
+import selenium
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.by import By
+from selenium.common.exceptions import TimeoutException
+from selenium.webdriver.chrome.options import Options
 
 
 
@@ -137,18 +143,9 @@ def get_cookie():
     '''Reads cookie value from pickle file, sets session cookies then returns session
     Cookie value is written to pickle file from the authenticator program, users can't move on to 
     the scraper until that value is set'''
-    session = requests.Session()
-    cookies_file = None
-    try:
-        cookies_file = open("./Program Data/Logs/IG_AUTH_LOGS/ig_cookies.pkl", "rb")
-    except:
-        print("Error opening cookie file")
-        sys.exit()
-    cookies = pickle.load(cookies_file)
-    c = cookies[0]
-    session.cookies.set(c['name'], c['value'])
-    cookies_file.close()
-    return session
+    global COOKIE
+    cookies = pickle.load(open("./Program Data/Logs/IG_AUTH_LOGS/ig_cookies.pkl", "rb"))
+    COOKIE = cookies
 
 
 
@@ -200,7 +197,7 @@ def reauth():
     
 
  
-def scrape_location(COUNTER, NUM_LOCATIONS, session, location):
+def scrape_location(COUNTER, NUM_LOCATIONS, location, driver):
     '''Requests data from location url, formats the return, searches captions for keywords and flagged post authors, sends to format_flagged_post if flagged
         Print statements are for debugging purposes, information to be printed to the GUI is written to the temp file that then is written into a log the GUI reads from
         Note that in most cases, what is printed to the terminal matches what is printed to the GUI, so print statements are often followed by a temp file write of the
@@ -215,31 +212,20 @@ def scrape_location(COUNTER, NUM_LOCATIONS, session, location):
     temp_file.write(location + "\n")
     print(f"Location {COUNTER}/{NUM_LOCATIONS}")
     temp_file.write("Location {}/{}\n".format(COUNTER, NUM_LOCATIONS))
-    #Request JSON data at the address by appending the parameters /?__a=1
-    response = session.get(LOCATION_URLS[location] + "?__a=1&__d=dis")
-    #print(response.json())
-    #Skip location if error encountered
-    if(response.status_code != OK):
-        print("Error")
-        print(response.status_code)
-        if(response.status_code == 401):
-            f = open("./Program Data/Logs/IG_SCRAPE_LOGS/log.txt", "w")
-            f.write("Permissions Error\nWill Reauthenticate in 24hrs...\n")
-            f.close()
-            #time.sleep(86400)
-            #success = reauth()
-            #if(success):
-            #    f.write("Successfully reauthenticated\n")
-            #else:
-            #    f.write("Reauth Fail\n")
-            #f.close()
+    driver.get(LOCATION_URLS[location]+ "/?__a=1&__d=dis")
+
+    time.sleep(5)
+    try:
+        response_dict = json.loads(driver.find_element(By.TAG_NAME, 'body').text)
+    except:
+        print("JSON decode Error, skipping location")
         return
-    print(f"Response Status is {response.status_code}")
-    temp_file.write("Response Status is {}\n".format(response.status_code))
-    print(response.content)
-    #response_dict = response.json()
-    response_dict = json.loads(response.content)
-    sections = response_dict["native_location_data"]["recent"]["sections"]
+        
+    sections = response_dict.get("native_location_data")
+    if(sections is not None):
+        sections = sections["recent"]["sections"]
+    else:
+        return
     for section in sections:
         try:
            media_arrays.append(section["layout_content"]["medias"])
@@ -426,7 +412,7 @@ def write_html_to_file():
 def main():
     get_urls()
     get_keywords()
-    session = get_cookie()
+    get_cookie()
     get_output_dir()
     get_flagged_users()
     global SCAN_NAME 
@@ -438,6 +424,13 @@ def main():
     clear_log.close()
     COUNTER = 1
     NUM_LOCATIONS = len(LOCATION_URLS)
+    chrome_options = Options()
+    #chrome_options.add_argument("--headless")
+    driver = selenium.webdriver.Chrome("./chromedriver", options=chrome_options)
+    driver.get("https://instagram.com")
+    for c in COOKIE:
+        driver.add_cookie(c)
+
     
     #Each location in LOCATION_URLS is scraped and checked for keywords and logical conditions, flaggged post information is written into an array of HTML strings
     for place in LOCATION_URLS:
@@ -446,7 +439,7 @@ def main():
         delay /= 1000
         print("delay is {}".format(delay))
         time.sleep(delay)
-        scrape_location(COUNTER, NUM_LOCATIONS, session, place)
+        scrape_location(COUNTER, NUM_LOCATIONS, place, driver)
         COUNTER += 1
     
     #All the flagged post information has been formatted and is in array of HTML strings, write to report file
@@ -455,7 +448,6 @@ def main():
     log_file = open("./Program Data/Logs/IG_SCRAPE_LOGS/log.txt", "w")
     log_file.write("TOTAL SCRAPED POSTS: {}\nTOTAL FLAGGED POSTS: {}\nSCAN COMPLETE".format(TOTAL_POSTS, FOUND_FLAGGED))
     log_file.close()
-    session.close()
 
 
 

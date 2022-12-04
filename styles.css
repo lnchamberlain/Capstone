@@ -1,24 +1,36 @@
 *
 {
 	font-family: sans-serif;
+	font-size: 30;
 	
 }
 
-
+h1
+{
+	font-size:48;
+}
 table, th, td
 {
 	
 	vertical-align:top;
 	border: 1px solid black;
+	
 }
 table
 {	
 	width:100%
-	border-collapse: collapse;
+	
+	table-layout: fixed;
+	white-space:normal;
 }
 th, td
 {
 	padding:3px;
+	
+}
+
+td{
+    word-wrap:break-word
 }
 	
 	

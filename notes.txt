@@ -1,3 +1,0 @@
-HFONT font
-SendMessage(hwnd, WM_SETFONT, WPARAM(font), TRUE);
-

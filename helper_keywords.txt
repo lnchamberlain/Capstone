@@ -1,8 +1,0 @@
-**************************************************************************************************************************************************************************************************************************************************************************************
-
-Enter keywords seperated by commas --------------- Example: To find posts that mention cats or dogs or monkeys, use terms "cats, dogs, monkeys"
-To AND words together: + -------------------------------- Example: To find posts that mention cats and dogs or lemurs and monkeys, use term "cats+dogs, lemurs+monkeys"
-To set time limit: before, after in MM/DD/YYYY ----  Example: To find posts that mention cats posted after January 1, 1999, use term "cats after 01/01/1999", to find posts that mention cats before January 1, 1999, use term "cats before 01/01/1999"
-
-****************************************************************************************************************************************************************************************************************************************************************************************
-word+anotherword, word after 02/18/1999,
