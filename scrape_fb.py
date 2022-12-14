@@ -72,17 +72,15 @@ def get_keywords():
     keywords_file = open("./Program Data/Wordlists/keywords.txt", "r+")
     global KEYWORDS
     lines = keywords_file.readlines()[7:]
-    KEYWORDS = lines[0].split(",")
-    #Advanced search only support for IG
-    for elem in KEYWORDS:
-        if("BEFORE" in elem) or ("AFTER" in elem) or ("+" in elem):
-            KEYWORDS.remove(elem)
+    line = str(lines[0]).split(",")
+    for word in line:
+        words = word.split(" ")
+        KEYWORDS.append(words[0])
  
     
 
 #Grabs cookie value from AUTH logs, rebuilds dictionary and sets global variable
 def get_cookie():
-    fb_auth_log_file = open("./Program Data/Logs/FB_AUTH_LOGS/log.txt")
     global COOKIE
     cookies = pickle.load(open("./Program Data/Logs/FB_AUTH_LOGS/fb_cookies.pkl", "rb"))
     COOKIE = cookies
@@ -104,7 +102,6 @@ def get_flagged_users():
     flagged_users_file = open("./Program Data/FlaggedUsers/FBFlaggedUsers/fb_flagged_users.txt", "r+")
     global FLAGGED_USERS
     FLAGGED_USERS = flagged_users_file.read().split(",")
-
 
 
 def reauth():
@@ -185,9 +182,6 @@ def scrape_location(driver, location, counter):
             prev_height = curr_height
     temp_file.write("Scrolled {} times\n".format(SCROLL_COUNT))
     s = BeautifulSoup(driver.page_source, 'html.parser')
-   # DELETE_THIS = open("./FB_AUTOPSY.html", "w", encoding="utf-8")
-    #ELETE_THIS.write(s.prettify())
-    #DELETE_THIS.close()
     
     l.append(s.find_all("div", {"class": "x1yztbdb x1n2onr6 xh8yej3 x1ja2u2z"})) #NEW: x1yztbdb x1n2onr6 xh8yej3 x1ja2u2z OLD: x1ja2u2z xh8yej3 x1n2onr6 x1yztbdb
     print("L has {} posts ".format(len(l)))
@@ -208,9 +202,6 @@ def scrape_location(driver, location, counter):
        format_found_post(post, driver, "KEYWORDS")
        
     print("\n*****************************************************************\n")
-
-
-
 
 
      #Requests data from location url, formats the return, searches captions and comments for keywords, adds posts to flagged posts
@@ -278,9 +269,6 @@ def scrape_flagged_user(driver, username, counter):
        format_found_post(post, driver, "FLAGGED_USERS")
        
     print("\n*****************************************************************\n")
-
-
-
 
 #Requests the full info for a flagged post
 def format_found_post(flagged_post, driver, mode):
@@ -460,7 +448,7 @@ def main():
     clear_log.close()
     chrome_options = Options()
     #--headless makes the window not pop up
-    #chrome_options.add_argument("--headless")
+    chrome_options.add_argument("--headless")
     driver = selenium.webdriver.Chrome("./chromedriver", options=chrome_options)
     driver.get("https://facebook.com")
     for c in COOKIE:

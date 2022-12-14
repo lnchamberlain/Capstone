@@ -16,7 +16,6 @@
 #include <shellapi.h>
 #include <fstream>
 #include <string>
-#include <Python.h>
 #include <conio.h>
 #include <fstream>
 #include <algorithm>
@@ -229,13 +228,10 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    HWND hWnd = CreateWindowW(szWindowClass, L"UnderCover Recovery", WS_OVERLAPPED | WS_MINIMIZEBOX | WS_SYSMENU,
       200, 100, 1200, 850, nullptr, nullptr, hInstance, nullptr);
    //Main Window Coordinates (0,0) upper left, (1200, 800) lower right
-   //BOOL USE_DARK_MODE = true;
-   //BOOL SET_IMMERSIVE_DARK_MODE_SUCCESS = SUCCEEDED(DwmSetWindowAttribute(hWnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &USE_DARK_MODE, sizeof(USE_DARK_MODE)));
    COLORREF DARK_COLOR = 0x00505050;
   
    BOOL SET_CAPTION_COLOR = SUCCEEDED(DwmSetWindowAttribute(hWnd, DWMWA_CAPTION_COLOR,&DARK_COLOR, sizeof(DARK_COLOR)));
    COLORREF GREEN = 0xFF0000;
-   //BOOL SET_TEXT_COLOR = SUCCEEDED(DwmSetWindowAttribute(hWnd, DWMWA_TEXT_COLOR, &GREEN, sizeof(GREEN)));
    BOOL SET_BORDER_COLOR = SUCCEEDED(DwmSetWindowAttribute(hWnd, DWMWA_BORDER_COLOR, &DARK_COLOR, sizeof(DARK_COLOR)));
    // Store in global variable
    MainWindow = hWnd;
@@ -278,9 +274,7 @@ void createConfigurationWindow(WNDCLASSEXW& config_cl, HINSTANCE& hInst_config, 
     ShowWindow(confighWnd, nCmdShow);
     COLORREF DARK_COLOR = 0x00505050;
     BOOL SET_CAPTION_COLOR = SUCCEEDED(DwmSetWindowAttribute(confighWnd, DWMWA_CAPTION_COLOR, &DARK_COLOR, sizeof(DARK_COLOR)));
-    //COLORREF GREEN = 0xFF0000;
-    //BOOL SET_TEXT_COLOR = SUCCEEDED(DwmSetWindowAttribute(confighWnd, DWMWA_TEXT_COLOR, &GREEN, sizeof(GREEN)));
-
+   
 }
 
 //Create Facebook Login Window 
@@ -537,9 +531,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 if (TW_LOGGED_IN) {
                     SendMessageW(twitterLoginButton, BM_SETIMAGE, IMAGE_BITMAP, (LPARAM)runningButton);
                 }
-                //lauchScanners(FB_LOGGED_IN, IG_LOGGED_IN, TW_LOGGED_IN);
-                //beginListeningforScrapeResults(FB_LOGGED_IN, IG_LOGGED_IN, TW_LOGGED_IN);
-                //FIRST_SCAN = false;
             }
             else
             {
@@ -659,8 +650,8 @@ LRESULT CALLBACK WndProcConfig(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
             hoursVal = _wtoi(hoursCaptured);
             minutesVal = _wtoi(minutesCaptured);
             secondsVal = _wtoi(secondsCaptured);
-            if ((hoursVal > 99 or hoursVal < 0) or (minutesVal > 60 or minutesVal < 0) or (secondsVal > 60 or secondsVal < 0) or (hoursVal == 0 and minutesVal == 0 and secondsVal == 0)) {
-                MessageBox(NULL, L"Enter valid time interval: \n0-99 Hours 0-60 Minutes and 0-60 Seconds", L"Input Error", MB_ICONERROR);
+            if ((hoursVal > 200 or hoursVal < 0) or (minutesVal > 60 or minutesVal < 0) or (secondsVal > 60 or secondsVal < 0) or (hoursVal == 0 and minutesVal == 0 and secondsVal == 0)) {
+                MessageBox(NULL, L"Enter valid time interval: \n0-200 Hours 0-60 Minutes and 0-60 Seconds", L"Input Error", MB_ICONERROR);
                 hoursVal = 0;
                 minutesVal = 0;
                 secondsVal = 0;
@@ -680,8 +671,6 @@ LRESULT CALLBACK WndProcConfig(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
                 ScanLimitInt = NULL;
             }
 
-            //IN FUTURE, CHECK VALUE INTEGRITY BEFORE SETTING CONFIG_SET TO TRUE
-            //CONFIG_SET = true;
             if (COUNT > 0) {
                 DestroyWindow(hWnd);
                 CONFIG_SET = true;
@@ -783,7 +772,7 @@ LRESULT CALLBACK WndProcFBLogin(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
                 shellOperation.append(" ");
 
                 //Lauch program
-                WinExec((LPCSTR)shellOperation.c_str(), SW_HIDE);
+                WinExec((LPCSTR)shellOperation.c_str(), SW_SHOW);
                 SetWindowTextW(FBsubmit, L"Authenticating...");
             }
             //NOTE: if user puts stuff in the login but also checks used saved, will override and use saved info
@@ -802,7 +791,7 @@ LRESULT CALLBACK WndProcFBLogin(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
                 shellOperation.append(" ");
 
                 //Lauch program
-                WinExec((LPCSTR)shellOperation.c_str(), SW_HIDE);
+                WinExec((LPCSTR)shellOperation.c_str(), SW_SHOW);
                 SetWindowTextW(FBsubmit, L"Authenticating...");
             }
 
@@ -1294,9 +1283,7 @@ void AddConfigControls(HWND hWnd)
     outputDir = CreateWindowW(L"Edit", L"Default: .\\Program Data\\FoundPosts\\", WS_VISIBLE | WS_CHILD | SS_LEFT | WS_BORDER | ES_AUTOHSCROLL,145, 180, 250, 20, hWnd, NULL, NULL, NULL);
     
     //SUBMIT
-    HWND submit = CreateWindowW(L"Button", L"SUBMIT", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON, 190, 230, 120, 60, hWnd, (HMENU)SUBMIT_CONFIG, NULL, NULL);
-
-    
+    HWND submit = CreateWindowW(L"Button", L"SUBMIT", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON, 190, 230, 120, 60, hWnd, (HMENU)SUBMIT_CONFIG, NULL, NULL);   
 
 }
 
@@ -1606,8 +1593,7 @@ void readIGScrapeLog()
             std::wstring wide_string = std::wstring(full_log_text.begin(), full_log_text.end());
             const wchar_t* scanUpdate = wide_string.c_str();
             SetWindowTextW(instagramResultsSummary, scanUpdate);
-            full_log_text = "";
-        }
+            full_l   }
         readOutputLog.close();
     }
     //Kill this thread

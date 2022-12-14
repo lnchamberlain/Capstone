@@ -109,7 +109,7 @@ def get_keywords():
             term = term_and_date[0]
             date = term_and_date[1].split("/")
             #datetime takes arguments (year, month, day, hour, minute), timestamp converts to seconds since epoch
-            if((date[2] < 2025 and date[2] > 1970) and (date[1] > 0 and date[1] < 13) and (date[0] > 0 and date[0] < 32)):
+            if(int(date[2]) < 2025 and (int(date[2]) > 1970) and ((int(date[1]) > 0 and int(date[1]) < 13) and (int(date[0])) > 0 and int(date[0]) < 32)):
 
                 datetime_obj = datetime.datetime(int(date[2]), int(date[0]), int(date[1]), 0, 0)
                 epoch_time = datetime_obj.timestamp()
@@ -253,6 +253,7 @@ def scrape_location(COUNTER, NUM_LOCATIONS, location, driver):
 
         #Check if post contains KEYWORDS or was authored by a FLAGGED USER
         for word in KEYWORDS:
+            no_timestamp = 0
             search_words = get_variations(word)
             for author in FLAGGED_USERS:
                 for w in search_words:
@@ -349,7 +350,9 @@ def format_found_post(flagged_post):
     lat_lng = str(lat) + ", " + str(lng)
     html_str = '<tr>'
     username = flagged_post["user"]["username"]
-    full_name = flagged_post["user"]["full_name"]
+    full_name = flagged_post["user"].get("full_name")
+    if(full_name is None):
+        full_name = ' '
     caption = ''
     if(flagged_post["caption"] is not None):
         caption = flagged_post["caption"]["text"] 
@@ -425,7 +428,7 @@ def main():
     COUNTER = 1
     NUM_LOCATIONS = len(LOCATION_URLS)
     chrome_options = Options()
-    #chrome_options.add_argument("--headless")
+    chrome_options.add_argument("--headless")
     driver = selenium.webdriver.Chrome("./chromedriver", options=chrome_options)
     driver.get("https://instagram.com")
     for c in COOKIE:

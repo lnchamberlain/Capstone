@@ -1,24 +1,4 @@
 
-# import requests
-
-# payload = {
-#     'inUserName': 'ExampleUsername',
-#     'inUserPass': 'ExamplePassword'
-# }
-
-# with requests.Session() as s:
-#     p = s.post('https://twitter.com/i/flow/login', data=payload)
-#     #print(p.text)
-    
-#     r = s.get('https://twitter.com/home')
-#     with open(r'/home/wisteria/CapstoneProject/Capstone/twitter_scrape_test.txt', mode='wb') as file:
-#         file.write(r.content)
-#         file.close()
-        
-# IF you look at the twitter_scrape_test.txt you'll see that the request worked,
-# but that twitter hashes the content in line 6.
-# Looks like we'll need to work around it with selenium.??
-# More research required.
 # coding=utf-8
 
 # UnderCover Recovery 
@@ -76,9 +56,6 @@ NOT_DEFAULT_DIR = False
 
 #Fills global variable with urls from the last column of the .csv file
 def get_urls():
-    #Resolve region number into path
-    #region_file = REGION_RESOLUTION_TABLE[int(sys.argv[1])] 
-    #No regions split for csv, all alaska, no need for first arguement yet
     region_file = "./Program Data/Regions/ALASKA_TW.csv"
     with open(region_file, newline='', encoding="utf-8") as csvfile:
         csv_data = csv.reader(csvfile, delimiter=',')
@@ -89,18 +66,17 @@ def get_urls():
     NUM_LOCATIONS = len(LOCATION_URLS)
 
 
-
-
 #Fills global variable with value from wordlist
 def get_keywords():
     keywords_file = open("./Program Data/Wordlists/keywords.txt", "r+")
     global KEYWORDS
     lines = keywords_file.readlines()[7:]
-    KEYWORDS = lines[0].split(",")
-    # #Advanced search only support for IG
-    for elem in KEYWORDS:
-         if("BEFORE" in elem) or ("AFTER" in elem) or ("+" in elem):
-             KEYWORDS.remove(elem)
+    line = str(lines[0]).split(",")
+    print(line)
+    for word in line:
+        words = word.split(" ")
+        print(words)
+        KEYWORDS.append(words[0])
     
 
 #Grabs cookie value from AUTH logs, rebuilds dictionary and sets global variable
@@ -121,14 +97,17 @@ def get_output_dir():
         OUTPUT_DIR = output_dir
         shutil.copy("./styles.css", output_dir + "/styles.css")
 
+
 #Populates global list from flagged users list
 def get_flagged_users():
     flagged_users_file = open("./Program Data/FlaggedUsers/TWFlaggedUsers/tw_flagged_users.txt", "r+")
     global FLAGGED_USERS
     FLAGGED_USERS = flagged_users_file.read().split(",")
 
+
  #Requests data from location url, formats the return, searches captions and comments for keywords, adds posts to flagged posts
 def scrape_location(driver, location, counter):
+    print(KEYWORDS)
     SCROLL_LIMIT = 10
     #open temporary file to write to
     temp_file = open("./Program Data/Logs/TW_SCRAPE_LOGS/temp.txt", "w", encoding="utf-8")
@@ -149,6 +128,7 @@ def scrape_location(driver, location, counter):
         url_base = LOCATION_URLS[location].split("word")
         #add keyword to crafted url
         url = url_base[0] + word + url_base[1]
+        print(url)
         driver.get(url)
         time.sleep(0.5)
         if("We didn't find any results" in driver.page_source):
@@ -204,8 +184,6 @@ def scrape_location(driver, location, counter):
        format_found_post(post, driver, "KEYWORDS")
        
     print("\n*****************************************************************\n")
-
-
 
 
 
@@ -281,8 +259,6 @@ def scrape_flagged_user(driver, username, counter):
        format_found_post(post, driver, "FLAGGED_USERS")
        
     print("\n*****************************************************************\n")
-
-
 
 
 #Requests the full info for a flagged post
@@ -432,7 +408,7 @@ def main():
     clear_log.close()
     chrome_options = Options()
     #--headless makes the window not pop up
-    #chrome_options.add_argument("--headless")
+    chrome_options.add_argument("--headless")
     driver = selenium.webdriver.Chrome("./chromedriver", options=chrome_options)
     driver.get("https://twitter.com")
     for c in COOKIE:
